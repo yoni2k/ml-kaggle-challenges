@@ -4,10 +4,19 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
+# TODO is staying?
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import VotingClassifier
+from sklearn.neighbors import KNeighborsClassifier
 sns.set()
+
+
+"""
+TODO:
+- Update titanic.MD
+-  
+"""
 
 
 def read_files():
@@ -57,23 +66,34 @@ def scale_train(x_train):
     return scaler
 
 
-# TODO is staying?
-def single_logistic_regression(x_train, y_train):
-    log_reg = LogisticRegression()
-    log_reg.fit(x_train, y_train)
-    return log_reg.score(x_train, y_train), log_reg
-
-
 def output_preds(preds, x_test):
     pred_df = pd.DataFrame(preds, index=x_test.index)
     pred_df.to_csv('output/preds.csv')
 
 
-# TODO is staying?
+def cross_valid(classifier, x_train, y_train):
+    accuracies = cross_val_score(estimator=classifier, X=x_train, y=y_train, cv=10)
+    return accuracies.mean(), classifier
+
+
+def fit_single_classifier(classifier, x_train, y_train):
+    classifier = classifier
+    classifier.fit(x_train, y_train)
+    return classifier.score(x_train, y_train), classifier
+
+
 def grid_search(classifier, param_grid, x_train, y_train):
     grid = GridSearchCV(classifier, param_grid, verbose=1, cv=10, n_jobs=-1)
     grid.fit(x_train, y_train)
     return grid.score(x_train, y_train), grid
+
+
+def single_and_grid_classifier(name_str, x_train, y_train, single_classifier, grid_params):
+    reg_score, classifier = cross_valid(single_classifier, x_train, y_train)
+    print(f'{name_str} - Single classification score: {reg_score}, default classifier:\n{classifier}')
+
+    reg_score, classifier = grid_search(single_classifier, grid_params, x_train, y_train)
+    print(f'{name_str} - Grid Search classification score: {reg_score}, best classifier:\n{classifier.best_estimator_}')
 
 
 def grid_with_voting(classifiers, param_grid, x_train, y_train):
@@ -81,15 +101,11 @@ def grid_with_voting(classifiers, param_grid, x_train, y_train):
 
     grid = GridSearchCV(voting_classifier, param_grid, verbose=1, cv=10, n_jobs=-1)
     grid.fit(x_train, y_train)
+    print(f'Best estimator: {grid.best_estimator_}')
     return grid.score(x_train, y_train), grid
 
 
 columns_to_drop = ['Name', 'Ticket', 'Cabin']
-classifiers = [('lr', LogisticRegression())]
-grid_voting_params = [{'lr__solver': ['liblinear', 'newton-cg', 'sag', 'saga']},
-                      {'lr__solver': ['lbfgs']}]
-grid_params = {'solver': ['liblinear', 'newton-cg', 'sag', 'saga']}
-
 
 x_train, y_train, x_test = read_files()
 
@@ -103,29 +119,26 @@ scaler = scale_train(x_train)
 x_train_scaled = scaler.transform(x_train)
 x_test_scaled = scaler.transform(x_test)
 
-'''
-# TODO is staying?
-reg_score, classifier = single_logistic_regression(x_train_scaled, y_train)
-print(f'Single Linear Regression score: {reg_score}')
-# TODO is staying?
-reg_score, classifier = grid_search(LogisticRegression(), grid_params, x_train_scaled, y_train)
-print(f'Grid Search Regression score: {reg_score}')
-'''
+single_and_grid_classifier('Linear', x_train_scaled, y_train,
+                           LogisticRegression(),
+                           [{'solver': ['liblinear', 'newton-cg', 'sag', 'saga', 'lbfgs']}])
+
+single_and_grid_classifier('KNN', x_train_scaled, y_train,
+                           KNeighborsClassifier(),
+                           [{'n_neighbors': range(1, 15)}])
+
+classifiers = [('lr', LogisticRegression()),
+               ('knn', KNeighborsClassifier()) ]
+grid_voting_params = [{'lr__solver': ['liblinear', 'newton-cg', 'sag', 'saga', 'lbfgs']},
+                      {'knn__n_neighbors': range(1, 15)}]
+#grid_voting_params = [{'lr__solver': ['liblinear']},
+#                      {'knn__n_neighbors': [7]}]
 reg_score, classifier = grid_with_voting(classifiers, grid_voting_params, x_train_scaled, y_train)
-print(f'Grid Search With Voting Regression score: {reg_score}')
+print(f'Grid Search With Voting classification score: {reg_score}')
 
 preds = classifier.predict(x_test_scaled)
 
 output_preds(preds, x_test)
-
-
-'''
-Old code currently not used:
-def cross_valid(classifier, x_train, y_train):
-    accuracies = cross_val_score(estimator=classifier, X=x_train, y=y_train, cv=10)
-    print(f'Cross validation, mean: {accuracies.mean()}, STD: {accuracies.std()}')
-cross_valid(classifier, x_train_scaled, y_train)
-'''
 
 
 
