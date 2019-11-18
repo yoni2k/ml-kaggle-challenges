@@ -20,10 +20,11 @@ sns.set()
 """
 TODO:
 - Update titanic.MD
-- Add more options of different algorithms
-- Think about how Voting and GridSearch work together, consider removing some values
-- Consider reading RandomForest - seems to be doing overfitting when added - need to split test set to really learn
+- Add more options of different algorithms - when have better features
 - Consider adding XGBoost
+
+Feature ideas:
+- Removed 
 """
 
 
@@ -129,7 +130,7 @@ def voting_only(classifiers, x_train, y_train, x_test_local, y_test_local, weigh
 
 
 def main():
-    columns_to_drop = ['Name', 'Ticket', 'Cabin']
+    columns_to_drop = ['Name', 'Ticket', 'Cabin', 'Embarked']
 
     x, y, x_test = read_files()
 
