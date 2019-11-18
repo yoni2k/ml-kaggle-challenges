@@ -74,9 +74,9 @@ def scale_train(x_train):
     return scaler
 
 
-def output_preds(preds, x_test):
+def output_preds(preds, x_test, name_suffix):
     pred_df = pd.DataFrame(preds, index=x_test.index, columns=['Survived'])
-    pred_df.to_csv('output/preds.csv')
+    pred_df.to_csv(f'output/preds_{name_suffix}.csv')
 
 
 def cross_valid(classifier, x_train, y_train):
@@ -187,7 +187,6 @@ def main():
               f'local test score: {round(classifier.score(x_test_local, y_test_local), 3)}, ')
     '''
 
-    '''
     classifiers_all = [
         ('lr', LogisticRegression(solver='liblinear')),
         ('knn', KNeighborsClassifier()),
@@ -195,6 +194,7 @@ def main():
         ('nb', GaussianNB()),
         ('rf', RandomForestClassifier())
     ]
+
     grid_voting_params_all = [
         {'lr__solver': ['liblinear', 'lbfgs'],
          'knn__n_neighbors': [10, 14, 20],
@@ -208,8 +208,8 @@ def main():
 
     classifier_all = grid_with_voting(classifiers_all, grid_voting_params_all,
                                                  x_train_scaled, y_train, x_test_local_scaled, y_test_local)
-
-    '''
+    preds = classifier_all.predict(x_test_scaled)
+    output_preds(preds, x_test, 'grid')
 
     classifiers_specific_with_params = [
         ('lr', LogisticRegression(solver='liblinear')),
@@ -225,7 +225,6 @@ def main():
                                                x_test_local_scaled, y_test_local)
 
     preds = classifier_voting.predict(x_test_scaled)
-
-    output_preds(preds, x_test)
+    output_preds(preds, x_test, 'best')
 
 main()
