@@ -38,7 +38,7 @@ def read_files():
     return x, y, x_test
 
 
-def clean_handle_missing_categorical(x, columns_to_drop, age_for_missing, mean_class_3_fare):
+def clean_handle_missing_categorical(x, columns_to_drop, age_for_missing, mean_class_3_fare, min_fare, max_reasonable_fare):
     x.drop(columns_to_drop, axis=1, inplace=True)
 
     print(f'Features after dropping: {x.columns.values}')
@@ -75,7 +75,12 @@ def clean_handle_missing_categorical(x, columns_to_drop, age_for_missing, mean_c
     if 'Fare' not in columns_to_drop:
         x['Fare'].replace({np.NaN: mean_class_3_fare}, inplace=True)
 
-    print(f'Number of members in family:\n{x["Family_Num"].value_counts().sort_index()}')
+        x['Fare'].replace({512.329200: max_reasonable_fare}, inplace=True)
+
+        x['Fare log'] = np.log(x['Fare'])
+        x['Fare log'].replace({np.NINF: min_fare}, inplace=True)
+        x.drop('Fare', axis=1, inplace=True)
+
 
 
 def scale_train(x_train):
@@ -147,10 +152,13 @@ def main():
 
     age_for_missing = x_train['Age'].mean()
     mean_class_3_fare = x_train[(x_train['Pclass'] == 1) | (x_train['Pclass'] == 2)]['Fare'].mean()
+    min_fare = x_train[x_train['Fare'] > 0]['Fare'].min()
+    max_reasonable_fare = x_train[x_train['Fare'] <300]['Fare'].max()
+    print(f'min_fare: {min_fare}')
 
-    clean_handle_missing_categorical(x_train, columns_to_drop, age_for_missing, mean_class_3_fare)
-    clean_handle_missing_categorical(x_test_local, columns_to_drop, age_for_missing, mean_class_3_fare)
-    clean_handle_missing_categorical(x_test, columns_to_drop, age_for_missing, mean_class_3_fare)
+    clean_handle_missing_categorical(x_train, columns_to_drop, age_for_missing, mean_class_3_fare, min_fare, max_reasonable_fare)
+    clean_handle_missing_categorical(x_test_local, columns_to_drop, age_for_missing, mean_class_3_fare, min_fare, max_reasonable_fare)
+    clean_handle_missing_categorical(x_test, columns_to_drop, age_for_missing, mean_class_3_fare, min_fare, max_reasonable_fare)
 
     scaler = scale_train(x_train)
     x_train_scaled = scaler.transform(x_train)
