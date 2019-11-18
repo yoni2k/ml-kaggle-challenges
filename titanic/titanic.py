@@ -24,7 +24,7 @@ TODO:
 - Consider adding XGBoost
 
 Feature ideas:
-- Removed 
+- Remove
 """
 
 
@@ -40,6 +40,13 @@ def read_files():
 
 def clean_handle_missing_categorical(x, columns_to_drop, age_for_missing, mean_class_3_fare):
     x.drop(columns_to_drop, axis=1, inplace=True)
+
+    print(f'Features after dropping: {x.columns.values}')
+
+    # Create a new feature of number of relatives regardless of who they are
+    if 'SibSp' not in columns_to_drop and 'Parch' not in columns_to_drop:
+        x['Family_Num'] = x['SibSp'] + x['Parch']
+        x.drop(['SibSp', 'Parch'], axis=1, inplace=True)
 
     # Split 3 categorical unique values (1, 2, 3) of Pclass into 2 dummy variables for classes 1 & 2
     if 'Pclass' not in columns_to_drop:
@@ -67,6 +74,8 @@ def clean_handle_missing_categorical(x, columns_to_drop, age_for_missing, mean_c
 
     if 'Fare' not in columns_to_drop:
         x['Fare'].replace({np.NaN: mean_class_3_fare}, inplace=True)
+
+    print(f'Number of members in family:\n{x["Family_Num"].value_counts().sort_index()}')
 
 
 def scale_train(x_train):
