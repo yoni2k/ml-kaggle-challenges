@@ -2,12 +2,13 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-sns.set()
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import VotingClassifier
+sns.set()
+
 
 def read_files():
     x_train = pd.read_csv('input/train.csv', index_col='PassengerId')
@@ -57,27 +58,18 @@ def scale_train(x_train):
 
 
 # TODO is staying?
-def regression(x_train, y_train):
+def single_logistic_regression(x_train, y_train):
     log_reg = LogisticRegression()
     log_reg.fit(x_train, y_train)
     return log_reg.score(x_train, y_train), log_reg
 
+
 def output_preds(preds, x_test):
     pred_df = pd.DataFrame(preds, index=x_test.index)
-
-#    pred_df = x_test.copy()
-#    pred_df['Survived'] = preds
-#    #pred_df = pred_df.pop('Survived')
-
     pred_df.to_csv('output/preds.csv')
 
 
 # TODO is staying?
-def cross_valid(classifier, x_train, y_train):
-    accuracies = cross_val_score(estimator=classifier, X=x_train, y=y_train, cv=10)
-    print(f'Cross validation, mean: {accuracies.mean()}, STD: {accuracies.std()}')
-
-
 def grid_search(classifier, param_grid, x_train, y_train):
     grid = GridSearchCV(classifier, param_grid, verbose=1, cv=10, n_jobs=-1)
     grid.fit(x_train, y_train)
@@ -111,19 +103,29 @@ scaler = scale_train(x_train)
 x_train_scaled = scaler.transform(x_train)
 x_test_scaled = scaler.transform(x_test)
 
-reg_score, classifier = regression(x_train_scaled, y_train)
+'''
+# TODO is staying?
+reg_score, classifier = single_logistic_regression(x_train_scaled, y_train)
 print(f'Single Linear Regression score: {reg_score}')
+# TODO is staying?
 reg_score, classifier = grid_search(LogisticRegression(), grid_params, x_train_scaled, y_train)
 print(f'Grid Search Regression score: {reg_score}')
+'''
 reg_score, classifier = grid_with_voting(classifiers, grid_voting_params, x_train_scaled, y_train)
 print(f'Grid Search With Voting Regression score: {reg_score}')
-
-# TODO - decide if keeping separate cross validation, otherwise remove the call and whole function
-# cross_valid(classifier, x_train_scaled, y_train)
 
 preds = classifier.predict(x_test_scaled)
 
 output_preds(preds, x_test)
+
+
+'''
+Old code currently not used:
+def cross_valid(classifier, x_train, y_train):
+    accuracies = cross_val_score(estimator=classifier, X=x_train, y=y_train, cv=10)
+    print(f'Cross validation, mean: {accuracies.mean()}, STD: {accuracies.std()}')
+cross_valid(classifier, x_train_scaled, y_train)
+'''
 
 
 
