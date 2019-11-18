@@ -21,7 +21,7 @@ TODO:
 - Update titanic.MD
 - Add more options of different algorithms
 - Think about how Voting and GridSearch work together, consider removing some values
-- Consider removing number of trees in RandomForest - seems to be doing overfitting
+- Consider reading RandomForest - seems to be doing overfitting when added - need to split test set to really learn
 """
 
 
@@ -111,6 +111,12 @@ def grid_with_voting(classifiers, param_grid, x_train, y_train):
     return grid.score(x_train, y_train), grid
 
 
+def voting_only(classifiers, x_train, y_train):
+    voting_classifier = VotingClassifier(estimators=classifiers, voting='soft', n_jobs=-1)
+    voting_classifier.fit(x_train, y_train)
+    return voting_classifier.score(x_train, y_train), voting_classifier
+
+
 def main():
     columns_to_drop = ['Name', 'Ticket', 'Cabin']
 
@@ -154,12 +160,12 @@ def main():
                                [{'n_estimators': [5, 10, 50, 100, 200],
                                 'criterion': ['gini', 'entropy']}])
 
-    classifiers = [
+    classifiers_all = [
         ('lr', LogisticRegression(solver='liblinear')),
         ('knn', KNeighborsClassifier()),
         ('svm', SVC(probability=True, gamma='auto')),
-        ('nb', GaussianNB()),
-        ('rf', RandomForestClassifier())
+        ('nb', GaussianNB())
+ #       ('rf', RandomForestClassifier())
     ]
     grid_voting_params_all = [
         {'lr__solver': ['liblinear', 'newton-cg', 'sag', 'saga', 'lbfgs']},
@@ -170,28 +176,50 @@ def main():
             'svm__kernel': ['rbf', 'sigmoid']},
         {
             'svm__kernel': ['poly'],
-            'svm__degree': [3, 4, 5, 6]},
-        {
-            'rf__n_estimators': [100],
-            'rf__criterion': ['gini', 'entropy']}
+            'svm__degree': [3, 4, 5, 6]}
+#        {
+#            'rf__n_estimators': [100],
+#            'rf__criterion': ['gini', 'entropy']}
     ]
 
+    reg_score, classifier_all = grid_with_voting(classifiers_all, grid_voting_params_all, x_train_scaled, y_train)
+    print(f'Grid Search With Voting classification score (all options): {reg_score}')
+
+    preds = classifier_all.predict(x_test_scaled)
+
+    output_preds(preds, x_test)
+
+    '''
     grid_voting_params_specific = [
         {'lr__solver': ['liblinear']},
         {'knn__n_neighbors': [7]},
-        {'svm__C': [1.5]},
-        {'rf__criterion': ['gini'],
-         'rf__n_estimators': [100]}
+        {'svm__C': [1.5]}
+        #        {'rf__criterion': ['gini'],
+        #         'rf__n_estimators': [100]}
     ]
 
-    reg_score, classifier = grid_with_voting(classifiers, grid_voting_params_all, x_train_scaled, y_train)
-    print(f'Grid Search With Voting classification score (all options): {reg_score}')
+    classifiers_specific_with_params = [
+        ('lr', LogisticRegression(solver='liblinear')),
+        ('knn', KNeighborsClassifier(n_neighbors=7)),
+        ('svm', SVC(probability=True, gamma='auto', C=1.5)),
+        ('nb', GaussianNB())
+        #       ('rf', RandomForestClassifier(criterion='gini', n_estimators=100))
+    ]
+    
+    classifiers_specific = [
+        ('lr', LogisticRegression(solver='liblinear')),
+        ('knn', KNeighborsClassifier()),
+        ('svm', SVC(probability=True, gamma='auto')),
+        ('nb', GaussianNB())
+        #       ('rf', RandomForestClassifier())
+    ]
 
-    reg_score, classifier = grid_with_voting(classifiers, grid_voting_params_specific, x_train_scaled, y_train)
+    reg_score, classifier_specific = grid_with_voting(classifiers_specific, grid_voting_params_specific, x_train_scaled, y_train)
     print(f'Grid Search With Voting classification score (specific options): {reg_score}')
+    
+    reg_score, classifier_voting = voting_only(classifiers_specific_with_params, x_train_scaled, y_train)
+    print(f'Voting only classification score (specific options): {reg_score}')
+'''
 
-    preds = classifier.predict(x_test_scaled)
-
-    output_preds(preds, x_test)
 
 main()
