@@ -1,3 +1,4 @@
+import warnings
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -9,13 +10,15 @@ from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import VotingClassifier
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
 sns.set()
 
 
 """
 TODO:
 - Update titanic.MD
--  
+- Add more options of different algorithms
+- 
 """
 
 
@@ -105,40 +108,69 @@ def grid_with_voting(classifiers, param_grid, x_train, y_train):
     return grid.score(x_train, y_train), grid
 
 
-columns_to_drop = ['Name', 'Ticket', 'Cabin']
+def main():
+    columns_to_drop = ['Name', 'Ticket', 'Cabin']
 
-x_train, y_train, x_test = read_files()
+    x_train, y_train, x_test = read_files()
 
-age_for_missing = x_train['Age'].mean()
-mean_class_3_fare = x_train[(x_train['Pclass'] == 1) | (x_train['Pclass'] == 2)]['Fare'].mean()
+    age_for_missing = x_train['Age'].mean()
+    mean_class_3_fare = x_train[(x_train['Pclass'] == 1) | (x_train['Pclass'] == 2)]['Fare'].mean()
 
-clean_handle_missing_categorical(x_train, columns_to_drop, age_for_missing, mean_class_3_fare)
-clean_handle_missing_categorical(x_test, columns_to_drop, age_for_missing, mean_class_3_fare)
+    clean_handle_missing_categorical(x_train, columns_to_drop, age_for_missing, mean_class_3_fare)
+    clean_handle_missing_categorical(x_test, columns_to_drop, age_for_missing, mean_class_3_fare)
 
-scaler = scale_train(x_train)
-x_train_scaled = scaler.transform(x_train)
-x_test_scaled = scaler.transform(x_test)
+    scaler = scale_train(x_train)
+    x_train_scaled = scaler.transform(x_train)
+    x_test_scaled = scaler.transform(x_test)
 
-single_and_grid_classifier('Linear', x_train_scaled, y_train,
-                           LogisticRegression(),
-                           [{'solver': ['liblinear', 'newton-cg', 'sag', 'saga', 'lbfgs']}])
+    '''
+    single_and_grid_classifier('Linear', x_train_scaled, y_train,
+                               LogisticRegression(),
+                               [{'solver': ['liblinear', 'newton-cg', 'sag', 'saga', 'lbfgs']}])
+    
+    single_and_grid_classifier('KNN', x_train_scaled, y_train,
+                               KNeighborsClassifier(),
+                               [{'n_neighbors': range(1, 15)}])
+    '''
 
-single_and_grid_classifier('KNN', x_train_scaled, y_train,
-                           KNeighborsClassifier(),
-                           [{'n_neighbors': range(1, 15)}])
-
-classifiers = [('lr', LogisticRegression()),
-               ('knn', KNeighborsClassifier()) ]
-grid_voting_params = [{'lr__solver': ['liblinear', 'newton-cg', 'sag', 'saga', 'lbfgs']},
-                      {'knn__n_neighbors': range(1, 15)}]
-#grid_voting_params = [{'lr__solver': ['liblinear']},
-#                      {'knn__n_neighbors': [7]}]
-reg_score, classifier = grid_with_voting(classifiers, grid_voting_params, x_train_scaled, y_train)
-print(f'Grid Search With Voting classification score: {reg_score}')
-
-preds = classifier.predict(x_test_scaled)
-
-output_preds(preds, x_test)
+    single_and_grid_classifier('SVM', x_train_scaled, y_train,
+                               SVC(),
+                               [{
+                                    'C': [0.05, 1.0, 1.5, 2.0, 3.0],
+                                    'gamma': [0.2, 0.1, 0.05, 'auto_deprecated', 'scale'],
+                                    'kernel': ['rbf', 'sigmoid']},
+                                {
+                                    'kernel': ['poly'],
+                                    'degree': [3, 4, 5, 6]
+                                }])
 
 
+    classifiers = [('lr', LogisticRegression()),
+                   ('knn', KNeighborsClassifier()),
+                   ('svm', SVC(probability=True))]
+    grid_voting_params_all = [{'lr__solver': ['liblinear', 'newton-cg', 'sag', 'saga', 'lbfgs']},
+                          {'knn__n_neighbors': range(1, 15)},
+                          {
+                              'svm__C': [0.05, 1.0, 1.5, 2.0, 3.0],
+                              'svm__gamma': [0.2, 0.1, 0.05, 'auto_deprecated', 'scale'],
+                              'svm__kernel': ['rbf', 'sigmoid']},
+                          {
+                              'svm__kernel': ['poly'],
+                              'svm__degree': [3, 4, 5, 6]}
+                          ]
 
+    grid_voting_params_specific = [{'lr__solver': ['liblinear']},
+                          {'knn__n_neighbors': [7]},
+                          {'svm__C': [1.5]}]
+
+    reg_score, classifier = grid_with_voting(classifiers, grid_voting_params_all, x_train_scaled, y_train)
+    print(f'Grid Search With Voting classification score (all options): {reg_score}')
+
+    reg_score, classifier = grid_with_voting(classifiers, grid_voting_params_specific, x_train_scaled, y_train)
+    print(f'Grid Search With Voting classification score (specific options): {reg_score}')
+
+    preds = classifier.predict(x_test_scaled)
+
+    output_preds(preds, x_test)
+
+main()
