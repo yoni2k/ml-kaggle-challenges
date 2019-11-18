@@ -118,8 +118,8 @@ def grid_with_voting(classifiers, param_grid, x_train, y_train, x_test_local, y_
     return grid
 
 
-def voting_only(classifiers, x_train, y_train, x_test_local, y_test_local):
-    voting_classifier = VotingClassifier(estimators=classifiers, voting='soft', n_jobs=-1)
+def voting_only(classifiers, x_train, y_train, x_test_local, y_test_local, weights=None):
+    voting_classifier = VotingClassifier(estimators=classifiers, voting='soft', n_jobs=-1, weights=weights)
     voting_classifier.fit(x_train, y_train)
     print(f'Best classifiers, Voting only classification train score: '
           f'{round(voting_classifier.score(x_train, y_train), 3)}, '
@@ -174,8 +174,8 @@ def main():
     single_and_grid_classifier('NB', x_train_scaled, y_train, x_test_local_scaled, y_test_local,
                                GaussianNB(),
                                [{}])
-                               
-    single_and_grid_classifier('RandomForest', x_train_scaled, y_train, x_test_local_scaled, y_test_local,
+
+    single_and_grid_classifier('RandomForest - 9', x_train_scaled, y_train, x_test_local_scaled, y_test_local,
                                RandomForestClassifier(n_jobs=-1, n_estimators=100, max_depth=9),
                                [{}])
     '''
@@ -187,6 +187,7 @@ def main():
               f'local test score: {round(classifier.score(x_test_local, y_test_local), 3)}, ')
     '''
 
+    '''
     classifiers_all = [
         ('lr', LogisticRegression(solver='liblinear')),
         ('knn', KNeighborsClassifier()),
@@ -210,6 +211,7 @@ def main():
                                                  x_train_scaled, y_train, x_test_local_scaled, y_test_local)
     preds = classifier_all.predict(x_test_scaled)
     output_preds(preds, x_test, 'grid')
+    '''
 
     classifiers_specific_with_params = [
         ('lr', LogisticRegression(solver='liblinear')),
@@ -221,8 +223,9 @@ def main():
     ]
 
     classifier_voting = voting_only(classifiers_specific_with_params,
-                                               x_train_scaled, y_train,
-                                               x_test_local_scaled, y_test_local)
+                                    x_train_scaled, y_train,
+                                    x_test_local_scaled, y_test_local,
+                                    [1, 1, 1, 1, 1, 0.3])
 
     preds = classifier_voting.predict(x_test_scaled)
     output_preds(preds, x_test, 'best')
