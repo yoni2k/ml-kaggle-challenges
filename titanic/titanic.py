@@ -11,6 +11,8 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import VotingClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
+from sklearn.naive_bayes import GaussianNB
+from sklearn.ensemble import RandomForestClassifier
 sns.set()
 
 
@@ -18,7 +20,8 @@ sns.set()
 TODO:
 - Update titanic.MD
 - Add more options of different algorithms
-- 
+- Think about how Voting and GridSearch work together, consider removing some values
+- Consider removing number of trees in RandomForest - seems to be doing overfitting
 """
 
 
@@ -70,7 +73,7 @@ def scale_train(x_train):
 
 
 def output_preds(preds, x_test):
-    pred_df = pd.DataFrame(preds, index=x_test.index)
+    pred_df = pd.DataFrame(preds, index=x_test.index, columns=['Survived'])
     pred_df.to_csv('output/preds.csv')
 
 
@@ -100,7 +103,7 @@ def single_and_grid_classifier(name_str, x_train, y_train, single_classifier, gr
 
 
 def grid_with_voting(classifiers, param_grid, x_train, y_train):
-    voting_classifier = VotingClassifier(estimators=classifiers, voting='soft')
+    voting_classifier = VotingClassifier(estimators=classifiers, voting='soft', n_jobs=-1)
 
     grid = GridSearchCV(voting_classifier, param_grid, verbose=1, cv=10, n_jobs=-1)
     grid.fit(x_train, y_train)
@@ -123,18 +126,16 @@ def main():
     x_train_scaled = scaler.transform(x_train)
     x_test_scaled = scaler.transform(x_test)
 
-    '''
-    single_and_grid_classifier('Linear', x_train_scaled, y_train,
-                               LogisticRegression(),
+    single_and_grid_classifier('Logistic', x_train_scaled, y_train,
+                               LogisticRegression(solver='liblinear', n_jobs=-1),
                                [{'solver': ['liblinear', 'newton-cg', 'sag', 'saga', 'lbfgs']}])
     
     single_and_grid_classifier('KNN', x_train_scaled, y_train,
-                               KNeighborsClassifier(),
+                               KNeighborsClassifier(n_jobs=-1),
                                [{'n_neighbors': range(1, 15)}])
-    '''
 
     single_and_grid_classifier('SVM', x_train_scaled, y_train,
-                               SVC(),
+                               SVC(gamma='auto'),
                                [{
                                     'C': [0.05, 1.0, 1.5, 2.0, 3.0],
                                     'gamma': [0.2, 0.1, 0.05, 'auto_deprecated', 'scale'],
@@ -144,24 +145,44 @@ def main():
                                     'degree': [3, 4, 5, 6]
                                 }])
 
+    single_and_grid_classifier('NB', x_train_scaled, y_train,
+                               GaussianNB(),
+                               [{}])
 
-    classifiers = [('lr', LogisticRegression()),
-                   ('knn', KNeighborsClassifier()),
-                   ('svm', SVC(probability=True))]
-    grid_voting_params_all = [{'lr__solver': ['liblinear', 'newton-cg', 'sag', 'saga', 'lbfgs']},
-                          {'knn__n_neighbors': range(1, 15)},
-                          {
-                              'svm__C': [0.05, 1.0, 1.5, 2.0, 3.0],
-                              'svm__gamma': [0.2, 0.1, 0.05, 'auto_deprecated', 'scale'],
-                              'svm__kernel': ['rbf', 'sigmoid']},
-                          {
-                              'svm__kernel': ['poly'],
-                              'svm__degree': [3, 4, 5, 6]}
-                          ]
+    single_and_grid_classifier('RandomForest', x_train_scaled, y_train,
+                               RandomForestClassifier(n_jobs=-1),
+                               [{'n_estimators': [5, 10, 50, 100, 200],
+                                'criterion': ['gini', 'entropy']}])
 
-    grid_voting_params_specific = [{'lr__solver': ['liblinear']},
-                          {'knn__n_neighbors': [7]},
-                          {'svm__C': [1.5]}]
+    classifiers = [
+        ('lr', LogisticRegression(solver='liblinear')),
+        ('knn', KNeighborsClassifier()),
+        ('svm', SVC(probability=True, gamma='auto')),
+        ('nb', GaussianNB()),
+        ('rf', RandomForestClassifier())
+    ]
+    grid_voting_params_all = [
+        {'lr__solver': ['liblinear', 'newton-cg', 'sag', 'saga', 'lbfgs']},
+        {'knn__n_neighbors': range(1, 15)},
+        {
+            'svm__C': [0.05, 1.0, 1.5, 2.0, 3.0],
+            'svm__gamma': [0.2, 0.1, 0.05, 'auto_deprecated', 'scale'],
+            'svm__kernel': ['rbf', 'sigmoid']},
+        {
+            'svm__kernel': ['poly'],
+            'svm__degree': [3, 4, 5, 6]},
+        {
+            'rf__n_estimators': [100],
+            'rf__criterion': ['gini', 'entropy']}
+    ]
+
+    grid_voting_params_specific = [
+        {'lr__solver': ['liblinear']},
+        {'knn__n_neighbors': [7]},
+        {'svm__C': [1.5]},
+        {'rf__criterion': ['gini'],
+         'rf__n_estimators': [100]}
+    ]
 
     reg_score, classifier = grid_with_voting(classifiers, grid_voting_params_all, x_train_scaled, y_train)
     print(f'Grid Search With Voting classification score (all options): {reg_score}')
