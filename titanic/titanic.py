@@ -278,7 +278,7 @@ def main():
     # All features: 'Pclass' 'Name' 'Sex' 'Age' 'SibSp' 'Parch' 'Ticket' 'Fare' 'Cabin' 'Embarked'
     # TODO is leaving dropping 'Embarked'?
     # Fare - TODO - return but in a different way
-    columns_to_drop = ['Name', 'Ticket', 'Cabin', 'Embarked', 'Fare', 'SibSp']
+    columns_to_drop = ['Name', 'Ticket', 'Cabin', 'Embarked', 'Fare', 'Parch']
 
     x, y, x_test = read_files()
 
