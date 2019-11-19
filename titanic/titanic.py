@@ -121,12 +121,14 @@ def single_and_grid_classifier(name_str, x_train, y_train, x_test_local, y_test_
 
     reg_score, classifier = grid_search(single_classifier, grid_params, x_train, y_train)
     reg_score, reg_std = cross_valid(classifier.best_estimator_, x_train, y_train)
+    test_score = classifier.score(x_test_local, y_test_local)
 
     print(f'{name_str.ljust(20)} - Stats: Default params cross: '
           f'{round(reg_score_def, 3)} (+-{round(reg_std_def, 3)}={round(reg_score_def - reg_std_def, 3)}), '
           f'grid train: {round(reg_score, 3)}, '
-          f'test: {round(classifier.score(x_test_local, y_test_local), 3)}, '
+          f'test: {round(test_score, 3)}, '
           f'best classifier cross: {round(reg_score, 3)} (+-{round(reg_std, 3)}={round(reg_score - reg_std, 3)}), '
+          f'min (test/cross): {round(min(reg_score, test_score), 3)}, '
           f'best classifier:\n{classifier.best_estimator_}')
     return classifier
 
@@ -137,9 +139,11 @@ def grid_with_voting(classifiers, param_grid, x_train, y_train, x_test_local, y_
     grid = GridSearchCV(voting_classifier, param_grid, verbose=1, cv=10, n_jobs=-1)
     reg_score, reg_std = cross_valid(grid, x_train, y_train)
     grid.fit(x_train, y_train)
+    test_score = grid.score(x_test_local, y_test_local)
     print(f'FINAL'.ljust(44) + ' - Stats: Grid + Voting train: {round(grid.score(x_train, y_train), 3)}, '
-          f'test: {round(grid.score(x_test_local, y_test_local), 3)}, '
+          f'test: {round(test_score, 3)}, '
           f'best classifier cross: {round(reg_score, 3)} (+-{round(reg_std, 3)}={round(reg_score - reg_std, 3)}), '
+          f'min (test/cross): {round(min(reg_score, test_score), 3)}, '
           f'best classifier:\n{grid.best_estimator_}')
     return grid
 
@@ -148,10 +152,12 @@ def voting_only(classifiers, x_train, y_train, x_test_local, y_test_local, weigh
     voting_classifier = VotingClassifier(estimators=classifiers, voting='soft', n_jobs=-1, weights=weights)
     voting_classifier.fit(x_train, y_train)
     reg_score, reg_std = cross_valid(voting_classifier, x_train, y_train)
+    test_score = voting_classifier.score(x_test_local, y_test_local)
     print(f'FINAL'.ljust(44) + ' - Stats: Best classifiers + Voting train: '
           f'{round(voting_classifier.score(x_train, y_train), 3)}, '
-          f'test: {round(voting_classifier.score(x_test_local, y_test_local), 3)}, '
+          f'test: {round(test_score, 3)}, '
           f'best classifier cross: {round(reg_score, 3)} (+-{round(reg_std, 3)}={round(reg_score - reg_std, 3)}), '
+          f'min (test/cross): {round(min(reg_score, test_score), 3)}, '
           f'best classifier:\n{voting_classifier}')
     return voting_classifier
 
