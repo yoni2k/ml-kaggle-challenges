@@ -375,8 +375,10 @@ def main():
 
     classifier_voting = voting_only(classifiers_specific_with_params,
                                     x_train_scaled, y_train,
-                                    x_test_local_scaled, y_test_local,
-                                    [1, 1, 1, 1, 1, 0.3])
+                                    x_test_local_scaled, y_test_local) #,
+                                    # TODO - should stay?
+                                    # Give weights not to give rf too much weight, since it overfits
+                                    #[1, 1, 1, 1, 1, 0.3])
 
     preds = classifier_voting.predict(x_test_scaled)
     output_preds(preds, x_test, 'best')
