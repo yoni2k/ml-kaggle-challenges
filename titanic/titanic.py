@@ -297,12 +297,12 @@ def main():
     '''
     columns_to_drop = ['Name', 'Ticket', 'Cabin',
                        'Embarked',
+                       'Fare',
                        # 'Sex',
                        # 'SibSp',
                        # 'Age',
-                       # 'Fare',
+                       # 'Pclass'
                        'Parch',
-                       'Pclass',
                        ]
 
     x, y, x_test = read_files()

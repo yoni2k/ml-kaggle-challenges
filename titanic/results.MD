@@ -269,16 +269,77 @@ Min cross:
 - Best: Age (0.741)
 - Better: Age (0.741), Pclass (0.731), Parch (0.723), Fare (0.724), Embarked (0.712)
 - Worse/same: 
-Best test: Age
-Best cross: Age
-Best min: Age
+Best test: Age (.821)
+Best cross: Age (.822)
+Best min: Age (.756)
 Conclusion - not try Embarked - 2nd round always the worst. Add Age
 
+### 15-. (Sex + SibSp + Age) - benchmark
+	Logistic - liblinear - Stats: Default params cross: 0.793 (+-0.076=0.717), grid train: 0.793, test: 0.785, best classifier cross: 0.793 (+-0.076=0.717), min (test/cross): 0.785, best classifier:
+	KNN - 14             - Stats: Default params cross: 0.801 (+-0.059=0.742), grid train: 0.801, test: 0.807, best classifier cross: 0.801 (+-0.059=0.742), min (test/cross): 0.801, best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.82 (+-0.064=0.756), grid train: 0.822, test: 0.812, best classifier cross: 0.822 (+-0.066=0.756), min (test/cross): 0.812, best classifier:
+	SVM - poly           - Stats: Default params cross: 0.789 (+-0.073=0.716), grid train: 0.792, test: 0.789, best classifier cross: 0.792 (+-0.074=0.718), min (test/cross): 0.789, best classifier:
+	NB                   - Stats: Default params cross: 0.793 (+-0.068=0.726), grid train: 0.793, test: 0.807, best classifier cross: 0.793 (+-0.068=0.726), min (test/cross): 0.793, best classifier:
+	RandomForest - 9     - Stats: Default params cross: 0.787 (+-0.062=0.725), grid train: 0.784, test: 0.798, best classifier cross: 0.784 (+-0.065=0.719), min (test/cross): 0.784, best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.819, test: 0.821, best classifier cross: 0.813 (+-0.072=0.741), min (test/cross): 0.813, best classifier:
+
+### 15a. (Sex + SibSp + Age) + Fare
+	Logistic - liblinear - Stats: Default params cross: 0.786 (+-0.074=0.712), grid train: 0.786, test: 0.785, best classifier cross: 0.786 (+-0.074=0.712), min (test/cross): 0.785, best classifier:
+	KNN - 14             - Stats: Default params cross: 0.805 (+-0.063=0.742), grid train: 0.805, test: 0.794, best classifier cross: 0.805 (+-0.063=0.742), min (test/cross): 0.794, best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.822 (+-0.06=0.762), grid train: 0.823, test: 0.825, best classifier cross: 0.823 (+-0.059=0.764), min (test/cross): 0.823, best classifier:
+	SVM - poly           - Stats: Default params cross: 0.79 (+-0.073=0.717), grid train: 0.79, test: 0.798, best classifier cross: 0.79 (+-0.075=0.716), min (test/cross): 0.79, best classifier:
+	NB                   - Stats: Default params cross: 0.793 (+-0.07=0.724), grid train: 0.793, test: 0.798, best classifier cross: 0.793 (+-0.07=0.724), min (test/cross): 0.793, best classifier:
+	RandomForest - 9     - Stats: Default params cross: 0.82 (+-0.056=0.764), grid train: 0.813, test: 0.794, best classifier cross: 0.813 (+-0.048=0.765), min (test/cross): 0.794, best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.822, test: 0.807, best classifier cross: 0.808 (+-0.071=0.738), min (test/cross): 0.807, best classifier:
+
+### 15b. (Sex + SibSp + Age) + Parch
+	Logistic - liblinear - Stats: Default params cross: 0.793 (+-0.076=0.717), grid train: 0.793, test: 0.785, best classifier cross: 0.793 (+-0.076=0.717), min (test/cross): 0.785, best classifier:
+	KNN - 14             - Stats: Default params cross: 0.808 (+-0.066=0.743), grid train: 0.808, test: 0.812, best classifier cross: 0.808 (+-0.066=0.743), min (test/cross): 0.808, best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.823 (+-0.066=0.757), grid train: 0.826, test: 0.821, best classifier cross: 0.826 (+-0.068=0.758), min (test/cross): 0.821, best classifier:
+	SVM - poly           - Stats: Default params cross: 0.802 (+-0.075=0.727), grid train: 0.802, test: 0.807, best classifier cross: 0.802 (+-0.075=0.727), min (test/cross): 0.802, best classifier:
+	NB                   - Stats: Default params cross: 0.795 (+-0.068=0.727), grid train: 0.795, test: 0.807, best classifier cross: 0.795 (+-0.068=0.727), min (test/cross): 0.795, best classifier:
+	RandomForest - 9     - Stats: Default params cross: 0.804 (+-0.048=0.756), grid train: 0.801, test: 0.807, best classifier cross: 0.801 (+-0.049=0.752), min (test/cross): 0.801, best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.828, test: 0.825, best classifier cross: 0.819 (+-0.069=0.75), min (test/cross): 0.819, best classifier:
+
+### 15c. (Sex + SibSp + Age) + Pclass
+	Logistic - liblinear - Stats: Default params cross: 0.795 (+-0.076=0.718), grid train: 0.795, test: 0.812, best classifier cross: 0.795 (+-0.076=0.718), min (test/cross): 0.795, best classifier:
+	KNN - 14             - Stats: Default params cross: 0.795 (+-0.061=0.734), grid train: 0.795, test: 0.821, best classifier cross: 0.795 (+-0.061=0.734), min (test/cross): 0.795, best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.82 (+-0.058=0.763), grid train: 0.825, test: 0.825, best classifier cross: 0.825 (+-0.054=0.77), min (test/cross): 0.825, best classifier:
+	SVM - poly           - Stats: Default params cross: 0.814 (+-0.059=0.755), grid train: 0.822, test: 0.83, best classifier cross: 0.822 (+-0.064=0.757), min (test/cross): 0.822, best classifier:
+	NB                   - Stats: Default params cross: 0.757 (+-0.072=0.685), grid train: 0.757, test: 0.78, best classifier cross: 0.757 (+-0.072=0.685), min (test/cross): 0.757, best classifier:
+	RandomForest - 9     - Stats: Default params cross: 0.82 (+-0.059=0.762), grid train: 0.826, test: 0.825, best classifier cross: 0.826 (+-0.053=0.773), min (test/cross): 0.825, best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.843, test: 0.821, best classifier cross: 0.823 (+-0.062=0.761), min (test/cross): 0.821, best classifier:
+Summary: What to add to (Sex + SibSp + Age)	
+Voting train:
+- benchmark: 0.819
+- Best: Pclass (0.843)
+- Better: Pclass (0.843), Parch (0.828), Fare (.822)
+- Worse/same: 
+Test: 
+- benchmark: 0.821
+- Best: Parch (0.825)
+- Better: Parch (0.825),  
+- Worse/same: Pclass (0.821), Fare (0.807)
+Cross:
+- benchmark: 0.813
+- Best: 
+- Better: Pclass (0.823), Parch (0.819), 
+- Worse/same: Fare (0.808)
+Min cross:
+- benchmark: 0.741
+- Best: Pclass (0.761)
+- Better: Pclass (0.761), Parch (0.75)
+- Worse/same: Fare (0.738)
+Best test: Pclass (.83)
+Best cross: All similar (.825)
+Best min: Pclass (.77)
+Conclusion: Adding Pclass seems to help, pretty clear that Fare gets in the way, remove it
 
 
 
 
-Conclusion: 	
+
+Summary: 	
 Voting train:
 - benchmark: 
 - Best: 
