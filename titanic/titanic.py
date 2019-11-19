@@ -275,10 +275,25 @@ def voting_only(classifiers, x_train, y_train, x_test_local, y_test_local, weigh
 
 
 def main():
-    # All features: 'Pclass' 'Name' 'Sex' 'Age' 'SibSp' 'Parch' 'Ticket' 'Fare' 'Cabin' 'Embarked'
+    #
     # TODO is leaving dropping 'Embarked'?
-    # Fare - TODO - return but in a different way
-    columns_to_drop = ['Name', 'Ticket', 'Cabin', 'Embarked', 'Fare', 'Parch']
+    '''
+    All features: 'Pclass' 'Name' 'Sex' 'Age' 'SibSp' 'Parch' 'Ticket' 'Fare' 'Cabin' 'Embarked'
+    Doesn't make sence to have:
+    - 'Name', 'Ticket', 'Cabin'
+
+    Slightly better without:
+    - Fare - TODO - return but in a different way
+    - Parch
+    - Embarked
+    Slightly better with:
+    - Age
+    - SibSp
+    A lot better with:
+    - Sex - TODO prove
+    - Pclass - TODO prove
+    '''
+    columns_to_drop = ['Name', 'Ticket', 'Cabin', 'Embarked', 'Fare', 'Parch', 'Sex']
 
     x, y, x_test = read_files()
 
