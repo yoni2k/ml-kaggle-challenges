@@ -22,6 +22,8 @@ TODO:
 - Update titanic.MD
 - Add more options of different algorithms - when have better features
 - Consider adding XGBoost
+- Play more with outliers for Fare - played for now with .985, .98, .99, .995, best combination of train and test score was .995
+- Copy from here into my summaries code that I used for the first time
 
 Feature ideas:
 - Remove
@@ -32,10 +34,13 @@ def read_files():
     x = pd.read_csv('input/train.csv', index_col='PassengerId')
     y = x.pop('Survived')
     x_test = pd.read_csv('input/test.csv', index_col='PassengerId')
-#    print(f'x, shape: {x.shape}, head:\n{x.head()}')
-#    print(f'y, shape: {y.shape}, head:\n{y.head()}')
-#    print(f'x_train, shape: {x_test.shape}, head:\n{x_test.head()}')
     return x, y, x_test
+
+
+def remove_outliers(x, y):
+    x = x[x['Fare'] < x['Fare'].quantile(.995)]
+    y = y.loc[x.index]
+    return x, y
 
 
 def clean_handle_missing_categorical(x, columns_to_drop, age_for_missing, mean_class_3_fare, min_fare, max_reasonable_fare):
@@ -75,11 +80,11 @@ def clean_handle_missing_categorical(x, columns_to_drop, age_for_missing, mean_c
     if 'Fare' not in columns_to_drop:
         x['Fare'].replace({np.NaN: mean_class_3_fare}, inplace=True)
 
-        x['Fare'].replace({512.329200: max_reasonable_fare}, inplace=True)
+#        x['Fare'].replace({512.329200: max_reasonable_fare}, inplace=True)
 
-        x['Fare log'] = np.log(x['Fare'])
-        x['Fare log'].replace({np.NINF: min_fare}, inplace=True)
-        x.drop('Fare', axis=1, inplace=True)
+        #x['Fare log'] = np.log(x['Fare'])
+        #x['Fare log'].replace({np.NINF: min_fare}, inplace=True)
+        #x.drop('Fare', axis=1, inplace=True)
 
 
 
@@ -96,7 +101,7 @@ def output_preds(preds, x_test, name_suffix):
 
 def cross_valid(classifier, x_train, y_train):
     accuracies = cross_val_score(estimator=classifier, X=x_train, y=y_train, cv=10)
-    return accuracies.mean(), classifier
+    return accuracies.mean(), accuracies.std()
 
 
 def fit_single_classifier(classifier, x_train, y_train):
@@ -112,12 +117,16 @@ def grid_search(classifier, param_grid, x_train, y_train):
 
 
 def single_and_grid_classifier(name_str, x_train, y_train, x_test_local, y_test_local, single_classifier, grid_params):
-    reg_score, classifier = cross_valid(single_classifier, x_train, y_train)
-    print(f'{name_str} - Single train cross-validation classification score: {round(reg_score, 3)}')
+    reg_score_def, reg_std_def = cross_valid(single_classifier, x_train, y_train)
 
     reg_score, classifier = grid_search(single_classifier, grid_params, x_train, y_train)
-    print(f'{name_str} - Grid Search train classification score: {round(reg_score, 3)}, '
-          f'local test score: {round(classifier.score(x_test_local, y_test_local), 3)}, '
+    reg_score, reg_std = cross_valid(classifier.best_estimator_, x_train, y_train)
+
+    print(f'{name_str.ljust(20)} - Stats: Default params cross: '
+          f'{round(reg_score_def, 3)} (+-{round(reg_std_def, 3)}={round(reg_score_def - reg_std_def, 3)}), '
+          f'grid train: {round(reg_score, 3)}, '
+          f'test: {round(classifier.score(x_test_local, y_test_local), 3)}, '
+          f'best classifier cross: {round(reg_score, 3)} (+-{round(reg_std, 3)}={round(reg_score - reg_std, 3)}), '
           f'best classifier:\n{classifier.best_estimator_}')
     return classifier
 
@@ -126,9 +135,11 @@ def grid_with_voting(classifiers, param_grid, x_train, y_train, x_test_local, y_
     voting_classifier = VotingClassifier(estimators=classifiers, voting='soft', n_jobs=-1)
 
     grid = GridSearchCV(voting_classifier, param_grid, verbose=1, cv=10, n_jobs=-1)
+    reg_score, reg_std = cross_valid(grid, x_train, y_train)
     grid.fit(x_train, y_train)
-    print(f'Grid Search With Voting classification train score: {round(grid.score(x_train, y_train), 3)}, '
-          f'local test score: {round(grid.score(x_test_local, y_test_local), 3)}, '
+    print(f'FINAL'.ljust(44) + ' - Stats: Grid + Voting train: {round(grid.score(x_train, y_train), 3)}, '
+          f'test: {round(grid.score(x_test_local, y_test_local), 3)}, '
+          f'best classifier cross: {round(reg_score, 3)} (+-{round(reg_std, 3)}={round(reg_score - reg_std, 3)}), '
           f'best classifier:\n{grid.best_estimator_}')
     return grid
 
@@ -136,9 +147,11 @@ def grid_with_voting(classifiers, param_grid, x_train, y_train, x_test_local, y_
 def voting_only(classifiers, x_train, y_train, x_test_local, y_test_local, weights=None):
     voting_classifier = VotingClassifier(estimators=classifiers, voting='soft', n_jobs=-1, weights=weights)
     voting_classifier.fit(x_train, y_train)
-    print(f'Best classifiers, Voting only classification train score: '
+    reg_score, reg_std = cross_valid(voting_classifier, x_train, y_train)
+    print(f'FINAL'.ljust(44) + ' - Stats: Best classifiers + Voting train: '
           f'{round(voting_classifier.score(x_train, y_train), 3)}, '
-          f'local test score: {round(voting_classifier.score(x_test_local, y_test_local), 3)}, '
+          f'test: {round(voting_classifier.score(x_test_local, y_test_local), 3)}, '
+          f'best classifier cross: {round(reg_score, 3)} (+-{round(reg_std, 3)}={round(reg_score - reg_std, 3)}), '
           f'best classifier:\n{voting_classifier}')
     return voting_classifier
 
@@ -148,13 +161,16 @@ def main():
 
     x, y, x_test = read_files()
 
+    x, y = remove_outliers(x, y)
+
     x_train, x_test_local, y_train, y_test_local = train_test_split(x, y, random_state=42)
 
     age_for_missing = x_train['Age'].mean()
     mean_class_3_fare = x_train[(x_train['Pclass'] == 1) | (x_train['Pclass'] == 2)]['Fare'].mean()
     min_fare = x_train[x_train['Fare'] > 0]['Fare'].min()
     max_reasonable_fare = x_train[x_train['Fare'] <300]['Fare'].max()
-    print(f'min_fare: {min_fare}')
+    print(f'Constants: age_for_missing: {age_for_missing}, mean_class_3_fare: {mean_class_3_fare}, '
+          f'min_fare: {min_fare}, max_reasonable_fare: {max_reasonable_fare}')
 
     clean_handle_missing_categorical(x_train, columns_to_drop, age_for_missing, mean_class_3_fare, min_fare, max_reasonable_fare)
     clean_handle_missing_categorical(x_test_local, columns_to_drop, age_for_missing, mean_class_3_fare, min_fare, max_reasonable_fare)
