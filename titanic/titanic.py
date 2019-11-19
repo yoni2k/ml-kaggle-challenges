@@ -292,7 +292,15 @@ def main():
     A lot better with:
     - Sex
     '''
-    columns_to_drop = ['Name', 'Ticket', 'Cabin', 'Embarked', 'Fare', 'Parch', 'Pclass']
+    columns_to_drop = ['Name', 'Ticket', 'Cabin',
+                       #'Sex',
+                       'Embarked',
+                       'Fare',
+                       'Parch',
+                       'Pclass',
+                       'SibSp',
+                       'Age'
+                       ]
 
     x, y, x_test = read_files()
 
