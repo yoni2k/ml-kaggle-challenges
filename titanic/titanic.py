@@ -152,6 +152,7 @@ def clean_handle_missing_categorical(x, columns_to_drop, mean_class_3_fare, min_
 
     print(f'YK: Features after dropping: {x.columns.values}')
 
+    # TODO - should keep?
     # Create a new feature of number of relatives regardless of who they are
     '''
     if 'SibSp' not in columns_to_drop and 'Parch' not in columns_to_drop:
@@ -165,7 +166,7 @@ def clean_handle_missing_categorical(x, columns_to_drop, mean_class_3_fare, min_
         x['pclass_2'] = x['Pclass'].apply(lambda cl: 1 if cl == 2 else 0)
         x.drop('Pclass', axis=1, inplace=True)
 
-    # Change categorical feature 'Sex' to be 1 encoded 'Male', 1 = Male, 0 = Fembale
+    # Change categorical feature 'Sex' to be 1 encoded 'Male', 1 = Male, 0 = Female
     if 'Sex' not in columns_to_drop:
         x['Male'] = x['Sex'].map({'male': 1, 'female': 0})
         x.drop('Sex', axis=1, inplace=True)
@@ -188,7 +189,8 @@ def clean_handle_missing_categorical(x, columns_to_drop, mean_class_3_fare, min_
     if 'Fare' not in columns_to_drop:
         x['Fare'].replace({np.NaN: mean_class_3_fare}, inplace=True)
 
-#        x['Fare'].replace({512.329200: max_reasonable_fare}, inplace=True)
+        # Separately removing crazy outliers
+#       x['Fare'].replace({512.329200: max_reasonable_fare}, inplace=True)
 
         #x['Fare log'] = np.log(x['Fare'])
         #x['Fare log'].replace({np.NINF: min_fare}, inplace=True)
@@ -275,7 +277,7 @@ def main():
 
     x, y, x_test = read_files()
 
-    x, y = remove_outliers(x, y)
+    # x, y = remove_outliers(x, y)
 
     x_train, x_test_local, y_train, y_test_local = train_test_split(x, y, random_state=42)
 
