@@ -43,10 +43,59 @@ def remove_outliers(x, y):
     return x, y
 
 
-def clean_handle_missing_categorical(x, columns_to_drop, age_for_missing, mean_class_3_fare, min_fare, max_reasonable_fare):
+def get_title(full_name):
+    return full_name.split(',')[1].split('.')[0].strip()
+
+
+def handle_age(x_train, x_test_local, x_test):
+
+    print(f"Before fixes, x_train values: \n{pd.DataFrame(x_train['Age'].value_counts(dropna=False)).head(30)}")
+    print(f"Before fixes, x_test_local values: \n{pd.DataFrame(x_test_local['Age'].value_counts(dropna=False)).head(15)}")
+    print(f"Before fixes, x_test values: \n{pd.DataFrame(x_test['Age'].value_counts(dropna=False)).head(15)}")
+
+    # 'Ms' appears only once in test, so replace it with Mrs since it's basically same ages
+    x_test.loc[(x_test['Age'].isnull()) & (x_test['Name'].apply(get_title) == 'Ms'), 'Name'] = "O'Donoghue, Mrs. Bridget"
+
+    x_train_title = x_train['Name'].apply(get_title)
+    x_test_local_title = x_test_local['Name'].apply(get_title)
+    x_test_title = x_test['Name'].apply(get_title)
+
+    for title in ['Mr', 'Miss', 'Mrs']:
+        for cl in [1, 2, 3]:
+            average = x_train[(x_train['Age'].isnull() == False) &
+                              (x_train_title == title) &
+                              (x_train['Pclass'] == cl)]['Age'].mean()
+            print(f"Replacing title {title} in class {cl} age with {average}")
+            x_train.loc[(x_train['Age'].isnull()) &
+                        (x_train_title == title) &
+                        (x_train['Pclass'] == cl), 'Age'] = average
+            x_test_local.loc[(x_test_local['Age'].isnull()) &
+                             (x_test_local_title == title) &
+                             (x_test_local['Pclass'] == cl), 'Age'] = average
+            x_test.loc[(x_test['Age'].isnull()) &
+                       (x_test_title == title) &
+                       (x_test['Pclass'] == cl), 'Age'] = average
+
+    for title in ['Master', 'Dr']:
+        average = x_train[(x_train['Age'].isnull() == False) & (x_train_title == title)]['Age'].mean()
+        print(f"Replacing title {title} age with {average}")
+        x_train.loc[(x_train['Age'].isnull()) & (x_train_title == title), 'Age'] = average
+
+        if x_test_local.loc[(x_test_local['Age'].isnull()) & (x_test_local_title == title), 'Age'].shape[0] > 0:
+            x_test_local.loc[(x_test_local['Age'].isnull()) & (x_test_local_title == title), 'Age'] = average
+        if x_test.loc[(x_test['Age'].isnull()) & (x_test_title == title), 'Age'].shape[0] > 0:
+            x_test.loc[(x_test['Age'].isnull()) & (x_test_title == title), 'Age'] = average
+
+    print(f"After fixes, x_train values: \n{pd.DataFrame(x_train['Age'].value_counts(dropna=False)).head(30)}")
+    print(f"After fixes, x_test_local values: \n{pd.DataFrame(x_test_local['Age'].value_counts(dropna=False)).head(15)}")
+    print(f"After fixes, x_test values: \n{pd.DataFrame(x_test['Age'].value_counts(dropna=False)).head(15)}")
+
+
+
+def clean_handle_missing_categorical(x, columns_to_drop, mean_class_3_fare, min_fare, max_reasonable_fare):
     x.drop(columns_to_drop, axis=1, inplace=True)
 
-    print(f'Features after dropping: {x.columns.values}')
+    print(f'YK: Features after dropping: {x.columns.values}')
 
     # Create a new feature of number of relatives regardless of who they are
     if 'SibSp' not in columns_to_drop and 'Parch' not in columns_to_drop:
@@ -74,8 +123,10 @@ def clean_handle_missing_categorical(x, columns_to_drop, age_for_missing, mean_c
         x['Embarked_Q'] = x['Embarked'].map({np.NaN: 0, 'S': 0, 'C': 0, 'Q': 1})
         x.drop('Embarked', axis=1, inplace=True)
 
+    ''' TODO should keep?
     if 'Age' not in columns_to_drop:
         x['Age'].replace({np.NaN: age_for_missing}, inplace=True)
+    '''
 
     if 'Fare' not in columns_to_drop:
         x['Fare'].replace({np.NaN: mean_class_3_fare}, inplace=True)
@@ -171,16 +222,26 @@ def main():
 
     x_train, x_test_local, y_train, y_test_local = train_test_split(x, y, random_state=42)
 
-    age_for_missing = x_train['Age'].mean()
+    handle_age(x_train, x_test_local, x_test)
+
     mean_class_3_fare = x_train[(x_train['Pclass'] == 1) | (x_train['Pclass'] == 2)]['Fare'].mean()
     min_fare = x_train[x_train['Fare'] > 0]['Fare'].min()
     max_reasonable_fare = x_train[x_train['Fare'] <300]['Fare'].max()
-    print(f'Constants: age_for_missing: {age_for_missing}, mean_class_3_fare: {mean_class_3_fare}, '
+    # TODO - should keep?
+    #  age_for_missing = x_train['Age'].mean()
+    # print(f'Constants: age_for_missing: {age_for_missing}, mean_class_3_fare: {mean_class_3_fare}, '
+    #      f'min_fare: {min_fare}, max_reasonable_fare: {max_reasonable_fare}')
+    print(f'YK: Constants: mean_class_3_fare: {mean_class_3_fare}, '
           f'min_fare: {min_fare}, max_reasonable_fare: {max_reasonable_fare}')
 
-    clean_handle_missing_categorical(x_train, columns_to_drop, age_for_missing, mean_class_3_fare, min_fare, max_reasonable_fare)
-    clean_handle_missing_categorical(x_test_local, columns_to_drop, age_for_missing, mean_class_3_fare, min_fare, max_reasonable_fare)
-    clean_handle_missing_categorical(x_test, columns_to_drop, age_for_missing, mean_class_3_fare, min_fare, max_reasonable_fare)
+    clean_handle_missing_categorical(x_train, columns_to_drop, mean_class_3_fare, min_fare, max_reasonable_fare)
+    clean_handle_missing_categorical(x_test_local, columns_to_drop, mean_class_3_fare, min_fare, max_reasonable_fare)
+    clean_handle_missing_categorical(x_test, columns_to_drop, mean_class_3_fare, min_fare, max_reasonable_fare)
+
+    print(f'x_test describe:\n{x_test.describe()}')
+    print(f'x_test empty age:\n{x_test[x_test["Age"].isnull()]}')
+    print(f'x_test indexes:\n{x_test.index.values}')
+
 
     scaler = scale_train(x_train)
     x_train_scaled = scaler.transform(x_train)
