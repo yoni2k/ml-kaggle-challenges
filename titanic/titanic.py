@@ -295,7 +295,7 @@ def main():
     columns_to_drop = ['Name', 'Ticket', 'Cabin',
                        #'Sex',
                        'Embarked',
-                       'Fare',
+                       #'Fare',
                        'Parch',
                        'Pclass',
                        'SibSp',
