@@ -298,35 +298,35 @@ def main():
     x_test_local_scaled = scaler.transform(x_test_local)
     x_test_scaled = scaler.transform(x_test)
 
-    single_and_grid_classifier('Logistic - liblinear', x_train_scaled, y_train, x_test_local_scaled, y_test_local,
+    class_log = single_and_grid_classifier('Logistic - liblinear', x_train_scaled, y_train, x_test_local_scaled, y_test_local,
                                LogisticRegression(solver='liblinear', n_jobs=-1),
                                [{}])
     # Following was tried also for Logistic and didn't make it much better: solver=['lbfgs', 'newton-cg', 'sag', 'saga']
 
-    single_and_grid_classifier('KNN - 14', x_train_scaled, y_train, x_test_local_scaled, y_test_local,
+    class_knn = single_and_grid_classifier('KNN - 14', x_train_scaled, y_train, x_test_local_scaled, y_test_local,
                                KNeighborsClassifier(n_jobs=-1, n_neighbors=14),
                                [{}])
     # Following was tried also and found 14 to be best: n_neighbors=[range(1, 25), 5 (lower scores), 25 (lower scored)]
 
-    single_and_grid_classifier('SVM - rbf', x_train_scaled, y_train, x_test_local_scaled, y_test_local,
-                               SVC(gamma='auto', kernel='rbf'),
+    class_svm_rbf = single_and_grid_classifier('SVM - rbf', x_train_scaled, y_train, x_test_local_scaled, y_test_local,
+                               SVC(gamma='auto', kernel='rbf', probability=True),
                                [{
                                    'C': [0.5, 1.0, 1.5, 2.0],
                                    'gamma': [0.2, 0.1, 0.05, 0.01, 'auto_deprecated', 'scale']}
                                 ])
-    single_and_grid_classifier('SVM - poly', x_train_scaled, y_train, x_test_local_scaled, y_test_local,
-                               SVC(gamma='auto', kernel='poly'),
+    class_svm_poly = single_and_grid_classifier('SVM - poly', x_train_scaled, y_train, x_test_local_scaled, y_test_local,
+                               SVC(gamma='auto', kernel='poly', probability=True),
                                [{
                                    'C': [0.5, 1.0, 1.5, 2.0],
                                    'gamma': [0.2, 0.1, 0.05, 0.01, 'auto_deprecated', 'scale']}
                                 ])
     # sigmoid kerned was also tried for SVM, but gave worse results
 
-    single_and_grid_classifier('NB', x_train_scaled, y_train, x_test_local_scaled, y_test_local,
+    class_nb = single_and_grid_classifier('NB', x_train_scaled, y_train, x_test_local_scaled, y_test_local,
                                GaussianNB(),
                                [{}])
 
-    single_and_grid_classifier('RandomForest - 9', x_train_scaled, y_train, x_test_local_scaled, y_test_local,
+    class_rf = single_and_grid_classifier('RandomForest - 9', x_train_scaled, y_train, x_test_local_scaled, y_test_local,
                                RandomForestClassifier(n_jobs=-1, n_estimators=100, max_depth=9),
                                [{}])
     '''
@@ -365,12 +365,12 @@ def main():
     '''
 
     classifiers_specific_with_params = [
-        ('lr', LogisticRegression(solver='liblinear')),
-        ('knn', KNeighborsClassifier(n_neighbors=14)),
-        ('svm - rbf', SVC(probability=True, kernel='rbf', gamma=0.05, C=1.0)),
-        ('svm - poly', SVC(probability=True, kernel='poly', gamma='auto_deprecated', C=0.5)),
-        ('nb', GaussianNB()),
-        ('rf', RandomForestClassifier(n_estimators=100, max_depth=9))
+        ('lr', class_log),
+        ('knn', class_knn),
+        ('svm - rbf', class_svm_rbf),
+        ('svm - poly', class_svm_poly),
+        ('nb', class_nb),
+        ('rf', class_rf)
     ]
 
     classifier_voting = voting_only(classifiers_specific_with_params,
