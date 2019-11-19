@@ -376,3 +376,13 @@ Conclusion: not adding
 	RandomForest - 9     - Stats: Default params cross: 0.823 (+-0.063=0.76), grid train: 0.816, test: 0.816, best classifier cross: 0.816 (+-0.054=0.762), min (test/cross): 0.816, best classifier:
 	FINAL                              - Stats: ALL DATA: Best classifiers + Voting train: 0.841, best classifier cross: 0.822 (+-0.051=0.77), best classifier:
 Conclusion: giving same results locally, but with less STD, but on the site it gives 1 additional %
+
+### 18. Working on whole data for all steps
+	Logistic - liblinear - Stats: Default params cross: 0.8 (+-0.019=0.781), grid train: 0.81, best classifier cross: 0.8 (+-0.019=0.781), best classifier:
+	KNN - 14             - Stats: Default params cross: 0.803 (+-0.037=0.766), grid train: 0.832, best classifier cross: 0.803 (+-0.037=0.766), best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.824 (+-0.035=0.788), grid train: 0.834, best classifier cross: 0.826 (+-0.038=0.788), best classifier:
+	SVM - poly           - Stats: Default params cross: 0.822 (+-0.032=0.79), grid train: 0.823, best classifier cross: 0.822 (+-0.032=0.79), best classifier:
+	NB                   - Stats: Default params cross: 0.761 (+-0.03=0.731), grid train: 0.762, best classifier cross: 0.761 (+-0.03=0.731), best classifier:
+	RandomForest - 9     - Stats: Default params cross: 0.815 (+-0.04=0.775), grid train: 0.896, best classifier cross: 0.818 (+-0.04=0.778), best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.838, best classifier cross: 0.812 (+-0.029=0.782), best classifier:
+Conclusion: 

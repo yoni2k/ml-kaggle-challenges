@@ -191,8 +191,8 @@ def grid_with_voting(classifiers, param_grid, x_train, y_train, x_test_local, y_
 def voting_only(classifiers, x_train, y_train, x_test_local, y_test_local, weights=None):
     voting_classifier = VotingClassifier(estimators=classifiers, voting='soft', n_jobs=-1, weights=weights)
     voting_classifier.fit(x_train, y_train)
-    reg_score, reg_std = cross_valid(voting_classifier, x_train, y_train)
     test_score = voting_classifier.score(x_test_local, y_test_local)
+    reg_score, reg_std = cross_valid(voting_classifier, x_train, y_train)
     print(f'FINAL'.ljust(44) + ' - Stats: Best classifiers + Voting train: '
           f'{round(voting_classifier.score(x_train, y_train), 3)}, '
           f'test: {round(test_score, 3)}, '
