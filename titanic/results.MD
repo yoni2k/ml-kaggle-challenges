@@ -396,3 +396,31 @@ Conclusion:
 	RandomForest - 9     - Stats: Default params cross: 0.827 (+-0.047=0.78), grid train: 0.903, best classifier cross: 0.826 (+-0.051=0.775), best classifier:
 	FINAL                                        - Stats: Best classifiers + Voting train: 0.842, best classifier cross: 0.825 (+-0.032=0.793), best classifier:
 Conclusion: seems to help on all fronts
+
+### 20. Try readding Fare
+	Logistic - liblinear - Stats: Default params cross: 0.803 (+-0.024=0.779), grid train: 0.806, best classifier cross: 0.803 (+-0.024=0.779), best classifier:
+	KNN - 14             - Stats: Default params cross: 0.811 (+-0.035=0.777), grid train: 0.831, best classifier cross: 0.811 (+-0.035=0.777), best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.831 (+-0.038=0.792), grid train: 0.838, best classifier cross: 0.832 (+-0.037=0.795), best classifier:
+	SVM - poly           - Stats: Default params cross: 0.815 (+-0.034=0.781), grid train: 0.826, best classifier cross: 0.822 (+-0.037=0.785), best classifier:
+	NB                   - Stats: Default params cross: 0.782 (+-0.024=0.758), grid train: 0.791, best classifier cross: 0.782 (+-0.024=0.758), best classifier:
+	RandomForest - 9     - Stats: Default params cross: 0.824 (+-0.05=0.774), grid train: 0.929, best classifier cross: 0.825 (+-0.047=0.778), best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.842, best classifier cross: 0.822 (+-0.034=0.788), best classifier:
+
+### 21. Try readding Fare with Log
+	Logistic - liblinear - Stats: Default params cross: 0.798 (+-0.021=0.777), grid train: 0.804, best classifier cross: 0.798 (+-0.021=0.777), best classifier:
+	KNN - 14             - Stats: Default params cross: 0.816 (+-0.033=0.783), grid train: 0.833, best classifier cross: 0.816 (+-0.033=0.783), best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.828 (+-0.037=0.791), grid train: 0.838, best classifier cross: 0.828 (+-0.037=0.791), best classifier:
+	SVM - poly           - Stats: Default params cross: 0.807 (+-0.03=0.777), grid train: 0.825, best classifier cross: 0.819 (+-0.037=0.782), best classifier:
+	NB                   - Stats: Default params cross: 0.764 (+-0.029=0.735), grid train: 0.767, best classifier cross: 0.764 (+-0.029=0.735), best classifier:
+	RandomForest - 9     - Stats: Default params cross: 0.824 (+-0.053=0.771), grid train: 0.926, best classifier cross: 0.826 (+-0.053=0.773), best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.846, best classifier cross: 0.815 (+-0.027=0.788), best classifier:
+Removing fare again - log is not better than without log, and Fare doesn't seem to help, makes it slightly worse
+
+### 22. Adding some more hypermarams for grid searches of specific classifiers
+	Logistic - liblinear - Stats: Default params cross: 0.8 (+-0.019=0.781), grid train: 0.811, best classifier cross: 0.801 (+-0.02=0.782), best classifier:
+	KNN - 14             - Stats: Default params cross: 0.801 (+-0.037=0.764), grid train: 0.853, best classifier cross: 0.823 (+-0.051=0.772), best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.824 (+-0.034=0.789), grid train: 0.836, best classifier cross: 0.827 (+-0.037=0.79), best classifier:
+	SVM - poly           - Stats: Default params cross: 0.814 (+-0.034=0.78), grid train: 0.825, best classifier cross: 0.816 (+-0.036=0.78), best classifier:
+	NB                   - Stats: Default params cross: 0.759 (+-0.032=0.727), grid train: 0.763, best classifier cross: 0.759 (+-0.032=0.727), best classifier:
+	RandomForest - 9     - Stats: Default params cross: 0.831 (+-0.046=0.784), grid train: 0.901, best classifier cross: 0.823 (+-0.045=0.777), best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.848, best classifier cross: 0.826 (+-0.038=0.789), best classifier:

@@ -224,13 +224,13 @@ def main():
     x_test_scaled = scaler.transform(x_test)
 
     class_log = single_and_grid_classifier('Logistic - liblinear', x_train_scaled, y_train,
-                               LogisticRegression(solver='liblinear', n_jobs=-1),
-                               [{}])
+                                           LogisticRegression(solver='liblinear', n_jobs=-1),
+                                           [{'solver': ['liblinear', 'lbfgs', 'newton-cg', 'sag', 'saga']}]) # TODO was empty
     # Following was tried also for Logistic and didn't make it much better: solver=['lbfgs', 'newton-cg', 'sag', 'saga']
 
     class_knn = single_and_grid_classifier('KNN - 14', x_train_scaled, y_train,
                                KNeighborsClassifier(n_jobs=-1, n_neighbors=14),
-                               [{}])
+                               [{'n_neighbors': range(5, 25)}])  # # TODO was empty
     # Following was tried also and found 14 to be best: n_neighbors=[range(1, 25), 5 (lower scores), 25 (lower scored)]
 
     class_svm_rbf = single_and_grid_classifier('SVM - rbf', x_train_scaled, y_train,
