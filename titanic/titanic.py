@@ -6,7 +6,6 @@ import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
-# TODO is staying?
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import VotingClassifier
@@ -22,11 +21,7 @@ TODO:
 - Update titanic.MD
 - Add more options of different algorithms - when have better features
 - Consider adding XGBoost
-- Play more with outliers for Fare - played for now with .985, .98, .99, .995, best combination of train and test score was .995
 - Copy from here into my summaries code that I used for the first time
-
-Feature ideas:
-- Remove
 """
 
 
@@ -49,45 +44,12 @@ def get_title(full_name):
 
 def handle_age(x_train, x_test_local, x_test):
 
-    '''
-    print(f"Before fixes, x_train values: \n{pd.DataFrame(x_train['Age'].value_counts(dropna=False)).head(30)}")
-    print(f"Before fixes, x_test_local values: \n{pd.DataFrame(x_test_local['Age'].value_counts(dropna=False)).head(15)}")
-    print(f"Before fixes, x_test values: \n{pd.DataFrame(x_test['Age'].value_counts(dropna=False)).head(15)}")
-    '''
-
     # 'Ms' appears only once in test, so replace it with Mrs since it's basically same ages
     x_test.loc[(x_test['Age'].isnull()) & (x_test['Name'].apply(get_title) == 'Ms'), 'Name'] = "O'Donoghue, Mrs. Bridget"
 
     x_train_title = x_train['Name'].apply(get_title)
     x_test_local_title = x_test_local['Name'].apply(get_title)
     x_test_title = x_test['Name'].apply(get_title)
-
-    '''
-    for cl in [1, 2, 3]:
-        for title in ['Mr', 'Mrs', 'Miss']:
-            print(f"Before fixes class {cl} title {title} x_train average: "
-                  f"{round(x_train[(x_train['Pclass']==cl) & (x_train_title == title)]['Age'].mean(), 2)}, "
-                  f"std: {round(x_train[(x_train['Pclass']==cl) & (x_train_title == title)]['Age'].std(), 2)}")
-            print(f"Before fixes class {cl} title {title} x_test_local average: "
-                  f"{round(x_test_local[(x_test_local['Pclass']==cl) & (x_test_local_title == title)]['Age'].mean(), 2)}, "
-                  f"std: {round(x_test_local[(x_test_local['Pclass']==cl) & (x_test_local_title == title)]['Age'].std(), 2)}")
-            print(f"Before fixes class {cl} title {title} x_test average: "
-                  f"{round(x_test[(x_test['Pclass']==cl) & (x_test_title == title)]['Age'].mean(), 2)}, "
-                  f"std: {round(x_test[(x_test['Pclass']==cl) & (x_test_title == title)]['Age'].std(), 2)}")
-
-    for title in ['Master', 'Dr']:
-        print(f"Before fixes class title {title} x_train average: "
-              f"{round(x_train[x_train_title == title]['Age'].mean(), 2)}, "
-              f"std: {round(x_train[x_train_title == title]['Age'].std(), 2)}")
-        if x_test_local.loc[(x_test_local['Age'].isnull()==False) & (x_test_local_title == title), 'Age'].shape[0] > 0:
-            print(f"Before fixes class title {title} x_test_local average: "
-                  f"{round(x_test_local[(x_test_local['Age'].isnull()==False) & (x_test_local_title == title)]['Age'].mean(), 2)}, "
-                  f"std: {round(x_test_local[(x_test_local['Age'].isnull()==False) & (x_test_local_title == title)]['Age'].std(), 2)}")
-        if x_test.loc[(x_test['Age'].isnull()==False) & (x_test_title == title), 'Age'].shape[0] > 0:
-            print(f"Before fixes class title {title} x_test average: "
-                  f"{round(x_test[(x_test['Age'].isnull()==False) & (x_test_title == title)]['Age'].mean(), 2)}, "
-                  f"std: {round(x_test[(x_test['Age'].isnull()==False) & (x_test_title == title)]['Age'].std(), 2)}")
-    '''
 
     for title in ['Mr', 'Miss', 'Mrs']:
         for cl in [1, 2, 3]:
@@ -114,37 +76,6 @@ def handle_age(x_train, x_test_local, x_test):
             x_test_local.loc[(x_test_local['Age'].isnull()) & (x_test_local_title == title), 'Age'] = average
         if x_test.loc[(x_test['Age'].isnull()) & (x_test_title == title), 'Age'].shape[0] > 0:
             x_test.loc[(x_test['Age'].isnull()) & (x_test_title == title), 'Age'] = average
-
-    '''
-    print(f"After fixes, x_train values: \n{pd.DataFrame(x_train['Age'].value_counts(dropna=False)).head(30)}")
-    print(f"After fixes, x_test_local values: \n{pd.DataFrame(x_test_local['Age'].value_counts(dropna=False)).head(15)}")
-    print(f"After fixes, x_test values: \n{pd.DataFrame(x_test['Age'].value_counts(dropna=False)).head(15)}")
-
-    for cl in [1, 2, 3]:
-        for title in ['Mr', 'Mrs', 'Miss']:
-            print(f"After fixes class {cl} title {title} x_train average: "
-                  f"{round(x_train[(x_train['Pclass'] == cl) & (x_train_title == title)]['Age'].mean(), 2)}, "
-                  f"std: {round(x_train[(x_train['Pclass'] == cl) & (x_train_title == title)]['Age'].std(), 2)}")
-            print(f"After fixes class {cl} title {title} x_test_local average: "
-                  f"{round(x_test_local[(x_test_local['Pclass'] == cl) & (x_test_local_title == title)]['Age'].mean(), 2)}, "
-                  f"std: {round(x_test_local[(x_test_local['Pclass'] == cl) & (x_test_local_title == title)]['Age'].std(), 2)}")
-            print(f"After fixes class {cl} title {title} x_test average: "
-                  f"{round(x_test[(x_test['Pclass'] == cl) & (x_test_title == title)]['Age'].mean(), 2)}, "
-                  f"std: {round(x_test[(x_test['Pclass'] == cl) & (x_test_title == title)]['Age'].std(), 2)}")
-
-    for title in ['Master', 'Dr']:
-        print(f"After fixes class title {title} x_train average: "
-              f"{round(x_train[x_train_title == title]['Age'].mean(), 2)}, "
-              f"std: {round(x_train[x_train_title == title]['Age'].std(), 2)}")
-        if x_test_local.loc[x_test_local_title == title, 'Age'].shape[0] > 0:
-            print(f"After fixes class title {title} x_test_local average: "
-                  f"{round(x_test_local[x_test_local_title == title]['Age'].mean(), 2)}, "
-                  f"std: {round(x_test_local[x_test_local_title == title]['Age'].std(), 2)}")
-        if x_test.loc[x_test_title == title, 'Age'].shape[0] > 0:
-            print(f"After fixes class title {title} x_test average: "
-                  f"{round(x_test[x_test_title == title]['Age'].mean(), 2)}, "
-                  f"std: {round(x_test[x_test_title == title]['Age'].std(), 2)}")
-    '''
 
 
 def clean_handle_missing_categorical(x, columns_to_drop, mean_class_3_fare, min_fare, max_reasonable_fare):
@@ -183,17 +114,14 @@ def clean_handle_missing_categorical(x, columns_to_drop, mean_class_3_fare, min_
         x['Embarked_Q'] = x['Embarked'].map({np.NaN: 0, 'S': 0, 'C': 0, 'Q': 1})
         x.drop('Embarked', axis=1, inplace=True)
 
-    ''' TODO should keep?
-    if 'Age' not in columns_to_drop:
-        x['Age'].replace({np.NaN: age_for_missing}, inplace=True)
-    '''
-
     if 'Fare' not in columns_to_drop:
         x['Fare'].replace({np.NaN: mean_class_3_fare}, inplace=True)
 
+        # TODO - keep?
         # Separately removing crazy outliers
 #       x['Fare'].replace({512.329200: max_reasonable_fare}, inplace=True)
 
+        # TODO - keep?
         #x['Fare log'] = np.log(x['Fare'])
         #x['Fare log'].replace({np.NINF: min_fare}, inplace=True)
         #x.drop('Fare', axis=1, inplace=True)
@@ -275,38 +203,19 @@ def voting_only(classifiers, x_train, y_train, x_test_local, y_test_local, weigh
 
 
 def main():
-    #
-    # TODO is leaving dropping 'Embarked'?
-    '''
-    All features: 'Pclass' 'Name' 'Sex' 'Age' 'SibSp' 'Parch' 'Ticket' 'Fare' 'Cabin' 'Embarked'
-    Doesn't make sence to have:
-    - 'Name', 'Ticket', 'Cabin'
-    Slightly better without:
-    - Fare - TODO - return but in a different way
-    - Parch
-    - Embarked
-    Slightly better with:
-    - Age
-    - SibSp
-    - Pclass
-    A lot better with:
-    - Sex
-    Order of adding features:
-    - Sex
-    -
-    '''
-    columns_to_drop = ['Name', 'Ticket', 'Cabin',
-                       'Embarked',
-                       'Fare',
+    columns_to_drop = ['Name', 'Ticket', 'Cabin',  # don't make sense to add
+                       'Embarked',  # doesn't help always
+                       'Fare',     # doesn't help always TODO consider returning in a different way
                        # 'Sex',
                        # 'SibSp',
                        # 'Age',
                        # 'Pclass'
-                       'Parch',
+                       'Parch'      # doesn't help at the end - border line
                        ]
 
     x, y, x_test = read_files()
 
+    # TODO keep?
     # x, y = remove_outliers(x, y)
 
     x_train, x_test_local, y_train, y_test_local = train_test_split(x, y, random_state=42)
@@ -316,10 +225,7 @@ def main():
     mean_class_3_fare = x_train[(x_train['Pclass'] == 1) | (x_train['Pclass'] == 2)]['Fare'].mean()
     min_fare = x_train[x_train['Fare'] > 0]['Fare'].min()
     max_reasonable_fare = x_train[x_train['Fare'] <300]['Fare'].max()
-    # TODO - should keep?
-    #  age_for_missing = x_train['Age'].mean()
-    # print(f'Constants: age_for_missing: {age_for_missing}, mean_class_3_fare: {mean_class_3_fare}, '
-    #      f'min_fare: {min_fare}, max_reasonable_fare: {max_reasonable_fare}')
+
     print(f'YK: Constants: mean_class_3_fare: {mean_class_3_fare}, '
           f'min_fare: {min_fare}, max_reasonable_fare: {max_reasonable_fare}')
 
@@ -363,6 +269,7 @@ def main():
     class_rf = single_and_grid_classifier('RandomForest - 9', x_train_scaled, y_train, x_test_local_scaled, y_test_local,
                                RandomForestClassifier(n_jobs=-1, n_estimators=100, max_depth=9),
                                [{}])
+    # TODO keep?
     '''
     for i in range(2, 21):
         reg_score, classifier = grid_search(RandomForestClassifier(max_depth=i, n_estimators=100),
@@ -407,12 +314,29 @@ def main():
         ('rf', class_rf)
     ]
 
+    # TODO temporary
+    concat_x = pd.concat([pd.DataFrame(x_train_scaled), pd.DataFrame(x_test_local_scaled)])
+    concat_y = pd.concat([pd.DataFrame(y_train), pd.DataFrame(y_test_local)])
+    print(f'YK: Shapes x: {concat_x.shape}, {x_train_scaled.shape}, {x_test_local_scaled.shape}')
+    print(f'YK: Shapes y: {concat_y.shape}, {y_train.shape}, {y_test_local.shape}')
+
+    classifier_voting = VotingClassifier(estimators=classifiers_specific_with_params, voting='soft', n_jobs=-1)
+    classifier_voting.fit(concat_x, concat_y)
+    reg_score, reg_std = cross_valid(classifier_voting, concat_x, concat_y)
+    print(f'FINAL'.ljust(34) + ' - Stats: ALL DATA: Best classifiers + Voting train: '
+                               f'{round(classifier_voting.score(concat_x, concat_y), 3)}, '
+                               f'best classifier cross: {round(reg_score, 3)} (+-{round(reg_std, 3)}={round(reg_score - reg_std, 3)}), '
+                               f'best classifier:\n{classifier_voting}')
+
+    '''
     classifier_voting = voting_only(classifiers_specific_with_params,
                                     x_train_scaled, y_train,
                                     x_test_local_scaled, y_test_local)  # ,
                                     # TODO - should stay?
                                     # Give weights not to give rf too much weight, since it overfits
                                     # [1, 1, 1, 1, 1, 0.3])
+    '''
+
 
     preds = classifier_voting.predict(x_test_scaled)
     output_preds(preds, x_test, 'best')

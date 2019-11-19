@@ -1,3 +1,4 @@
+### There were many different tries before, from this point working systematically
 ### 1. Using best classifiers:
     train: 0.831, test: 0.824, best classifier cross: 0.799 (+-0.067=0.732), min (test/cross): 0.799, best classifier:
 	
@@ -335,31 +336,43 @@ Best cross: All similar (.825)
 Best min: Pclass (.77)
 Conclusion: Adding Pclass seems to help, pretty clear that Fare gets in the way, remove it
 
-
-
-
-
-Summary: 	
-Voting train:
-- benchmark: 
-- Best: 
-- Better: 
-- Worse/same: 
-Test: 
-- benchmark: 
-- Best: 
-- Better: 
-- Worse/same: 
+### 16. (Sex + SibSp + Age + Pclass) - add Parch ?
+Benchmark:
+	Logistic - liblinear - Stats: Default params cross: 0.795 (+-0.076=0.718), grid train: 0.795, test: 0.812, best classifier cross: 0.795 (+-0.076=0.718), min (test/cross): 0.795, best classifier:
+	KNN - 14             - Stats: Default params cross: 0.795 (+-0.061=0.734), grid train: 0.795, test: 0.821, best classifier cross: 0.795 (+-0.061=0.734), min (test/cross): 0.795, best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.82 (+-0.058=0.763), grid train: 0.825, test: 0.825, best classifier cross: 0.825 (+-0.054=0.77), min (test/cross): 0.825, best classifier:
+	SVM - poly           - Stats: Default params cross: 0.814 (+-0.059=0.755), grid train: 0.822, test: 0.83, best classifier cross: 0.822 (+-0.064=0.757), min (test/cross): 0.822, best classifier:
+	NB                   - Stats: Default params cross: 0.757 (+-0.072=0.685), grid train: 0.757, test: 0.78, best classifier cross: 0.757 (+-0.072=0.685), min (test/cross): 0.757, best classifier:
+	RandomForest - 9     - Stats: Default params cross: 0.82 (+-0.059=0.762), grid train: 0.826, test: 0.825, best classifier cross: 0.826 (+-0.053=0.773), min (test/cross): 0.825, best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.843, test: 0.821, best classifier cross: 0.823 (+-0.062=0.761), min (test/cross): 0.821, best classifier:
+With Parch:
+	Logistic - liblinear - Stats: Default params cross: 0.796 (+-0.079=0.718), grid train: 0.796, test: 0.83, best classifier cross: 0.796 (+-0.079=0.718), min (test/cross): 0.796, best classifier:
+	KNN - 14             - Stats: Default params cross: 0.795 (+-0.06=0.734), grid train: 0.795, test: 0.803, best classifier cross: 0.795 (+-0.06=0.734), min (test/cross): 0.795, best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.825 (+-0.055=0.769), grid train: 0.825, test: 0.834, best classifier cross: 0.825 (+-0.059=0.765), min (test/cross): 0.825, best classifier:
+	SVM - poly           - Stats: Default params cross: 0.81 (+-0.061=0.748), grid train: 0.811, test: 0.843, best classifier cross: 0.811 (+-0.063=0.748), min (test/cross): 0.811, best classifier:
+	NB                   - Stats: Default params cross: 0.762 (+-0.069=0.693), grid train: 0.762, test: 0.78, best classifier cross: 0.762 (+-0.069=0.693), min (test/cross): 0.762, best classifier:
+	RandomForest - 9     - Stats: Default params cross: 0.817 (+-0.049=0.768), grid train: 0.816, test: 0.834, best classifier cross: 0.816 (+-0.052=0.764), min (test/cross): 0.816, best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.829, test: 0.812, best classifier cross: 0.82 (+-0.06=0.76), min (test/cross): 0.812, best classifier:
+Train:
+- FINAL: worse
+- Rest: same
+Test:
+- FINAL: worse
+- Rest: not conclusive
 Cross:
-- benchmark: 
-- Best: 
-- Better: 
-- Worse/same: 
-Min cross:
-- benchmark: 
-- Best: 
-- Better: 
-- Worse/same: 
-Best test: 
-Best cross: 
-Best min: 
+- FINAL: worse
+- Rest: not conclusive
+Min:
+- FINAL: slightly worse
+- Rest: slightly worse
+Conclusion: not adding
+
+### 17. (Sex + SibSp + Age + Pclass) - using all data
+	Logistic - liblinear - Stats: Default params cross: 0.795 (+-0.076=0.718), grid train: 0.795, test: 0.812, best classifier cross: 0.795 (+-0.076=0.718), min (test/cross): 0.795, best classifier:
+	KNN - 14             - Stats: Default params cross: 0.795 (+-0.061=0.734), grid train: 0.795, test: 0.821, best classifier cross: 0.795 (+-0.061=0.734), min (test/cross): 0.795, best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.82 (+-0.058=0.763), grid train: 0.825, test: 0.825, best classifier cross: 0.825 (+-0.054=0.77), min (test/cross): 0.825, best classifier:
+	SVM - poly           - Stats: Default params cross: 0.814 (+-0.059=0.755), grid train: 0.822, test: 0.83, best classifier cross: 0.822 (+-0.064=0.757), min (test/cross): 0.822, best classifier:
+	NB                   - Stats: Default params cross: 0.757 (+-0.072=0.685), grid train: 0.757, test: 0.78, best classifier cross: 0.757 (+-0.072=0.685), min (test/cross): 0.757, best classifier:
+	RandomForest - 9     - Stats: Default params cross: 0.823 (+-0.063=0.76), grid train: 0.816, test: 0.816, best classifier cross: 0.816 (+-0.054=0.762), min (test/cross): 0.816, best classifier:
+	FINAL                              - Stats: ALL DATA: Best classifiers + Voting train: 0.841, best classifier cross: 0.822 (+-0.051=0.77), best classifier:
+Conclusion: giving same results locally, but with less STD, but on the site it gives 1 additional %
