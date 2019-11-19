@@ -148,6 +148,8 @@ def handle_age(x_train, x_test_local, x_test):
 
 
 def clean_handle_missing_categorical(x, columns_to_drop, mean_class_3_fare, min_fare, max_reasonable_fare):
+    print(f'YK: Features before dropping: {x.columns.values}')
+
     x.drop(columns_to_drop, axis=1, inplace=True)
 
     print(f'YK: Features after dropping: {x.columns.values}')
@@ -273,9 +275,10 @@ def voting_only(classifiers, x_train, y_train, x_test_local, y_test_local, weigh
 
 
 def main():
+    # All features: 'Pclass' 'Name' 'Sex' 'Age' 'SibSp' 'Parch' 'Ticket' 'Fare' 'Cabin' 'Embarked'
     # TODO is leaving dropping 'Embarked'?
     # Fare - TODO - return but in a different way
-    columns_to_drop = ['Name', 'Ticket', 'Cabin', 'Embarked', 'Fare', 'Age']
+    columns_to_drop = ['Name', 'Ticket', 'Cabin', 'Embarked', 'Fare', 'SibSp']
 
     x, y, x_test = read_files()
 
