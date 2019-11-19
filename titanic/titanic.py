@@ -49,9 +49,11 @@ def get_title(full_name):
 
 def handle_age(x_train, x_test_local, x_test):
 
+    '''
     print(f"Before fixes, x_train values: \n{pd.DataFrame(x_train['Age'].value_counts(dropna=False)).head(30)}")
     print(f"Before fixes, x_test_local values: \n{pd.DataFrame(x_test_local['Age'].value_counts(dropna=False)).head(15)}")
     print(f"Before fixes, x_test values: \n{pd.DataFrame(x_test['Age'].value_counts(dropna=False)).head(15)}")
+    '''
 
     # 'Ms' appears only once in test, so replace it with Mrs since it's basically same ages
     x_test.loc[(x_test['Age'].isnull()) & (x_test['Name'].apply(get_title) == 'Ms'), 'Name'] = "O'Donoghue, Mrs. Bridget"
@@ -60,12 +62,39 @@ def handle_age(x_train, x_test_local, x_test):
     x_test_local_title = x_test_local['Name'].apply(get_title)
     x_test_title = x_test['Name'].apply(get_title)
 
+    '''
+    for cl in [1, 2, 3]:
+        for title in ['Mr', 'Mrs', 'Miss']:
+            print(f"Before fixes class {cl} title {title} x_train average: "
+                  f"{round(x_train[(x_train['Pclass']==cl) & (x_train_title == title)]['Age'].mean(), 2)}, "
+                  f"std: {round(x_train[(x_train['Pclass']==cl) & (x_train_title == title)]['Age'].std(), 2)}")
+            print(f"Before fixes class {cl} title {title} x_test_local average: "
+                  f"{round(x_test_local[(x_test_local['Pclass']==cl) & (x_test_local_title == title)]['Age'].mean(), 2)}, "
+                  f"std: {round(x_test_local[(x_test_local['Pclass']==cl) & (x_test_local_title == title)]['Age'].std(), 2)}")
+            print(f"Before fixes class {cl} title {title} x_test average: "
+                  f"{round(x_test[(x_test['Pclass']==cl) & (x_test_title == title)]['Age'].mean(), 2)}, "
+                  f"std: {round(x_test[(x_test['Pclass']==cl) & (x_test_title == title)]['Age'].std(), 2)}")
+
+    for title in ['Master', 'Dr']:
+        print(f"Before fixes class title {title} x_train average: "
+              f"{round(x_train[x_train_title == title]['Age'].mean(), 2)}, "
+              f"std: {round(x_train[x_train_title == title]['Age'].std(), 2)}")
+        if x_test_local.loc[(x_test_local['Age'].isnull()==False) & (x_test_local_title == title), 'Age'].shape[0] > 0:
+            print(f"Before fixes class title {title} x_test_local average: "
+                  f"{round(x_test_local[(x_test_local['Age'].isnull()==False) & (x_test_local_title == title)]['Age'].mean(), 2)}, "
+                  f"std: {round(x_test_local[(x_test_local['Age'].isnull()==False) & (x_test_local_title == title)]['Age'].std(), 2)}")
+        if x_test.loc[(x_test['Age'].isnull()==False) & (x_test_title == title), 'Age'].shape[0] > 0:
+            print(f"Before fixes class title {title} x_test average: "
+                  f"{round(x_test[(x_test['Age'].isnull()==False) & (x_test_title == title)]['Age'].mean(), 2)}, "
+                  f"std: {round(x_test[(x_test['Age'].isnull()==False) & (x_test_title == title)]['Age'].std(), 2)}")
+    '''
+
     for title in ['Mr', 'Miss', 'Mrs']:
         for cl in [1, 2, 3]:
             average = x_train[(x_train['Age'].isnull() == False) &
                               (x_train_title == title) &
                               (x_train['Pclass'] == cl)]['Age'].mean()
-            print(f"Replacing title {title} in class {cl} age with {average}")
+            print(f"YK: Replacing title {title} in class {cl} age with {average}")
             x_train.loc[(x_train['Age'].isnull()) &
                         (x_train_title == title) &
                         (x_train['Pclass'] == cl), 'Age'] = average
@@ -78,7 +107,7 @@ def handle_age(x_train, x_test_local, x_test):
 
     for title in ['Master', 'Dr']:
         average = x_train[(x_train['Age'].isnull() == False) & (x_train_title == title)]['Age'].mean()
-        print(f"Replacing title {title} age with {average}")
+        print(f"YK: Replacing title {title} age with {average}")
         x_train.loc[(x_train['Age'].isnull()) & (x_train_title == title), 'Age'] = average
 
         if x_test_local.loc[(x_test_local['Age'].isnull()) & (x_test_local_title == title), 'Age'].shape[0] > 0:
@@ -86,10 +115,36 @@ def handle_age(x_train, x_test_local, x_test):
         if x_test.loc[(x_test['Age'].isnull()) & (x_test_title == title), 'Age'].shape[0] > 0:
             x_test.loc[(x_test['Age'].isnull()) & (x_test_title == title), 'Age'] = average
 
+    '''
     print(f"After fixes, x_train values: \n{pd.DataFrame(x_train['Age'].value_counts(dropna=False)).head(30)}")
     print(f"After fixes, x_test_local values: \n{pd.DataFrame(x_test_local['Age'].value_counts(dropna=False)).head(15)}")
     print(f"After fixes, x_test values: \n{pd.DataFrame(x_test['Age'].value_counts(dropna=False)).head(15)}")
 
+    for cl in [1, 2, 3]:
+        for title in ['Mr', 'Mrs', 'Miss']:
+            print(f"After fixes class {cl} title {title} x_train average: "
+                  f"{round(x_train[(x_train['Pclass'] == cl) & (x_train_title == title)]['Age'].mean(), 2)}, "
+                  f"std: {round(x_train[(x_train['Pclass'] == cl) & (x_train_title == title)]['Age'].std(), 2)}")
+            print(f"After fixes class {cl} title {title} x_test_local average: "
+                  f"{round(x_test_local[(x_test_local['Pclass'] == cl) & (x_test_local_title == title)]['Age'].mean(), 2)}, "
+                  f"std: {round(x_test_local[(x_test_local['Pclass'] == cl) & (x_test_local_title == title)]['Age'].std(), 2)}")
+            print(f"After fixes class {cl} title {title} x_test average: "
+                  f"{round(x_test[(x_test['Pclass'] == cl) & (x_test_title == title)]['Age'].mean(), 2)}, "
+                  f"std: {round(x_test[(x_test['Pclass'] == cl) & (x_test_title == title)]['Age'].std(), 2)}")
+
+    for title in ['Master', 'Dr']:
+        print(f"After fixes class title {title} x_train average: "
+              f"{round(x_train[x_train_title == title]['Age'].mean(), 2)}, "
+              f"std: {round(x_train[x_train_title == title]['Age'].std(), 2)}")
+        if x_test_local.loc[x_test_local_title == title, 'Age'].shape[0] > 0:
+            print(f"After fixes class title {title} x_test_local average: "
+                  f"{round(x_test_local[x_test_local_title == title]['Age'].mean(), 2)}, "
+                  f"std: {round(x_test_local[x_test_local_title == title]['Age'].std(), 2)}")
+        if x_test.loc[x_test_title == title, 'Age'].shape[0] > 0:
+            print(f"After fixes class title {title} x_test average: "
+                  f"{round(x_test[x_test_title == title]['Age'].mean(), 2)}, "
+                  f"std: {round(x_test[x_test_title == title]['Age'].std(), 2)}")
+    '''
 
 
 def clean_handle_missing_categorical(x, columns_to_drop, mean_class_3_fare, min_fare, max_reasonable_fare):
@@ -237,11 +292,6 @@ def main():
     clean_handle_missing_categorical(x_train, columns_to_drop, mean_class_3_fare, min_fare, max_reasonable_fare)
     clean_handle_missing_categorical(x_test_local, columns_to_drop, mean_class_3_fare, min_fare, max_reasonable_fare)
     clean_handle_missing_categorical(x_test, columns_to_drop, mean_class_3_fare, min_fare, max_reasonable_fare)
-
-    print(f'x_test describe:\n{x_test.describe()}')
-    print(f'x_test empty age:\n{x_test[x_test["Age"].isnull()]}')
-    print(f'x_test indexes:\n{x_test.index.values}')
-
 
     scaler = scale_train(x_train)
     x_train_scaled = scaler.transform(x_train)
