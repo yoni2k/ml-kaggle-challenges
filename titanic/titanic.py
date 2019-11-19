@@ -42,13 +42,12 @@ def get_title(full_name):
     return full_name.split(',')[1].split('.')[0].strip()
 
 
-def handle_age(x_train, x_test_local, x_test):
+def handle_age(x_train, x_test):
 
     # 'Ms' appears only once in test, so replace it with Mrs since it's basically same ages
     x_test.loc[(x_test['Age'].isnull()) & (x_test['Name'].apply(get_title) == 'Ms'), 'Name'] = "O'Donoghue, Mrs. Bridget"
 
     x_train_title = x_train['Name'].apply(get_title)
-    x_test_local_title = x_test_local['Name'].apply(get_title)
     x_test_title = x_test['Name'].apply(get_title)
 
     for title in ['Mr', 'Miss', 'Mrs']:
@@ -60,9 +59,6 @@ def handle_age(x_train, x_test_local, x_test):
             x_train.loc[(x_train['Age'].isnull()) &
                         (x_train_title == title) &
                         (x_train['Pclass'] == cl), 'Age'] = average
-            x_test_local.loc[(x_test_local['Age'].isnull()) &
-                             (x_test_local_title == title) &
-                             (x_test_local['Pclass'] == cl), 'Age'] = average
             x_test.loc[(x_test['Age'].isnull()) &
                        (x_test_title == title) &
                        (x_test['Pclass'] == cl), 'Age'] = average
@@ -72,8 +68,6 @@ def handle_age(x_train, x_test_local, x_test):
         print(f"YK: Replacing title {title} age with {average}")
         x_train.loc[(x_train['Age'].isnull()) & (x_train_title == title), 'Age'] = average
 
-        if x_test_local.loc[(x_test_local['Age'].isnull()) & (x_test_local_title == title), 'Age'].shape[0] > 0:
-            x_test_local.loc[(x_test_local['Age'].isnull()) & (x_test_local_title == title), 'Age'] = average
         if x_test.loc[(x_test['Age'].isnull()) & (x_test_title == title), 'Age'].shape[0] > 0:
             x_test.loc[(x_test['Age'].isnull()) & (x_test_title == title), 'Age'] = average
 
@@ -156,19 +150,17 @@ def grid_search(classifier, param_grid, x_train, y_train):
     return grid.score(x_train, y_train), grid
 
 
-def single_and_grid_classifier(name_str, x_train, y_train, x_test_local, y_test_local, single_classifier, grid_params):
+def single_and_grid_classifier(name_str, x_train, y_train, single_classifier, grid_params):
     reg_score_def, reg_std_def = cross_valid(single_classifier, x_train, y_train)
 
-    reg_score, classifier = grid_search(single_classifier, grid_params, x_train, y_train)
-    reg_score, reg_std = cross_valid(classifier.best_estimator_, x_train, y_train)
-    test_score = classifier.score(x_test_local, y_test_local)
+    reg_score_grid, classifier = grid_search(single_classifier, grid_params, x_train, y_train)
+    reg_score_cross, reg_std_cross = cross_valid(classifier.best_estimator_, x_train, y_train)
 
     print(f'{name_str.ljust(20)} - Stats: Default params cross: '
           f'{round(reg_score_def, 3)} (+-{round(reg_std_def, 3)}={round(reg_score_def - reg_std_def, 3)}), '
-          f'grid train: {round(reg_score, 3)}, '
-          f'test: {round(test_score, 3)}, '
-          f'best classifier cross: {round(reg_score, 3)} (+-{round(reg_std, 3)}={round(reg_score - reg_std, 3)}), '
-          f'min (test/cross): {round(min(reg_score, test_score), 3)}, '
+          f'grid train: {round(reg_score_grid, 3)}, '
+          f'best classifier cross: {round(reg_score_cross, 3)} '
+          f'(+-{round(reg_std_cross, 3)}={round(reg_score_cross - reg_std_cross, 3)}), '
           f'best classifier:\n{classifier.best_estimator_}')
     return classifier
 
@@ -188,16 +180,13 @@ def grid_with_voting(classifiers, param_grid, x_train, y_train, x_test_local, y_
     return grid
 
 
-def voting_only(classifiers, x_train, y_train, x_test_local, y_test_local, weights=None):
+def voting_only(classifiers, x_train, y_train, weights=None):
     voting_classifier = VotingClassifier(estimators=classifiers, voting='soft', n_jobs=-1, weights=weights)
     voting_classifier.fit(x_train, y_train)
-    test_score = voting_classifier.score(x_test_local, y_test_local)
     reg_score, reg_std = cross_valid(voting_classifier, x_train, y_train)
     print(f'FINAL'.ljust(44) + ' - Stats: Best classifiers + Voting train: '
           f'{round(voting_classifier.score(x_train, y_train), 3)}, '
-          f'test: {round(test_score, 3)}, '
           f'best classifier cross: {round(reg_score, 3)} (+-{round(reg_std, 3)}={round(reg_score - reg_std, 3)}), '
-          f'min (test/cross): {round(min(reg_score, test_score), 3)}, '
           f'best classifier:\n{voting_classifier}')
     return voting_classifier
 
@@ -210,17 +199,15 @@ def main():
                        # 'SibSp',
                        # 'Age',
                        # 'Pclass'
-                       'Parch'      # doesn't help at the end - border line
+                       #'Parch'      # doesn't help at the end - border line
                        ]
 
-    x, y, x_test = read_files()
+    x_train, y_train, x_test = read_files()
 
     # TODO keep?
     # x, y = remove_outliers(x, y)
 
-    x_train, x_test_local, y_train, y_test_local = train_test_split(x, y, random_state=42)
-
-    handle_age(x_train, x_test_local, x_test)
+    handle_age(x_train, x_test)
 
     mean_class_3_fare = x_train[(x_train['Pclass'] == 1) | (x_train['Pclass'] == 2)]['Fare'].mean()
     min_fare = x_train[x_train['Fare'] > 0]['Fare'].min()
@@ -230,31 +217,29 @@ def main():
           f'min_fare: {min_fare}, max_reasonable_fare: {max_reasonable_fare}')
 
     clean_handle_missing_categorical(x_train, columns_to_drop, mean_class_3_fare, min_fare, max_reasonable_fare)
-    clean_handle_missing_categorical(x_test_local, columns_to_drop, mean_class_3_fare, min_fare, max_reasonable_fare)
     clean_handle_missing_categorical(x_test, columns_to_drop, mean_class_3_fare, min_fare, max_reasonable_fare)
 
     scaler = scale_train(x_train)
     x_train_scaled = scaler.transform(x_train)
-    x_test_local_scaled = scaler.transform(x_test_local)
     x_test_scaled = scaler.transform(x_test)
 
-    class_log = single_and_grid_classifier('Logistic - liblinear', x_train_scaled, y_train, x_test_local_scaled, y_test_local,
+    class_log = single_and_grid_classifier('Logistic - liblinear', x_train_scaled, y_train,
                                LogisticRegression(solver='liblinear', n_jobs=-1),
                                [{}])
     # Following was tried also for Logistic and didn't make it much better: solver=['lbfgs', 'newton-cg', 'sag', 'saga']
 
-    class_knn = single_and_grid_classifier('KNN - 14', x_train_scaled, y_train, x_test_local_scaled, y_test_local,
+    class_knn = single_and_grid_classifier('KNN - 14', x_train_scaled, y_train,
                                KNeighborsClassifier(n_jobs=-1, n_neighbors=14),
                                [{}])
     # Following was tried also and found 14 to be best: n_neighbors=[range(1, 25), 5 (lower scores), 25 (lower scored)]
 
-    class_svm_rbf = single_and_grid_classifier('SVM - rbf', x_train_scaled, y_train, x_test_local_scaled, y_test_local,
+    class_svm_rbf = single_and_grid_classifier('SVM - rbf', x_train_scaled, y_train,
                                SVC(gamma='auto', kernel='rbf', probability=True),
                                [{
                                    'C': [0.5, 1.0, 1.5, 2.0],
                                    'gamma': [0.2, 0.1, 0.05, 0.01, 'auto_deprecated', 'scale']}
                                 ])
-    class_svm_poly = single_and_grid_classifier('SVM - poly', x_train_scaled, y_train, x_test_local_scaled, y_test_local,
+    class_svm_poly = single_and_grid_classifier('SVM - poly', x_train_scaled, y_train,
                                SVC(gamma='auto', kernel='poly', probability=True),
                                [{
                                    'C': [0.5, 1.0, 1.5, 2.0],
@@ -262,11 +247,11 @@ def main():
                                 ])
     # sigmoid kerned was also tried for SVM, but gave worse results
 
-    class_nb = single_and_grid_classifier('NB', x_train_scaled, y_train, x_test_local_scaled, y_test_local,
+    class_nb = single_and_grid_classifier('NB', x_train_scaled, y_train,
                                GaussianNB(),
                                [{}])
 
-    class_rf = single_and_grid_classifier('RandomForest - 9', x_train_scaled, y_train, x_test_local_scaled, y_test_local,
+    class_rf = single_and_grid_classifier('RandomForest - 9', x_train_scaled, y_train,
                                RandomForestClassifier(n_jobs=-1, n_estimators=100, max_depth=9),
                                [{}])
     # TODO keep?
@@ -314,29 +299,11 @@ def main():
         ('rf', class_rf)
     ]
 
-    # TODO temporary
-    concat_x = pd.concat([pd.DataFrame(x_train_scaled), pd.DataFrame(x_test_local_scaled)])
-    concat_y = pd.concat([pd.DataFrame(y_train), pd.DataFrame(y_test_local)])
-    print(f'YK: Shapes x: {concat_x.shape}, {x_train_scaled.shape}, {x_test_local_scaled.shape}')
-    print(f'YK: Shapes y: {concat_y.shape}, {y_train.shape}, {y_test_local.shape}')
-
-    classifier_voting = VotingClassifier(estimators=classifiers_specific_with_params, voting='soft', n_jobs=-1)
-    classifier_voting.fit(concat_x, concat_y)
-    reg_score, reg_std = cross_valid(classifier_voting, concat_x, concat_y)
-    print(f'FINAL'.ljust(34) + ' - Stats: ALL DATA: Best classifiers + Voting train: '
-                               f'{round(classifier_voting.score(concat_x, concat_y), 3)}, '
-                               f'best classifier cross: {round(reg_score, 3)} (+-{round(reg_std, 3)}={round(reg_score - reg_std, 3)}), '
-                               f'best classifier:\n{classifier_voting}')
-
-    '''
     classifier_voting = voting_only(classifiers_specific_with_params,
-                                    x_train_scaled, y_train,
-                                    x_test_local_scaled, y_test_local)  # ,
+                                    x_train_scaled, y_train)
                                     # TODO - should stay?
                                     # Give weights not to give rf too much weight, since it overfits
                                     # [1, 1, 1, 1, 1, 0.3])
-    '''
-
 
     preds = classifier_voting.predict(x_test_scaled)
     output_preds(preds, x_test, 'best')
