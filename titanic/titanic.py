@@ -281,7 +281,6 @@ def main():
     All features: 'Pclass' 'Name' 'Sex' 'Age' 'SibSp' 'Parch' 'Ticket' 'Fare' 'Cabin' 'Embarked'
     Doesn't make sence to have:
     - 'Name', 'Ticket', 'Cabin'
-
     Slightly better without:
     - Fare - TODO - return but in a different way
     - Parch
@@ -289,11 +288,11 @@ def main():
     Slightly better with:
     - Age
     - SibSp
+    - Pclass
     A lot better with:
-    - Sex - TODO prove
-    - Pclass - TODO prove
+    - Sex
     '''
-    columns_to_drop = ['Name', 'Ticket', 'Cabin', 'Embarked', 'Fare', 'Parch', 'Sex']
+    columns_to_drop = ['Name', 'Ticket', 'Cabin', 'Embarked', 'Fare', 'Parch', 'Pclass']
 
     x, y, x_test = read_files()
 
