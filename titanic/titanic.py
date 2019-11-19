@@ -153,9 +153,11 @@ def clean_handle_missing_categorical(x, columns_to_drop, mean_class_3_fare, min_
     print(f'YK: Features after dropping: {x.columns.values}')
 
     # Create a new feature of number of relatives regardless of who they are
+    '''
     if 'SibSp' not in columns_to_drop and 'Parch' not in columns_to_drop:
         x['Family_Num'] = x['SibSp'] + x['Parch']
         x.drop(['SibSp', 'Parch'], axis=1, inplace=True)
+    '''
 
     # Split 3 categorical unique values (1, 2, 3) of Pclass into 2 dummy variables for classes 1 & 2
     if 'Pclass' not in columns_to_drop:
@@ -375,12 +377,13 @@ def main():
 
     classifier_voting = voting_only(classifiers_specific_with_params,
                                     x_train_scaled, y_train,
-                                    x_test_local_scaled, y_test_local) #,
+                                    x_test_local_scaled, y_test_local)  # ,
                                     # TODO - should stay?
                                     # Give weights not to give rf too much weight, since it overfits
-                                    #[1, 1, 1, 1, 1, 0.3])
+                                    # [1, 1, 1, 1, 1, 0.3])
 
     preds = classifier_voting.predict(x_test_scaled)
     output_preds(preds, x_test, 'best')
+
 
 main()
