@@ -273,7 +273,9 @@ def voting_only(classifiers, x_train, y_train, x_test_local, y_test_local, weigh
 
 
 def main():
-    columns_to_drop = ['Name', 'Ticket', 'Cabin', 'Embarked']
+    # TODO is leaving dropping 'Embarked'?
+    # columns_to_drop = ['Name', 'Ticket', 'Cabin', 'Embarked']
+    columns_to_drop = ['Name', 'Ticket', 'Cabin']
 
     x, y, x_test = read_files()
 
