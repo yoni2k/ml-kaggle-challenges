@@ -291,13 +291,16 @@ def main():
     - Pclass
     A lot better with:
     - Sex
+    Order of adding features:
+    - Sex
+    -
     '''
     columns_to_drop = ['Name', 'Ticket', 'Cabin',
                        #'Sex',
                        'Embarked',
-                       #'Fare',
+                       'Fare',
                        'Parch',
-                       'Pclass',
+                       #'Pclass',
                        'SibSp',
                        'Age'
                        ]
