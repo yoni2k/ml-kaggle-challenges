@@ -424,3 +424,13 @@ Removing fare again - log is not better than without log, and Fare doesn't seem 
 	NB                   - Stats: Default params cross: 0.759 (+-0.032=0.727), grid train: 0.763, best classifier cross: 0.759 (+-0.032=0.727), best classifier:
 	RandomForest - 9     - Stats: Default params cross: 0.831 (+-0.046=0.784), grid train: 0.901, best classifier cross: 0.823 (+-0.045=0.777), best classifier:
 	FINAL                                        - Stats: Best classifiers + Voting train: 0.848, best classifier cross: 0.826 (+-0.038=0.789), best classifier:
+
+### 23. Adding shuffling before fitting
+	Logistic - liblinear - Stats: Default params cross: 0.804 (+-0.072=0.731), grid train: 0.811, best classifier cross: 0.807 (+-0.073=0.734), best classifier:
+	KNN - 14             - Stats: Default params cross: 0.794 (+-0.051=0.743), grid train: 0.854, best classifier cross: 0.814 (+-0.038=0.776), best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.823 (+-0.044=0.779), grid train: 0.835, best classifier cross: 0.828 (+-0.046=0.783), best classifier:
+	SVM - poly           - Stats: Default params cross: 0.816 (+-0.047=0.769), grid train: 0.825, best classifier cross: 0.819 (+-0.047=0.772), best classifier:
+	NB                   - Stats: Default params cross: 0.763 (+-0.039=0.724), grid train: 0.763, best classifier cross: 0.763 (+-0.039=0.724), best classifier:
+	RandomForest - 9     - Stats: Default params cross: 0.826 (+-0.028=0.798), grid train: 0.9, best classifier cross: 0.824 (+-0.037=0.787), best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.844, best classifier cross: 0.821 (+-0.049=0.771), best classifier:
+Conclusion: doesn't seem to help, removing	

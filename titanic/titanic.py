@@ -13,6 +13,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.utils import shuffle
 sns.set()
 
 
@@ -203,6 +204,9 @@ def main():
                        ]
 
     x_train, y_train, x_test = read_files()
+
+    # Shuffling doesn't seem to help.  Remove for now TODO - should stay?
+    # x_train, y_train = shuffle(x_train, y_train, random_state=42)
 
     # TODO keep?
     # x, y = remove_outliers(x, y)
