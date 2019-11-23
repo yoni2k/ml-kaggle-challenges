@@ -14,6 +14,7 @@ from sklearn.svm import SVC
 from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.utils import shuffle
+import xgboost as xgb
 sns.set()
 
 
@@ -258,6 +259,21 @@ def main():
     class_rf = single_and_grid_classifier('RandomForest - 9', x_train_scaled, y_train,
                                RandomForestClassifier(n_jobs=-1, n_estimators=100, max_depth=9),
                                [{}])
+
+    class_xgb = single_and_grid_classifier('XGB', x_train_scaled, y_train,
+                                xgb.XGBClassifier(objective='binary:logistic', random_state=42, n_jobs=-1),
+                                [{
+                                    'max_depth': range(2, 8, 1),  # default 3
+                                    # 'n_estimators': range(60, 260, 40), # default 100
+                                    'learning_rate': [0.3, 0.2, 0.1, 0.01],  # , 0.001, 0.0001
+                                    'min_child_weight': [0.5, 1, 2],  # default 1
+                                    # 'subsample': [i / 10.0 for i in range(6, 11)], # default 1, not sure needed
+                                    # 'colsample_bytree': [i / 10.0 for i in range(6, 11)] # default 1, not sure needed
+                                    'gamma': [i / 10.0 for i in range(3)]  # default 0
+                                }])
+
+    exit()
+
     # TODO keep?
     '''
     for i in range(2, 21):
@@ -300,7 +316,8 @@ def main():
         ('svm - rbf', class_svm_rbf),
         ('svm - poly', class_svm_poly),
         ('nb', class_nb),
-        ('rf', class_rf)
+        ('rf', class_rf),
+        ('xgb', class_xgb)
     ]
 
     classifier_voting = voting_only(classifiers_specific_with_params,
@@ -311,6 +328,9 @@ def main():
 
     preds = classifier_voting.predict(x_test_scaled)
     output_preds(preds, x_test, 'best')
+
+    preds = class_xgb.predict(x_test_scaled)
+    output_preds(preds, x_test, 'xgb')
 
 
 main()

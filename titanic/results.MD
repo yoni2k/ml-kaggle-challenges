@@ -434,3 +434,15 @@ Removing fare again - log is not better than without log, and Fare doesn't seem 
 	RandomForest - 9     - Stats: Default params cross: 0.826 (+-0.028=0.798), grid train: 0.9, best classifier cross: 0.824 (+-0.037=0.787), best classifier:
 	FINAL                                        - Stats: Best classifiers + Voting train: 0.844, best classifier cross: 0.821 (+-0.049=0.771), best classifier:
 Conclusion: doesn't seem to help, removing	
+
+### 24. Adding XGBoost
+	Logistic - liblinear - Stats: Default params cross: 0.8 (+-0.019=0.781), grid train: 0.811, best classifier cross: 0.801 (+-0.02=0.782), best classifier:
+	KNN - 14             - Stats: Default params cross: 0.801 (+-0.037=0.764), grid train: 0.853, best classifier cross: 0.823 (+-0.051=0.772), best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.824 (+-0.034=0.789), grid train: 0.836, best classifier cross: 0.827 (+-0.037=0.79), best classifier:
+	SVM - poly           - Stats: Default params cross: 0.814 (+-0.034=0.78), grid train: 0.825, best classifier cross: 0.816 (+-0.036=0.78), best classifier:
+	NB                   - Stats: Default params cross: 0.759 (+-0.032=0.727), grid train: 0.763, best classifier cross: 0.759 (+-0.032=0.727), best classifier:
+	RandomForest - 9     - Stats: Default params cross: 0.827 (+-0.048=0.779), grid train: 0.9, best classifier cross: 0.823 (+-0.047=0.776), best classifier:
+	XGB                  - Stats: Default params cross: 0.842 (+-0.033=0.808), grid train: 0.862, best classifier cross: 0.842 (+-0.033=0.808), best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.85, best classifier cross: 0.831 (+-0.04=0.791), best classifier:
+Conclusion: XGBoost gives good result (but maybe overfitting), using it gives better result also (not sure if overfitting)
+On the website, adding XGBoost didn't improve the result of the voting, and having it on it's own actually made it worse
