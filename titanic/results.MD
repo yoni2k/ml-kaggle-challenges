@@ -467,3 +467,14 @@ On the website, adding XGBoost didn't improve the result of the voting, and havi
 	XGB                  - Stats: Default params cross: 0.84 (+-0.036=0.804), grid train: 0.865, best classifier cross: 0.84 (+-0.036=0.804), best classifier:
 	FINAL                                        - Stats: Best classifiers + Voting train: 0.844, best classifier cross: 0.822 (+-0.034=0.788), best classifier:
 Conclusion: doesn't seem to make a difference to have it or not to have it.  Leaving for now, perhaps will remove later.
+
+### 27. Replacing unknown age based on median and not mean
+	Logistic - liblinear - Stats: Default params cross: 0.809 (+-0.027=0.782), grid train: 0.822, best classifier cross: 0.809 (+-0.027=0.782), best classifier:
+	KNN - 14             - Stats: Default params cross: 0.813 (+-0.04=0.773), grid train: 0.826, best classifier cross: 0.813 (+-0.04=0.773), best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.823 (+-0.033=0.79), grid train: 0.835, best classifier cross: 0.823 (+-0.033=0.79), best classifier:
+	SVM - poly           - Stats: Default params cross: 0.809 (+-0.041=0.768), grid train: 0.838, best classifier cross: 0.809 (+-0.041=0.768), best classifier:
+	NB                   - Stats: Default params cross: 0.753 (+-0.049=0.705), grid train: 0.763, best classifier cross: 0.753 (+-0.049=0.705), best classifier:
+	RandomForest - 9     - Stats: Default params cross: 0.818 (+-0.041=0.778), grid train: 0.897, best classifier cross: 0.816 (+-0.039=0.777), best classifier:
+	XGB                  - Stats: Default params cross: 0.833 (+-0.033=0.8), grid train: 0.863, best classifier cross: 0.833 (+-0.033=0.8), best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.843, best classifier cross: 0.817 (+-0.036=0.782), best classifier:
+Conclusion: doesn't seem to make much of a difference, but makes sense.  Perhaps reconsider later.	

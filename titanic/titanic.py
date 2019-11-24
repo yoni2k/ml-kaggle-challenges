@@ -29,6 +29,13 @@ TODO:
 """
 
 
+# TODO: ask Notbook owner of https://www.kaggle.com/gunesevitan/advanced-feature-engineering-tutorial-with-titanic
+'''
+- How come age is replaced with Median and not with Mean?
+- 
+'''
+
+
 def read_files():
     train = pd.read_csv('input/train.csv', index_col='PassengerId')
     x_test = pd.read_csv('input/test.csv', index_col='PassengerId')
@@ -48,6 +55,10 @@ def get_title(full_name):
 
 def handle_age(both):
 
+    # TODO features - in https://www.kaggle.com/gunesevitan/advanced-feature-engineering-tutorial-with-titanic
+    #   did something a bit different, based on Sex and Class, and not on title.  I think doing it on title is
+    #   more exact, especially regarding differences between Mrs. and Miss
+
     # 'Ms' appears only once in test, so replace it with Mrs since it's basically same ages
     both.loc[(both['Age'].isnull()) & (both['Name'].apply(get_title) == 'Ms'), 'Name'] = "O'Donoghue, Mrs. Bridget"
 
@@ -55,18 +66,16 @@ def handle_age(both):
 
     for title in ['Mr', 'Miss', 'Mrs']:
         for cl in [1, 2, 3]:
-            # TODO feature - consider median and not mean
             average = both[(both['Age'].isnull() == False) &
-                              (both_title == title) &
-                              (both['Pclass'] == cl)]['Age'].mean()
+                           (both_title == title) &
+                           (both['Pclass'] == cl)]['Age'].median()
             print(f"YK: Replacing title {title} in class {cl} age with {average}")
             both.loc[(both['Age'].isnull()) &
                      (both_title == title) &
                      (both['Pclass'] == cl), 'Age'] = average
 
     for title in ['Master', 'Dr']:
-        # TODO feature - consider median and not mean, and based on class and sex, and not on title
-        average = both[(both['Age'].isnull() == False) & (both_title == title)]['Age'].mean()
+        average = both[(both['Age'].isnull() == False) & (both_title == title)]['Age'].median()
         print(f"YK: Replacing title {title} age with {average}")
         both.loc[(both['Age'].isnull()) & (both_title == title), 'Age'] = average
 
@@ -133,6 +142,7 @@ def prepare_features(x, options):
     x.drop(options['columns_to_drop'], axis=1, inplace=True)
 
     print(f'YK: Features after dropping: {x.columns.values}')
+    print(f'YK: both.info():\n{x.info()}')
 
 
 def scale_train(x_train):
@@ -347,7 +357,7 @@ options = {
     'columns_to_drop': ['Name', 'Ticket',  # don't make sense to add
                         'Embarked',  # doesn't help always
                         'Fare',     # doesn't help always TODO consider returning in a different way
-                        # 'Cabin' - helps if take out 'Deck' from first letter
+                        # 'Cabin' - helps if take out 'Deck' from first letter, currently doesn't make a difference to have it or not
                         # 'Sex',
                         # 'SibSp',
                         # 'Age',
