@@ -86,13 +86,17 @@ def prepare_features(x, options):
     '''
 
     # TODO features - return
-    '''
-    x['Cabin'] = x['Cabin'].fillna('')
-    x['AC'] = x['Cabin'].apply(lambda cab: cab.startswith('A') or cab.startswith('C'))
-    x['BT'] = x['Cabin'].apply(lambda cab: cab.startswith('B') or cab.startswith('T'))
-    x['DE'] = x['Cabin'].apply(lambda cab: cab.startswith('D') or cab.startswith('E'))
-    x['FG'] = x['Cabin'].apply(lambda cab: cab.startswith('F') or cab.startswith('G'))
-    '''
+    if 'Cabin' not in options['columns_to_drop']:
+        x['Cabin'] = x['Cabin'].fillna('')
+        x['Deck_AC'] = x['Cabin'].apply(lambda cab: 1 if cab.startswith('A') or cab.startswith('C') else 0)
+        x['Deck_BT'] = x['Cabin'].apply(lambda cab: 1 if cab.startswith('B') or cab.startswith('T') else 0)
+        x['Deck_DE'] = x['Cabin'].apply(lambda cab: 1 if cab.startswith('D') or cab.startswith('E') else 0)
+        x['Deck_FG'] = x['Cabin'].apply(lambda cab: 1 if cab.startswith('F') or cab.startswith('G') else 0)
+        print(f"YK: x['Deck_AC'].sum(): {x['Deck_AC'].sum()}")
+        print(f"YK: x['Deck_BT'].sum(): {x['Deck_BT'].sum()}")
+        print(f"YK: x['Deck_DE'].sum(): {x['Deck_DE'].sum()}")
+        print(f"YK: x['Deck_FG'].sum(): {x['Deck_FG'].sum()}")
+        x.drop('Cabin', axis=1, inplace=True)
 
 
     # Split 3 categorical unique values (1, 2, 3) of Pclass into 2 dummy variables for classes 1 & 2
@@ -340,15 +344,16 @@ def main(options):
 
 
 options = {
-    'columns_to_drop' : ['Name', 'Ticket', 'Cabin',  # don't make sense to add
-                       'Embarked',  # doesn't help always
-                       'Fare',     # doesn't help always TODO consider returning in a different way
-                       # 'Sex',
-                       # 'SibSp',
-                       # 'Age',
-                       # 'Pclass'
-                       #'Parch'      # doesn't help at the end - border line
-                       ],
+    'columns_to_drop': ['Name', 'Ticket',  # don't make sense to add
+                        'Embarked',  # doesn't help always
+                        'Fare',     # doesn't help always TODO consider returning in a different way
+                        # 'Cabin' - helps if take out 'Deck' from first letter
+                        # 'Sex',
+                        # 'SibSp',
+                        # 'Age',
+                        # 'Pclass'
+                        # 'Parch'      # doesn't help at the end - border line
+                        ],
     'hyperparams_optimization': False
 
 }

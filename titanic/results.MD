@@ -456,3 +456,14 @@ On the website, adding XGBoost didn't improve the result of the voting, and havi
 	RandomForest - 9     - Stats: Default params cross: 0.827 (+-0.042=0.785), grid train: 0.902, best classifier cross: 0.822 (+-0.041=0.78), best classifier:
 	XGB                  - Stats: Default params cross: 0.842 (+-0.033=0.808), grid train: 0.862, best classifier cross: 0.842 (+-0.033=0.808), best classifier:
 	FINAL                                        - Stats: Best classifiers + Voting train: 0.84, best classifier cross: 0.826 (+-0.037=0.789), best classifier:
+	
+### 26. Adding Deck feature learning it from Cabin
+	Logistic - liblinear - Stats: Default params cross: 0.809 (+-0.027=0.782), grid train: 0.82, best classifier cross: 0.809 (+-0.027=0.782), best classifier:
+	KNN - 14             - Stats: Default params cross: 0.81 (+-0.039=0.771), grid train: 0.825, best classifier cross: 0.81 (+-0.039=0.771), best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.823 (+-0.033=0.79), grid train: 0.835, best classifier cross: 0.823 (+-0.033=0.79), best classifier:
+	SVM - poly           - Stats: Default params cross: 0.816 (+-0.039=0.777), grid train: 0.838, best classifier cross: 0.816 (+-0.039=0.777), best classifier:
+	NB                   - Stats: Default params cross: 0.754 (+-0.044=0.71), grid train: 0.765, best classifier cross: 0.754 (+-0.044=0.71), best classifier:
+	RandomForest - 9     - Stats: Default params cross: 0.825 (+-0.04=0.785), grid train: 0.905, best classifier cross: 0.826 (+-0.042=0.784), best classifier:
+	XGB                  - Stats: Default params cross: 0.84 (+-0.036=0.804), grid train: 0.865, best classifier cross: 0.84 (+-0.036=0.804), best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.844, best classifier cross: 0.822 (+-0.034=0.788), best classifier:
+Conclusion: doesn't seem to make a difference to have it or not to have it.  Leaving for now, perhaps will remove later.
