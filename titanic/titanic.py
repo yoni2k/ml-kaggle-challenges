@@ -1,5 +1,6 @@
 import warnings
 import re
+import time
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -29,12 +30,12 @@ TODO:
 
 
 def read_files():
-    x = pd.read_csv('input/train.csv', index_col='PassengerId')
-    y = x.pop('Survived')
+    train = pd.read_csv('input/train.csv', index_col='PassengerId')
     x_test = pd.read_csv('input/test.csv', index_col='PassengerId')
-    return x, y, x_test
+    return train, x_test
 
 
+# TODO keep?
 def remove_outliers(x, y):
     x = x[x['Fare'] < x['Fare'].quantile(.995)]
     y = y.loc[x.index]
@@ -45,45 +46,36 @@ def get_title(full_name):
     return full_name.split(',')[1].split('.')[0].strip()
 
 
-def handle_age(x_train, x_test):
+def handle_age(both):
 
     # 'Ms' appears only once in test, so replace it with Mrs since it's basically same ages
-    x_test.loc[(x_test['Age'].isnull()) & (x_test['Name'].apply(get_title) == 'Ms'), 'Name'] = "O'Donoghue, Mrs. Bridget"
+    both.loc[(both['Age'].isnull()) & (both['Name'].apply(get_title) == 'Ms'), 'Name'] = "O'Donoghue, Mrs. Bridget"
 
-    x_train_title = x_train['Name'].apply(get_title)
-    x_test_title = x_test['Name'].apply(get_title)
+    both_title = both['Name'].apply(get_title)
 
     for title in ['Mr', 'Miss', 'Mrs']:
         for cl in [1, 2, 3]:
             # TODO feature - consider median and not mean
-            average = x_train[(x_train['Age'].isnull() == False) &
-                              (x_train_title == title) &
-                              (x_train['Pclass'] == cl)]['Age'].mean()
+            average = both[(both['Age'].isnull() == False) &
+                              (both_title == title) &
+                              (both['Pclass'] == cl)]['Age'].mean()
             print(f"YK: Replacing title {title} in class {cl} age with {average}")
-            x_train.loc[(x_train['Age'].isnull()) &
-                        (x_train_title == title) &
-                        (x_train['Pclass'] == cl), 'Age'] = average
-            x_test.loc[(x_test['Age'].isnull()) &
-                       (x_test_title == title) &
-                       (x_test['Pclass'] == cl), 'Age'] = average
+            both.loc[(both['Age'].isnull()) &
+                     (both_title == title) &
+                     (both['Pclass'] == cl), 'Age'] = average
 
     for title in ['Master', 'Dr']:
         # TODO feature - consider median and not mean, and based on class and sex, and not on title
-        # TODO feature - consider taking test into consideration when dealing with missing values
-        average = x_train[(x_train['Age'].isnull() == False) & (x_train_title == title)]['Age'].mean()
+        average = both[(both['Age'].isnull() == False) & (both_title == title)]['Age'].mean()
         print(f"YK: Replacing title {title} age with {average}")
-        x_train.loc[(x_train['Age'].isnull()) & (x_train_title == title), 'Age'] = average
-
-        if x_test.loc[(x_test['Age'].isnull()) & (x_test_title == title), 'Age'].shape[0] > 0:
-            x_test.loc[(x_test['Age'].isnull()) & (x_test_title == title), 'Age'] = average
+        both.loc[(both['Age'].isnull()) & (both_title == title), 'Age'] = average
 
 
-def clean_handle_missing_categorical(x, options, mean_class_3_fare, min_fare, max_reasonable_fare):
-    print(f'YK: Features before dropping: {x.columns.values}')
+def prepare_features(x, options):
+    print(f'YK: Features before adding / dropping: {x.columns.values}')
 
-    x.drop(options['columns_to_drop'], axis=1, inplace=True)
-
-    print(f'YK: Features after dropping: {x.columns.values}')
+    if 'Age' not in options['columns_to_drop']:
+        handle_age(x)
 
     # TODO - should keep?
     # Create a new feature of number of relatives regardless of who they are
@@ -131,17 +123,12 @@ def clean_handle_missing_categorical(x, options, mean_class_3_fare, min_fare, ma
         # Filling the missing value in Fare with the median Fare of 3rd class alone passenger
         df_all['Fare'] = df_all['Fare'].fillna(med_fare)
         '''
+        mean_class_3_fare = x[(x['Pclass'] == 1) | (x['Pclass'] == 2)]['Fare'].mean()
         x['Fare'].replace({np.NaN: mean_class_3_fare}, inplace=True)
 
-        # TODO - keep?
-        # Separately removing crazy outliers
-#       x['Fare'].replace({512.329200: max_reasonable_fare}, inplace=True)
+    x.drop(options['columns_to_drop'], axis=1, inplace=True)
 
-        # TODO - keep?
-        #x['Fare log'] = np.log(x['Fare'])
-        #x['Fare log'].replace({np.NINF: min_fare}, inplace=True)
-        #x.drop('Fare', axis=1, inplace=True)
-
+    print(f'YK: Features after dropping: {x.columns.values}')
 
 
 def scale_train(x_train):
@@ -217,8 +204,9 @@ def voting_only(classifiers, x_train, y_train, weights=None):
 
 
 def main(options):
+    start_time = time.time()
 
-    x_train, y_train, x_test = read_files()
+    train, x_test = read_files()
 
     # Shuffling doesn't seem to help.  Remove for now TODO - should stay?
     # x_train, y_train = shuffle(x_train, y_train, random_state=42)
@@ -226,17 +214,14 @@ def main(options):
     # TODO keep?
     # x, y = remove_outliers(x, y)
 
-    handle_age(x_train, x_test)
+    x_test['Survived'] = 2
+    both = pd.concat([train, x_test], axis=0)
 
-    mean_class_3_fare = x_train[(x_train['Pclass'] == 1) | (x_train['Pclass'] == 2)]['Fare'].mean()
-    min_fare = x_train[x_train['Fare'] > 0]['Fare'].min()
-    max_reasonable_fare = x_train[x_train['Fare'] <300]['Fare'].max()
+    prepare_features(both, options)
 
-    print(f'YK: Constants: mean_class_3_fare: {mean_class_3_fare}, '
-          f'min_fare: {min_fare}, max_reasonable_fare: {max_reasonable_fare}')
-
-    clean_handle_missing_categorical(x_train, options, mean_class_3_fare, min_fare, max_reasonable_fare)
-    clean_handle_missing_categorical(x_test, options, mean_class_3_fare, min_fare, max_reasonable_fare)
+    x_train = both[both['Survived'] != 2].drop('Survived', axis=1)
+    y_train = both[both['Survived'] != 2]['Survived']
+    x_test = both[both['Survived'] == 2].drop('Survived', axis=1)
 
     scaler = scale_train(x_train)
     x_train_scaled = scaler.transform(x_train)
@@ -350,6 +335,8 @@ def main(options):
 
     preds = class_xgb.predict(x_test_scaled)
     output_preds(preds, x_test, 'xgb')
+
+    print(f'YK: Time took: {time.time() - start_time} seconds = {round((time.time() - start_time)/60)} minutes ')
 
 
 options = {
