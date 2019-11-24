@@ -446,3 +446,13 @@ Conclusion: doesn't seem to help, removing
 	FINAL                                        - Stats: Best classifiers + Voting train: 0.85, best classifier cross: 0.831 (+-0.04=0.791), best classifier:
 Conclusion: XGBoost gives good result (but maybe overfitting), using it gives better result also (not sure if overfitting)
 On the website, adding XGBoost didn't improve the result of the voting, and having it on it's own actually made it worse
+
+### 25. Adding running with different options - like not to do hyperparameter optimization every time
+	Logistic - liblinear - Stats: Default params cross: 0.8 (+-0.019=0.781), grid train: 0.81, best classifier cross: 0.8 (+-0.019=0.781), best classifier:
+	KNN - 14             - Stats: Default params cross: 0.801 (+-0.037=0.764), grid train: 0.824, best classifier cross: 0.801 (+-0.037=0.764), best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.824 (+-0.034=0.789), grid train: 0.838, best classifier cross: 0.824 (+-0.034=0.789), best classifier:
+	SVM - poly           - Stats: Default params cross: 0.814 (+-0.034=0.78), grid train: 0.828, best classifier cross: 0.814 (+-0.034=0.78), best classifier:
+	NB                   - Stats: Default params cross: 0.759 (+-0.032=0.727), grid train: 0.763, best classifier cross: 0.759 (+-0.032=0.727), best classifier:
+	RandomForest - 9     - Stats: Default params cross: 0.827 (+-0.042=0.785), grid train: 0.902, best classifier cross: 0.822 (+-0.041=0.78), best classifier:
+	XGB                  - Stats: Default params cross: 0.842 (+-0.033=0.808), grid train: 0.862, best classifier cross: 0.842 (+-0.033=0.808), best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.84, best classifier cross: 0.826 (+-0.037=0.789), best classifier:

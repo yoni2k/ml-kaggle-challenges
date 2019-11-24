@@ -1,4 +1,5 @@
 import warnings
+import re
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -54,6 +55,7 @@ def handle_age(x_train, x_test):
 
     for title in ['Mr', 'Miss', 'Mrs']:
         for cl in [1, 2, 3]:
+            # TODO feature - consider median and not mean
             average = x_train[(x_train['Age'].isnull() == False) &
                               (x_train_title == title) &
                               (x_train['Pclass'] == cl)]['Age'].mean()
@@ -66,6 +68,8 @@ def handle_age(x_train, x_test):
                        (x_test['Pclass'] == cl), 'Age'] = average
 
     for title in ['Master', 'Dr']:
+        # TODO feature - consider median and not mean, and based on class and sex, and not on title
+        # TODO feature - consider taking test into consideration when dealing with missing values
         average = x_train[(x_train['Age'].isnull() == False) & (x_train_title == title)]['Age'].mean()
         print(f"YK: Replacing title {title} age with {average}")
         x_train.loc[(x_train['Age'].isnull()) & (x_train_title == title), 'Age'] = average
@@ -74,10 +78,10 @@ def handle_age(x_train, x_test):
             x_test.loc[(x_test['Age'].isnull()) & (x_test_title == title), 'Age'] = average
 
 
-def clean_handle_missing_categorical(x, columns_to_drop, mean_class_3_fare, min_fare, max_reasonable_fare):
+def clean_handle_missing_categorical(x, options, mean_class_3_fare, min_fare, max_reasonable_fare):
     print(f'YK: Features before dropping: {x.columns.values}')
 
-    x.drop(columns_to_drop, axis=1, inplace=True)
+    x.drop(options['columns_to_drop'], axis=1, inplace=True)
 
     print(f'YK: Features after dropping: {x.columns.values}')
 
@@ -89,14 +93,24 @@ def clean_handle_missing_categorical(x, columns_to_drop, mean_class_3_fare, min_
         x.drop(['SibSp', 'Parch'], axis=1, inplace=True)
     '''
 
+    # TODO features - return
+    '''
+    x['Cabin'] = x['Cabin'].fillna('')
+    x['AC'] = x['Cabin'].apply(lambda cab: cab.startswith('A') or cab.startswith('C'))
+    x['BT'] = x['Cabin'].apply(lambda cab: cab.startswith('B') or cab.startswith('T'))
+    x['DE'] = x['Cabin'].apply(lambda cab: cab.startswith('D') or cab.startswith('E'))
+    x['FG'] = x['Cabin'].apply(lambda cab: cab.startswith('F') or cab.startswith('G'))
+    '''
+
+
     # Split 3 categorical unique values (1, 2, 3) of Pclass into 2 dummy variables for classes 1 & 2
-    if 'Pclass' not in columns_to_drop:
+    if 'Pclass' not in options['columns_to_drop']:
         x['pclass_1'] = x['Pclass'].apply(lambda cl: 1 if cl == 1 else 0)
         x['pclass_2'] = x['Pclass'].apply(lambda cl: 1 if cl == 2 else 0)
         x.drop('Pclass', axis=1, inplace=True)
 
     # Change categorical feature 'Sex' to be 1 encoded 'Male', 1 = Male, 0 = Female
-    if 'Sex' not in columns_to_drop:
+    if 'Sex' not in options['columns_to_drop']:
         x['Male'] = x['Sex'].map({'male': 1, 'female': 0})
         x.drop('Sex', axis=1, inplace=True)
 
@@ -105,12 +119,18 @@ def clean_handle_missing_categorical(x, columns_to_drop, mean_class_3_fare, min_
             Embarked_S, Embarked_Q with 'C' being a reference variable
             In addition, handle 2 missing values to have them the most common value 'S'
     '''
-    if 'Embarked' not in columns_to_drop:
+    if 'Embarked' not in options['columns_to_drop']:
         x['Embarked_S'] = x['Embarked'].map({np.NaN: 1, 'S': 1, 'C': 0, 'Q': 0})
         x['Embarked_Q'] = x['Embarked'].map({np.NaN: 0, 'S': 0, 'C': 0, 'Q': 1})
         x.drop('Embarked', axis=1, inplace=True)
 
-    if 'Fare' not in columns_to_drop:
+    if 'Fare' not in options['columns_to_drop']:
+        # TODO feature - not really important since it's only 1, but: We can assume that Fare is related to family size (Parch and SibSp) and Pclass features.Median Fare value of a male with a third class ticket and no family is a logical choice to fill the missing value.
+        ''' - Code copied from notebook online:
+        med_fare = df_all.groupby(['Pclass', 'Parch', 'SibSp']).Fare.median()[3][0][0]
+        # Filling the missing value in Fare with the median Fare of 3rd class alone passenger
+        df_all['Fare'] = df_all['Fare'].fillna(med_fare)
+        '''
         x['Fare'].replace({np.NaN: mean_class_3_fare}, inplace=True)
 
         # TODO - keep?
@@ -152,8 +172,11 @@ def grid_search(classifier, param_grid, x_train, y_train):
     return grid.score(x_train, y_train), grid
 
 
-def single_and_grid_classifier(name_str, x_train, y_train, single_classifier, grid_params):
+def single_and_grid_classifier(name_str, x_train, y_train, single_classifier, options, grid_params):
     reg_score_def, reg_std_def = cross_valid(single_classifier, x_train, y_train)
+
+    if not options['hyperparams_optimization']:
+        grid_params = [{}]
 
     reg_score_grid, classifier = grid_search(single_classifier, grid_params, x_train, y_train)
     reg_score_cross, reg_std_cross = cross_valid(classifier.best_estimator_, x_train, y_train)
@@ -193,16 +216,7 @@ def voting_only(classifiers, x_train, y_train, weights=None):
     return voting_classifier
 
 
-def main():
-    columns_to_drop = ['Name', 'Ticket', 'Cabin',  # don't make sense to add
-                       'Embarked',  # doesn't help always
-                       'Fare',     # doesn't help always TODO consider returning in a different way
-                       # 'Sex',
-                       # 'SibSp',
-                       # 'Age',
-                       # 'Pclass'
-                       #'Parch'      # doesn't help at the end - border line
-                       ]
+def main(options):
 
     x_train, y_train, x_test = read_files()
 
@@ -221,8 +235,8 @@ def main():
     print(f'YK: Constants: mean_class_3_fare: {mean_class_3_fare}, '
           f'min_fare: {min_fare}, max_reasonable_fare: {max_reasonable_fare}')
 
-    clean_handle_missing_categorical(x_train, columns_to_drop, mean_class_3_fare, min_fare, max_reasonable_fare)
-    clean_handle_missing_categorical(x_test, columns_to_drop, mean_class_3_fare, min_fare, max_reasonable_fare)
+    clean_handle_missing_categorical(x_train, options, mean_class_3_fare, min_fare, max_reasonable_fare)
+    clean_handle_missing_categorical(x_test, options, mean_class_3_fare, min_fare, max_reasonable_fare)
 
     scaler = scale_train(x_train)
     x_train_scaled = scaler.transform(x_train)
@@ -230,49 +244,54 @@ def main():
 
     class_log = single_and_grid_classifier('Logistic - liblinear', x_train_scaled, y_train,
                                            LogisticRegression(solver='liblinear', n_jobs=-1),
-                                           [{'solver': ['liblinear', 'lbfgs', 'newton-cg', 'sag', 'saga']}]) # TODO was empty
+                                           options,
+                                           [{'solver': ['liblinear', 'lbfgs', 'newton-cg', 'sag', 'saga']}],) # TODO was empty
     # Following was tried also for Logistic and didn't make it much better: solver=['lbfgs', 'newton-cg', 'sag', 'saga']
 
     class_knn = single_and_grid_classifier('KNN - 14', x_train_scaled, y_train,
-                               KNeighborsClassifier(n_jobs=-1, n_neighbors=14),
-                               [{'n_neighbors': range(5, 25)}])  # # TODO was empty
+                                           KNeighborsClassifier(n_jobs=-1, n_neighbors=14),
+                                           options,
+                                           [{'n_neighbors': range(5, 25)}])  # # TODO was empty
     # Following was tried also and found 14 to be best: n_neighbors=[range(1, 25), 5 (lower scores), 25 (lower scored)]
 
     class_svm_rbf = single_and_grid_classifier('SVM - rbf', x_train_scaled, y_train,
-                               SVC(gamma='auto', kernel='rbf', probability=True),
-                               [{
-                                   'C': [0.5, 1.0, 1.5, 2.0],
-                                   'gamma': [0.2, 0.1, 0.05, 0.01, 'auto_deprecated', 'scale']}
-                                ])
+                                               SVC(gamma='auto', kernel='rbf', probability=True),
+                                               options,
+                                               [{
+                                                   'C': [0.5, 1.0, 1.5, 2.0],
+                                                   'gamma': [0.2, 0.1, 0.05, 0.01, 'auto_deprecated', 'scale']}
+                                               ])
     class_svm_poly = single_and_grid_classifier('SVM - poly', x_train_scaled, y_train,
-                               SVC(gamma='auto', kernel='poly', probability=True),
-                               [{
-                                   'C': [0.5, 1.0, 1.5, 2.0],
-                                   'gamma': [0.2, 0.1, 0.05, 0.01, 'auto_deprecated', 'scale']}
-                                ])
+                                                SVC(gamma='auto', kernel='poly', probability=True),
+                                                options,
+                                                [{
+                                                    'C': [0.5, 1.0, 1.5, 2.0],
+                                                    'gamma': [0.2, 0.1, 0.05, 0.01, 'auto_deprecated', 'scale']}
+                                                ])
     # sigmoid kerned was also tried for SVM, but gave worse results
 
     class_nb = single_and_grid_classifier('NB', x_train_scaled, y_train,
-                               GaussianNB(),
-                               [{}])
+                                          GaussianNB(),
+                                          options,
+                                          [{}])
 
     class_rf = single_and_grid_classifier('RandomForest - 9', x_train_scaled, y_train,
-                               RandomForestClassifier(n_jobs=-1, n_estimators=100, max_depth=9),
-                               [{}])
+                                          RandomForestClassifier(n_jobs=-1, n_estimators=100, max_depth=9),
+                                          options,
+                                          [{}])
 
     class_xgb = single_and_grid_classifier('XGB', x_train_scaled, y_train,
-                                xgb.XGBClassifier(objective='binary:logistic', random_state=42, n_jobs=-1),
-                                [{
-                                    'max_depth': range(2, 8, 1),  # default 3
-                                    # 'n_estimators': range(60, 260, 40), # default 100
-                                    'learning_rate': [0.3, 0.2, 0.1, 0.01],  # , 0.001, 0.0001
-                                    'min_child_weight': [0.5, 1, 2],  # default 1
-                                    # 'subsample': [i / 10.0 for i in range(6, 11)], # default 1, not sure needed
-                                    # 'colsample_bytree': [i / 10.0 for i in range(6, 11)] # default 1, not sure needed
-                                    'gamma': [i / 10.0 for i in range(3)]  # default 0
-                                }])
-
-    exit()
+                                           xgb.XGBClassifier(objective='binary:logistic', random_state=42, n_jobs=-1),
+                                           options,
+                                           [{
+                                               'max_depth': range(2, 8, 1),  # default 3
+                                               # 'n_estimators': range(60, 260, 40), # default 100
+                                               # 'learning_rate': [0.3, 0.2, 0.1, 0.01],  # , 0.001, 0.0001
+                                               # 'min_child_weight': [0.5, 1, 2],  # default 1
+                                               # 'subsample': [i / 10.0 for i in range(6, 11)], # default 1, not sure needed
+                                               # 'colsample_bytree': [i / 10.0 for i in range(6, 11)] # default 1, not sure needed
+                                               # 'gamma': [i / 10.0 for i in range(3)]  # default 0
+                                            }])
 
     # TODO keep?
     '''
@@ -333,4 +352,18 @@ def main():
     output_preds(preds, x_test, 'xgb')
 
 
-main()
+options = {
+    'columns_to_drop' : ['Name', 'Ticket', 'Cabin',  # don't make sense to add
+                       'Embarked',  # doesn't help always
+                       'Fare',     # doesn't help always TODO consider returning in a different way
+                       # 'Sex',
+                       # 'SibSp',
+                       # 'Age',
+                       # 'Pclass'
+                       #'Parch'      # doesn't help at the end - border line
+                       ],
+    'hyperparams_optimization': False
+
+}
+
+main(options)
