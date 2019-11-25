@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import OneHotEncoder, LabelEncoder, StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_val_score
@@ -32,7 +32,10 @@ TODO:
 # TODO: ask Notbook owner of https://www.kaggle.com/gunesevitan/advanced-feature-engineering-tutorial-with-titanic
 '''
 - How come age is replaced with Median and not with Mean?
-- 
+- How come fare is replaced with Median and not with mean? - Since only one case will not make a difference
+- Why bin fare? To get rid of outliers or some other reason?
+# How come 13 Fare bins? Is that based on exploratory analysis? What were we looking for to decide on this number?
+- Why bin age? Because of spikes in survival rate?
 '''
 
 
@@ -74,14 +77,20 @@ def handle_age(both):
                      (both_title == title) &
                      (both['Pclass'] == cl), 'Age'] = average
 
+    # not enough instances of 'Master' and 'Dr' to take median by class also
     for title in ['Master', 'Dr']:
         average = both[(both['Age'].isnull() == False) & (both_title == title)]['Age'].median()
         print(f"YK: Replacing title {title} age with {average}")
         both.loc[(both['Age'].isnull()) & (both_title == title), 'Age'] = average
 
+    # TODO features - consider not binning, or binning into a different number
+    #    both['Age'] = StandardScaler().fit_transform(pd.qcut(both['Age'], 10))
+
 
 def prepare_features(x, options):
     print(f'YK: Features before adding / dropping: {x.columns.values}')
+
+    features_no_drop_after_use = []
 
     if 'Age' not in options['columns_to_drop']:
         handle_age(x)
@@ -105,19 +114,19 @@ def prepare_features(x, options):
         print(f"YK: x['Deck_BT'].sum(): {x['Deck_BT'].sum()}")
         print(f"YK: x['Deck_DE'].sum(): {x['Deck_DE'].sum()}")
         print(f"YK: x['Deck_FG'].sum(): {x['Deck_FG'].sum()}")
-        x.drop('Cabin', axis=1, inplace=True)
+        features_no_drop_after_use.append('Cabin')
 
 
     # Split 3 categorical unique values (1, 2, 3) of Pclass into 2 dummy variables for classes 1 & 2
     if 'Pclass' not in options['columns_to_drop']:
         x['pclass_1'] = x['Pclass'].apply(lambda cl: 1 if cl == 1 else 0)
         x['pclass_2'] = x['Pclass'].apply(lambda cl: 1 if cl == 2 else 0)
-        x.drop('Pclass', axis=1, inplace=True)
+        features_no_drop_after_use.append('Pclass')
 
     # Change categorical feature 'Sex' to be 1 encoded 'Male', 1 = Male, 0 = Female
     if 'Sex' not in options['columns_to_drop']:
         x['Male'] = x['Sex'].map({'male': 1, 'female': 0})
-        x.drop('Sex', axis=1, inplace=True)
+        features_no_drop_after_use.append('Sex')
 
     ''' 
         Change categorical feature 'Embarked' with 3 values ('S', 'C', 'Q') to be 2 dummy variables: 
@@ -127,7 +136,7 @@ def prepare_features(x, options):
     if 'Embarked' not in options['columns_to_drop']:
         x['Embarked_S'] = x['Embarked'].map({np.NaN: 1, 'S': 1, 'C': 0, 'Q': 0})
         x['Embarked_Q'] = x['Embarked'].map({np.NaN: 0, 'S': 0, 'C': 0, 'Q': 1})
-        x.drop('Embarked', axis=1, inplace=True)
+        features_no_drop_after_use.append('Embarked')
 
     if 'Fare' not in options['columns_to_drop']:
         # TODO feature - not really important since it's only 1, but: We can assume that Fare is related to family size (Parch and SibSp) and Pclass features.Median Fare value of a male with a third class ticket and no family is a logical choice to fill the missing value.
@@ -136,10 +145,15 @@ def prepare_features(x, options):
         # Filling the missing value in Fare with the median Fare of 3rd class alone passenger
         df_all['Fare'] = df_all['Fare'].fillna(med_fare)
         '''
-        mean_class_3_fare = x[(x['Pclass'] == 1) | (x['Pclass'] == 2)]['Fare'].mean()
-        x['Fare'].replace({np.NaN: mean_class_3_fare}, inplace=True)
+        mean_class_3_fare = x[(x['Pclass'] == 3) & (x['SibSp'] == 0) & (x['Parch'] == 0)]['Fare'].median()
+        x['Fare'] = x['Fare'].fillna(mean_class_3_fare)
+
+        # TODO features - how come 13 bins? Is that based on exploratory analysis? What were we looking for?
+        #   Try as optimization input with a different number of bins
+        x['Fare'] = LabelEncoder().fit_transform(pd.qcut(x['Fare'], 13))
 
     x.drop(options['columns_to_drop'], axis=1, inplace=True)
+    x.drop(features_no_drop_after_use, axis=1, inplace=True)
 
     print(f'YK: Features after dropping: {x.columns.values}')
     print(f'YK: both.info():\n{x.info()}')
@@ -356,7 +370,7 @@ def main(options):
 options = {
     'columns_to_drop': ['Name', 'Ticket',  # don't make sense to add
                         'Embarked',  # doesn't help always
-                        'Fare',     # doesn't help always TODO consider returning in a different way
+                        # 'Fare',     # doesn't help always TODO consider returning in a different way
                         # 'Cabin' - helps if take out 'Deck' from first letter, currently doesn't make a difference to have it or not
                         # 'Sex',
                         # 'SibSp',

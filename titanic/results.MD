@@ -478,3 +478,14 @@ Conclusion: doesn't seem to make a difference to have it or not to have it.  Lea
 	XGB                  - Stats: Default params cross: 0.833 (+-0.033=0.8), grid train: 0.863, best classifier cross: 0.833 (+-0.033=0.8), best classifier:
 	FINAL                                        - Stats: Best classifiers + Voting train: 0.843, best classifier cross: 0.817 (+-0.036=0.782), best classifier:
 Conclusion: doesn't seem to make much of a difference, but makes sense.  Perhaps reconsider later.	
+
+### 28. Adding binned Fare into 13 categories
+	Logistic - liblinear - Stats: Default params cross: 0.808 (+-0.029=0.779), grid train: 0.818, best classifier cross: 0.808 (+-0.029=0.779), best classifier:
+	KNN - 14             - Stats: Default params cross: 0.818 (+-0.038=0.781), grid train: 0.837, best classifier cross: 0.818 (+-0.038=0.781), best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.823 (+-0.033=0.789), grid train: 0.838, best classifier cross: 0.823 (+-0.033=0.789), best classifier:
+	SVM - poly           - Stats: Default params cross: 0.831 (+-0.042=0.788), grid train: 0.847, best classifier cross: 0.831 (+-0.042=0.788), best classifier:
+	NB                   - Stats: Default params cross: 0.752 (+-0.036=0.716), grid train: 0.753, best classifier cross: 0.752 (+-0.036=0.716), best classifier:
+	RandomForest - 9     - Stats: Default params cross: 0.827 (+-0.039=0.788), grid train: 0.915, best classifier cross: 0.822 (+-0.039=0.782), best classifier:
+	XGB                  - Stats: Default params cross: 0.835 (+-0.04=0.795), grid train: 0.864, best classifier cross: 0.835 (+-0.04=0.795), best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.851, best classifier cross: 0.825 (+-0.036=0.789), best classifier:
+Conclusion: seems to help a bit, leaving for now.
