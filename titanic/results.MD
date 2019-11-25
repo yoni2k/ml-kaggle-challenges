@@ -534,3 +534,15 @@ Conclusion: doesn't make a change, (XGB seems to improve) but leaving for now
 	FINAL                                        - Stats: Best classifiers + Voting train: 0.862, best classifier cross: 0.842 (+-0.035=0.806), best classifier:
 Conclusion: seems to improve, leaving
 
+### 33. Added Survival rates based on family (based on last name) and ticket number
+	Logistic - liblinear - Stats: Default params cross: 0.984 (+-0.01=0.974), grid train: 0.988, best classifier cross: 0.984 (+-0.01=0.974), best classifier:
+	KNN - 14             - Stats: Default params cross: 0.934 (+-0.026=0.908), grid train: 0.952, best classifier cross: 0.934 (+-0.026=0.908), best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.966 (+-0.019=0.948), grid train: 0.988, best classifier cross: 0.966 (+-0.019=0.948), best classifier:
+	SVM - poly           - Stats: Default params cross: 0.974 (+-0.022=0.952), grid train: 0.984, best classifier cross: 0.974 (+-0.022=0.952), best classifier:
+	NB                   - Stats: Default params cross: 0.943 (+-0.025=0.918), grid train: 0.947, best classifier cross: 0.943 (+-0.025=0.918), best classifier:
+	RandomForest - 9     - Stats: Default params cross: 0.988 (+-0.009=0.978), grid train: 0.999, best classifier cross: 0.987 (+-0.01=0.977), best classifier:
+	XGB                  - Stats: Default params cross: 0.984 (+-0.013=0.972), grid train: 0.996, best classifier cross: 0.984 (+-0.013=0.972), best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.992, best classifier cross: 0.984 (+-0.012=0.972), best classifier:
+Conclusion: Amazing results, but it seems that it's doing overfitting, the results are not real since the result is already coded in the inputs.  
+Indeed, doing in the website gives a much worse result
+

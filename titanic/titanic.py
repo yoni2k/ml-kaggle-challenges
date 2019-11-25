@@ -37,6 +37,10 @@ TODO:
 - How come 13 Fare bins? Is that based on exploratory analysis? What were we looking for to decide on this number?
 - Why bin age? Because of spikes in survival rate?
 - How come binning Age into 10 bins? 
+- Why could it be helpful to have grouped 'Title'? There are a lot of very small categories, 
+    and grouping together doesn't add new info, since already know male/female, age etc.  
+    Also, Mr and Dr/Military/Noble/Clergy don't have significantly different behavior.
+- 
 '''
 
 
@@ -56,46 +60,136 @@ def remove_outliers(x, y):
 def get_title(full_name):
     return full_name.split(',')[1].split('.')[0].strip()
 
+
+def extract_lastname(full_name):
+    return full_name.split(',')[0]
+
+
+def prepare_age_title_is_married(x):
+    # TODO features - in https://www.kaggle.com/gunesevitan/advanced-feature-engineering-tutorial-with-titanic
+    #   did something a bit different, based on Sex and Class, and not on title.  I think doing it on title is
+    #   more exact, especially regarding differences between Mrs. and Miss
+
+    # 'Ms' appears only once in test, so replace it with Mrs since it's basically same ages
+    x.loc[(x['Age'].isnull()) & (x['Name'].apply(get_title) == 'Ms'), 'Name'] = "O'Donoghue, Mrs. Bridget"
+
+    titles_col = x['Name'].apply(get_title)
+
+    for title in ['Mr', 'Miss', 'Mrs']:
+        for cl in [1, 2, 3]:
+            average = x[(x['Age'].isnull() == False) &
+                        (titles_col == title) &
+                        (x['Pclass'] == cl)]['Age'].median()
+            print(f"YK: Replacing title {title} in class {cl} age with {average}")
+            x.loc[(x['Age'].isnull()) &
+                  (titles_col == title) &
+                  (x['Pclass'] == cl), 'Age'] = average
+
+    # not enough instances of 'Master' and 'Dr' to take median by class also
+    for title in ['Master', 'Dr']:
+        average = x[(x['Age'].isnull() == False) & (titles_col == title)]['Age'].median()
+        print(f"YK: Replacing title {title} age with {average}")
+        x.loc[(x['Age'].isnull()) & (titles_col == title), 'Age'] = average
+
+    # TODO features - consider not binning, or binning into a different number
+    #   try without binning, or binning into a different number of bins
+    #   make things worse, removing for now
+    # x['Age'] = LabelEncoder().fit_transform(pd.qcut(x['Age'], 11))
+
+    x['Lady married'] = titles_col.apply(lambda title: 1 if title == 'Mrs' else 0)
+
+    # TODO features - https://www.kaggle.com/gunesevitan/advanced-feature-engineering-tutorial-with-titanic
+    #   also saved title with grouping, but it doesn't seem to be helpful since
+    #   there are a lot of very small categories, and grouping together doesn't add new info, since already know
+    #   male/female, age etc.  Also, Mr and Dr/Military/Noble/Clergy don't have significantly different behavior
+    '''
+    x['Title'] = titles_col.replace(['Miss', 'Mrs', 'Ms', 'Mlle', 'Lady', 'Mme', 'the Countess', 'Dona'],
+                                              'Miss/Mrs/Ms')
+    x['Title'] = titles_col.replace(['Dr', 'Col', 'Major', 'Jonkheer', 'Capt', 'Sir', 'Don', 'Rev'],
+                                              'Dr/Military/Noble/Clergy')
+    '''
+
+
+def prepare_family_ticket_frequencies(x):
+    # add temporary last name who it's going to be decided by if it's the same family
+    x['Last name'] = x['Name'].apply(extract_lastname)
+
+    # add information for training only of how many of known survived in the family
+    x['Known family survived %'] = np.NaN
+    x.loc[x['Survived'] != 2, 'Known family survived %'] = \
+        x[x['Survived'] != 2].groupby(by='Last name')['Survived'].transform('sum') / \
+        x[x['Survived'] != 2].groupby(by='Last name')['Survived'].transform('count')
+
+    # add information for training only of how many of known survived in the same ticket
+    x['Known ticket survived %'] = np.NaN
+    x.loc[x['Survived'] != 2, 'Known ticket survived %'] = \
+        x[x['Survived'] != 2].groupby(by='Ticket')['Survived'].transform('sum') / \
+        x[x['Survived'] != 2].groupby(by='Ticket')['Survived'].transform('count')
+
+    # The real value is survival rate in the family/same ticket is average of family & ticket survival
+    #   useful at this point only for training where survival rate was known
+    x['Known family/ticket survived %'] = (x['Known family survived %'] + x['Known ticket survived %']) / 2
+
+    # set that survival rate was known.  correct for train, will be overridden for test set
+    x['Family/ticket survival known'] = 1
+
+    # to mark same information in test, need to known what last names and ticket names were known
+    known_last_names = x[x['Survived'] != 2]['Last name'].unique()
+    known_tickets = x[x['Survived'] != 2]['Ticket'].unique()
+    mean_survival_rate = x[x['Survived'] != 2]['Survived'].mean()
+
+    # go over all test passengers, and fill in the survival information
+    for i in x.index:
+        # skip training passengers
+        if x.loc[i, 'Survived'] != 2:
+            continue
+        last_name = x.loc[i, 'Last name']
+        ticket = x.loc[i, 'Ticket']
+
+        # if last name was known in train, copy the family survival rate from training
+        if last_name in known_last_names:
+            x.loc[i, 'Known family survived %'] = \
+                x[(x['Survived'] != 2) & (x['Last name'] == last_name)]['Known family survived %'].median()
+
+        # if ticket was known in train, copy the ticket survival rate from training
+        if ticket in known_tickets:
+            x.loc[i, 'Known ticket survived %'] = \
+                x[(x['Survived'] != 2) & (x['Ticket'] == ticket)]['Known ticket survived %'].median()
+
+        # For final value of
+        if np.isnan(x.loc[i, 'Known family survived %']) == False:
+            if np.isnan(x.loc[i, 'Known ticket survived %']) == False:
+                # both family and ticket survival rates known, take average
+                x.loc[i, 'Known family/ticket survived %'] = \
+                    (x.loc[i, 'Known family survived %'] + x.loc[i, 'Known ticket survived %']) / 2
+            else:
+                # only family survival known, take it
+                x.loc[i, 'Known family/ticket survived %'] = x.loc[i, 'Known family survived %']
+        elif np.isnan(x.loc[i, 'Known ticket survived %']) == False:
+            # only ticket is known - take value from ticket
+            x.loc[i, 'Known family/ticket survived %'] = x.loc[i, 'Known ticket survived %']
+        else:
+            # none known, set mean survival value
+            x.loc[i, 'Known family/ticket survived %'] = mean_survival_rate
+            x.loc[i, 'Family/ticket survival known'] = 0
+
+    print(f'YK debug: Train survival rates: \n'
+          f'{x[x["Survived"] != 2]["Known family/ticket survived %"].value_counts(dropna=False)}')
+    print(f'YK debug: Test survival rates: \n'
+        f'{x[x["Survived"] == 2]["Known family/ticket survived %"].value_counts(dropna=False)}')
+
+    # drop temporary columns used
+    x.drop(['Last name', 'Known family survived %', 'Known ticket survived %'], axis=1, inplace=True)
+
+
 def prepare_features(x, options):
     print(f'YK: Features before adding / dropping: {x.columns.values}')
 
     features_no_drop_after_use = []
 
+    # Adding Age, potentially Title, and is Married
     if 'Age' not in options['columns_to_drop']:
-        # TODO features - in https://www.kaggle.com/gunesevitan/advanced-feature-engineering-tutorial-with-titanic
-        #   did something a bit different, based on Sex and Class, and not on title.  I think doing it on title is
-        #   more exact, especially regarding differences between Mrs. and Miss
-
-        # 'Ms' appears only once in test, so replace it with Mrs since it's basically same ages
-        x.loc[(x['Age'].isnull()) & (x['Name'].apply(get_title) == 'Ms'), 'Name'] = "O'Donoghue, Mrs. Bridget"
-
-        titles_col = x['Name'].apply(get_title)
-        print(f"YK: titles:\n{titles_col.value_counts()}")
-
-        for title in ['Mr', 'Miss', 'Mrs']:
-            for cl in [1, 2, 3]:
-                average = x[(x['Age'].isnull() == False) &
-                               (titles_col == title) &
-                               (x['Pclass'] == cl)]['Age'].median()
-                print(f"YK: Replacing title {title} in class {cl} age with {average}")
-                x.loc[(x['Age'].isnull()) &
-                         (titles_col== title) &
-                         (x['Pclass'] == cl), 'Age'] = average
-
-        # not enough instances of 'Master' and 'Dr' to take median by class also
-        for title in ['Master', 'Dr']:
-            average = x[(x['Age'].isnull() == False) & (titles_col == title)]['Age'].median()
-            print(f"YK: Replacing title {title} age with {average}")
-            x.loc[(x['Age'].isnull()) & (titles_col == title), 'Age'] = average
-
-        # TODO features - consider not binning, or binning into a different number
-        #   try without binning, or binning into a different number of bins
-        #   make things worse, removing for now
-        # x['Age'] = LabelEncoder().fit_transform(pd.qcut(x['Age'], 11))
-
-        x['Lady married'] = titles_col.apply(lambda title: 1 if title == 'Mrs' else 0)
-        print(f"YK: x['Lady married']:\n{x['Lady married'].value_counts()}")
-
+        prepare_age_title_is_married(x)
         features_no_drop_after_use.append('Name')
 
     # TODO - should keep?
@@ -107,17 +201,13 @@ def prepare_features(x, options):
         features_no_drop_after_use.append('SibSp')
         features_no_drop_after_use.append('Parch')
 
-    # TODO features - return
+    # Prepare Deck features based on first letter of Cabin, unknown Cabin becomes reference category
     if 'Cabin' not in options['columns_to_drop']:
         x['Cabin'] = x['Cabin'].fillna('')
         x['Deck_AC'] = x['Cabin'].apply(lambda cab: 1 if cab.startswith('A') or cab.startswith('C') else 0)
         x['Deck_BT'] = x['Cabin'].apply(lambda cab: 1 if cab.startswith('B') or cab.startswith('T') else 0)
         x['Deck_DE'] = x['Cabin'].apply(lambda cab: 1 if cab.startswith('D') or cab.startswith('E') else 0)
         x['Deck_FG'] = x['Cabin'].apply(lambda cab: 1 if cab.startswith('F') or cab.startswith('G') else 0)
-        print(f"YK: x['Deck_AC'].sum(): {x['Deck_AC'].sum()}")
-        print(f"YK: x['Deck_BT'].sum(): {x['Deck_BT'].sum()}")
-        print(f"YK: x['Deck_DE'].sum(): {x['Deck_DE'].sum()}")
-        print(f"YK: x['Deck_FG'].sum(): {x['Deck_FG'].sum()}")
         features_no_drop_after_use.append('Cabin')
 
     # Split 3 categorical unique values (1, 2, 3) of Pclass into 2 dummy variables for classes 1 & 2
@@ -158,6 +248,8 @@ def prepare_features(x, options):
     if 'Ticket' not in options['columns_to_drop']:
         x['Ticket_Frequency'] = x.groupby('Ticket')['Ticket'].transform('count')
         features_no_drop_after_use.append('Ticket')
+
+    prepare_family_ticket_frequencies(x)
 
     x.drop(options['columns_to_drop'], axis=1, inplace=True)
     x.drop(features_no_drop_after_use, axis=1, inplace=True)
@@ -375,7 +467,7 @@ def main(options):
 
 
 options = {
-    'columns_to_drop': ['Embarked',  # doesn't help always
+    'columns_to_drop': [# 'Embarked',  # doesn't help always
                         # 'Ticket' - used for ticket frequency
                         # 'Name' - used for title
                         # 'Fare',     # doesn't help always TODO consider returning in a different way
