@@ -522,3 +522,15 @@ Conclusion: helps, leaving
 	Line 171: XGB                  - Stats: Default params cross: 0.844 (+-0.034=0.81), grid train: 0.871, best classifier cross: 0.844 (+-0.034=0.81), best classifier:
 	Line 551: FINAL                                        - Stats: Best classifiers + Voting train: 0.861, best classifier cross: 0.833 (+-0.03=0.802), best classifier:
 Conclusion: doesn't make a change, (XGB seems to improve) but leaving for now
+
+### 32. Adding Lady married feature based on Title Mrs
+	Logistic - liblinear - Stats: Default params cross: 0.825 (+-0.031=0.793), grid train: 0.829, best classifier cross: 0.825 (+-0.031=0.793), best classifier:
+	KNN - 14             - Stats: Default params cross: 0.822 (+-0.036=0.786), grid train: 0.842, best classifier cross: 0.822 (+-0.036=0.786), best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.837 (+-0.03=0.807), grid train: 0.85, best classifier cross: 0.837 (+-0.03=0.807), best classifier:
+	SVM - poly           - Stats: Default params cross: 0.838 (+-0.041=0.797), grid train: 0.863, best classifier cross: 0.838 (+-0.041=0.797), best classifier:
+	NB                   - Stats: Default params cross: 0.763 (+-0.037=0.726), grid train: 0.767, best classifier cross: 0.763 (+-0.037=0.726), best classifier:
+	RandomForest - 9     - Stats: Default params cross: 0.842 (+-0.045=0.797), grid train: 0.915, best classifier cross: 0.837 (+-0.046=0.792), best classifier:
+	XGB                  - Stats: Default params cross: 0.838 (+-0.034=0.805), grid train: 0.874, best classifier cross: 0.838 (+-0.034=0.805), best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.862, best classifier cross: 0.842 (+-0.035=0.806), best classifier:
+Conclusion: seems to improve, leaving
+

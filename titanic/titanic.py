@@ -56,47 +56,47 @@ def remove_outliers(x, y):
 def get_title(full_name):
     return full_name.split(',')[1].split('.')[0].strip()
 
-
-def handle_age(both):
-
-    # TODO features - in https://www.kaggle.com/gunesevitan/advanced-feature-engineering-tutorial-with-titanic
-    #   did something a bit different, based on Sex and Class, and not on title.  I think doing it on title is
-    #   more exact, especially regarding differences between Mrs. and Miss
-
-    # 'Ms' appears only once in test, so replace it with Mrs since it's basically same ages
-    both.loc[(both['Age'].isnull()) & (both['Name'].apply(get_title) == 'Ms'), 'Name'] = "O'Donoghue, Mrs. Bridget"
-
-    both_title = both['Name'].apply(get_title)
-
-    for title in ['Mr', 'Miss', 'Mrs']:
-        for cl in [1, 2, 3]:
-            average = both[(both['Age'].isnull() == False) &
-                           (both_title == title) &
-                           (both['Pclass'] == cl)]['Age'].median()
-            print(f"YK: Replacing title {title} in class {cl} age with {average}")
-            both.loc[(both['Age'].isnull()) &
-                     (both_title == title) &
-                     (both['Pclass'] == cl), 'Age'] = average
-
-    # not enough instances of 'Master' and 'Dr' to take median by class also
-    for title in ['Master', 'Dr']:
-        average = both[(both['Age'].isnull() == False) & (both_title == title)]['Age'].median()
-        print(f"YK: Replacing title {title} age with {average}")
-        both.loc[(both['Age'].isnull()) & (both_title == title), 'Age'] = average
-
-    # TODO features - consider not binning, or binning into a different number
-    #   try without binning, or binning into a different number of bins
-    #   make things worse, removing for now
-    # both['Age'] = LabelEncoder().fit_transform(pd.qcut(both['Age'], 11))
-
-
 def prepare_features(x, options):
     print(f'YK: Features before adding / dropping: {x.columns.values}')
 
     features_no_drop_after_use = []
 
     if 'Age' not in options['columns_to_drop']:
-        handle_age(x)
+        # TODO features - in https://www.kaggle.com/gunesevitan/advanced-feature-engineering-tutorial-with-titanic
+        #   did something a bit different, based on Sex and Class, and not on title.  I think doing it on title is
+        #   more exact, especially regarding differences between Mrs. and Miss
+
+        # 'Ms' appears only once in test, so replace it with Mrs since it's basically same ages
+        x.loc[(x['Age'].isnull()) & (x['Name'].apply(get_title) == 'Ms'), 'Name'] = "O'Donoghue, Mrs. Bridget"
+
+        titles_col = x['Name'].apply(get_title)
+        print(f"YK: titles:\n{titles_col.value_counts()}")
+
+        for title in ['Mr', 'Miss', 'Mrs']:
+            for cl in [1, 2, 3]:
+                average = x[(x['Age'].isnull() == False) &
+                               (titles_col == title) &
+                               (x['Pclass'] == cl)]['Age'].median()
+                print(f"YK: Replacing title {title} in class {cl} age with {average}")
+                x.loc[(x['Age'].isnull()) &
+                         (titles_col== title) &
+                         (x['Pclass'] == cl), 'Age'] = average
+
+        # not enough instances of 'Master' and 'Dr' to take median by class also
+        for title in ['Master', 'Dr']:
+            average = x[(x['Age'].isnull() == False) & (titles_col == title)]['Age'].median()
+            print(f"YK: Replacing title {title} age with {average}")
+            x.loc[(x['Age'].isnull()) & (titles_col == title), 'Age'] = average
+
+        # TODO features - consider not binning, or binning into a different number
+        #   try without binning, or binning into a different number of bins
+        #   make things worse, removing for now
+        # x['Age'] = LabelEncoder().fit_transform(pd.qcut(x['Age'], 11))
+
+        x['Lady married'] = titles_col.apply(lambda title: 1 if title == 'Mrs' else 0)
+        print(f"YK: x['Lady married']:\n{x['Lady married'].value_counts()}")
+
+        features_no_drop_after_use.append('Name')
 
     # TODO - should keep?
     # Create a new feature of number of relatives regardless of who they are
@@ -155,7 +155,9 @@ def prepare_features(x, options):
         #   Try as optimization input with a different number of bins
         x['Fare'] = LabelEncoder().fit_transform(pd.qcut(x['Fare'], 13))
 
-    x['Ticket_Frequency'] = x.groupby('Ticket')['Ticket'].transform('count')
+    if 'Ticket' not in options['columns_to_drop']:
+        x['Ticket_Frequency'] = x.groupby('Ticket')['Ticket'].transform('count')
+        features_no_drop_after_use.append('Ticket')
 
     x.drop(options['columns_to_drop'], axis=1, inplace=True)
     x.drop(features_no_drop_after_use, axis=1, inplace=True)
@@ -373,8 +375,9 @@ def main(options):
 
 
 options = {
-    'columns_to_drop': ['Name', 'Ticket',  # don't make sense to add
-                        'Embarked',  # doesn't help always
+    'columns_to_drop': ['Embarked',  # doesn't help always
+                        # 'Ticket' - used for ticket frequency
+                        # 'Name' - used for title
                         # 'Fare',     # doesn't help always TODO consider returning in a different way
                         # 'Cabin' - helps if take out 'Deck' from first letter, currently doesn't make a difference to have it or not
                         # 'Sex',
