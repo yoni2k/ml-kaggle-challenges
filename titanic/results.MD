@@ -489,3 +489,36 @@ Conclusion: doesn't seem to make much of a difference, but makes sense.  Perhaps
 	XGB                  - Stats: Default params cross: 0.835 (+-0.04=0.795), grid train: 0.864, best classifier cross: 0.835 (+-0.04=0.795), best classifier:
 	FINAL                                        - Stats: Best classifiers + Voting train: 0.851, best classifier cross: 0.825 (+-0.036=0.789), best classifier:
 Conclusion: seems to help a bit, leaving for now.
+
+### 29. Changing age into bins (9)
+	Logistic - liblinear - Stats: Default params cross: 0.792 (+-0.033=0.759), grid train: 0.808, best classifier cross: 0.792 (+-0.033=0.759), best classifier:
+	KNN - 14             - Stats: Default params cross: 0.813 (+-0.046=0.767), grid train: 0.826, best classifier cross: 0.813 (+-0.046=0.767), best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.802 (+-0.025=0.778), grid train: 0.825, best classifier cross: 0.802 (+-0.025=0.778), best classifier:
+	SVM - poly           - Stats: Default params cross: 0.822 (+-0.042=0.78), grid train: 0.842, best classifier cross: 0.822 (+-0.042=0.78), best classifier:
+	NB                   - Stats: Default params cross: 0.751 (+-0.039=0.712), grid train: 0.752, best classifier cross: 0.751 (+-0.039=0.712), best classifier:
+	RandomForest - 9     - Stats: Default params cross: 0.825 (+-0.044=0.781), grid train: 0.906, best classifier cross: 0.819 (+-0.042=0.778), best classifier:
+	XGB                  - Stats: Default params cross: 0.83 (+-0.036=0.794), grid train: 0.864, best classifier cross: 0.83 (+-0.036=0.794), best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.846, best classifier cross: 0.814 (+-0.038=0.776), best classifier:
+Conclusion: looks like makes things worse, reverting for now
+
+### 30. Changing number of children / spouces / parents into 1 category with 3 groups: alone, small family, large family
+	Logistic - liblinear - Stats: Default params cross: 0.823 (+-0.025=0.797), grid train: 0.832, best classifier cross: 0.823 (+-0.025=0.797), best classifier:
+	KNN - 14             - Stats: Default params cross: 0.815 (+-0.027=0.788), grid train: 0.834, best classifier cross: 0.815 (+-0.027=0.788), best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.834 (+-0.03=0.804), grid train: 0.847, best classifier cross: 0.834 (+-0.03=0.804), best classifier:
+	SVM - poly           - Stats: Default params cross: 0.844 (+-0.043=0.801), grid train: 0.854, best classifier cross: 0.844 (+-0.043=0.801), best classifier:
+	NB                   - Stats: Default params cross: 0.754 (+-0.046=0.708), grid train: 0.756, best classifier cross: 0.754 (+-0.046=0.708), best classifier:
+	RandomForest - 9     - Stats: Default params cross: 0.836 (+-0.039=0.797), grid train: 0.912, best classifier cross: 0.841 (+-0.041=0.799), best classifier:
+	XGB                  - Stats: Default params cross: 0.844 (+-0.042=0.802), grid train: 0.868, best classifier cross: 0.844 (+-0.042=0.802), best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.863, best classifier cross: 0.834 (+-0.033=0.801), best classifier:
+Conclusion: helps, leaving
+
+### 31. Adding ticket frequency - similar to family size, but maybe traveling in groups that are not family
+	Line 115: Logistic - liblinear - Stats: Default params cross: 0.824 (+-0.025=0.798), grid train: 0.832, best classifier cross: 0.824 (+-0.025=0.798), best classifier:
+	Line 125: KNN - 14             - Stats: Default params cross: 0.817 (+-0.031=0.786), grid train: 0.835, best classifier cross: 0.817 (+-0.031=0.786), best classifier:
+	Line 133: SVM - rbf            - Stats: Default params cross: 0.835 (+-0.035=0.8), grid train: 0.851, best classifier cross: 0.835 (+-0.035=0.8), best classifier:
+	Line 142: SVM - poly           - Stats: Default params cross: 0.843 (+-0.044=0.799), grid train: 0.859, best classifier cross: 0.843 (+-0.044=0.799), best classifier:
+	Line 153: NB                   - Stats: Default params cross: 0.757 (+-0.045=0.712), grid train: 0.758, best classifier cross: 0.757 (+-0.045=0.712), best classifier:
+	Line 159: RandomForest - 9     - Stats: Default params cross: 0.837 (+-0.04=0.798), grid train: 0.91, best classifier cross: 0.837 (+-0.038=0.799), best classifier:
+	Line 171: XGB                  - Stats: Default params cross: 0.844 (+-0.034=0.81), grid train: 0.871, best classifier cross: 0.844 (+-0.034=0.81), best classifier:
+	Line 551: FINAL                                        - Stats: Best classifiers + Voting train: 0.861, best classifier cross: 0.833 (+-0.03=0.802), best classifier:
+Conclusion: doesn't make a change, (XGB seems to improve) but leaving for now

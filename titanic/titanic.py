@@ -34,8 +34,9 @@ TODO:
 - How come age is replaced with Median and not with Mean?
 - How come fare is replaced with Median and not with mean? - Since only one case will not make a difference
 - Why bin fare? To get rid of outliers or some other reason?
-# How come 13 Fare bins? Is that based on exploratory analysis? What were we looking for to decide on this number?
+- How come 13 Fare bins? Is that based on exploratory analysis? What were we looking for to decide on this number?
 - Why bin age? Because of spikes in survival rate?
+- How come binning Age into 10 bins? 
 '''
 
 
@@ -84,7 +85,9 @@ def handle_age(both):
         both.loc[(both['Age'].isnull()) & (both_title == title), 'Age'] = average
 
     # TODO features - consider not binning, or binning into a different number
-    #    both['Age'] = StandardScaler().fit_transform(pd.qcut(both['Age'], 10))
+    #   try without binning, or binning into a different number of bins
+    #   make things worse, removing for now
+    # both['Age'] = LabelEncoder().fit_transform(pd.qcut(both['Age'], 11))
 
 
 def prepare_features(x, options):
@@ -97,11 +100,12 @@ def prepare_features(x, options):
 
     # TODO - should keep?
     # Create a new feature of number of relatives regardless of who they are
-    '''
-    if 'SibSp' not in columns_to_drop and 'Parch' not in columns_to_drop:
-        x['Family_Num'] = x['SibSp'] + x['Parch']
-        x.drop(['SibSp', 'Parch'], axis=1, inplace=True)
-    '''
+    if 'SibSp' not in options['columns_to_drop'] and 'Parch' not in options['columns_to_drop']:
+        sum_sibs_parch = x['SibSp'] + x['Parch']
+        x['Small family'] = sum_sibs_parch.apply(lambda size: 1 if (size < 4) and (size > 0) else 0)
+        x['Large family'] = sum_sibs_parch.apply(lambda size: 1 if (size >= 4) else 0)
+        features_no_drop_after_use.append('SibSp')
+        features_no_drop_after_use.append('Parch')
 
     # TODO features - return
     if 'Cabin' not in options['columns_to_drop']:
@@ -115,7 +119,6 @@ def prepare_features(x, options):
         print(f"YK: x['Deck_DE'].sum(): {x['Deck_DE'].sum()}")
         print(f"YK: x['Deck_FG'].sum(): {x['Deck_FG'].sum()}")
         features_no_drop_after_use.append('Cabin')
-
 
     # Split 3 categorical unique values (1, 2, 3) of Pclass into 2 dummy variables for classes 1 & 2
     if 'Pclass' not in options['columns_to_drop']:
@@ -151,6 +154,8 @@ def prepare_features(x, options):
         # TODO features - how come 13 bins? Is that based on exploratory analysis? What were we looking for?
         #   Try as optimization input with a different number of bins
         x['Fare'] = LabelEncoder().fit_transform(pd.qcut(x['Fare'], 13))
+
+    x['Ticket_Frequency'] = x.groupby('Ticket')['Ticket'].transform('count')
 
     x.drop(options['columns_to_drop'], axis=1, inplace=True)
     x.drop(features_no_drop_after_use, axis=1, inplace=True)
