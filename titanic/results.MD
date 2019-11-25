@@ -532,7 +532,7 @@ Conclusion: doesn't make a change, (XGB seems to improve) but leaving for now
 	RandomForest - 9     - Stats: Default params cross: 0.842 (+-0.045=0.797), grid train: 0.915, best classifier cross: 0.837 (+-0.046=0.792), best classifier:
 	XGB                  - Stats: Default params cross: 0.838 (+-0.034=0.805), grid train: 0.874, best classifier cross: 0.838 (+-0.034=0.805), best classifier:
 	FINAL                                        - Stats: Best classifiers + Voting train: 0.862, best classifier cross: 0.842 (+-0.035=0.806), best classifier:
-Conclusion: seems to improve, leaving
+Conclusion: seems to improve, leaving. On site gives ~76 result (worse than before adding all these features)
 
 ### 33. Added Survival rates based on family (based on last name) and ticket number
 	Logistic - liblinear - Stats: Default params cross: 0.984 (+-0.01=0.974), grid train: 0.988, best classifier cross: 0.984 (+-0.01=0.974), best classifier:
@@ -544,5 +544,39 @@ Conclusion: seems to improve, leaving
 	XGB                  - Stats: Default params cross: 0.984 (+-0.013=0.972), grid train: 0.996, best classifier cross: 0.984 (+-0.013=0.972), best classifier:
 	FINAL                                        - Stats: Best classifiers + Voting train: 0.992, best classifier cross: 0.984 (+-0.012=0.972), best classifier:
 Conclusion: Amazing results, but it seems that it's doing overfitting, the results are not real since the result is already coded in the inputs.  
-Indeed, doing in the website gives a much worse result
+Indeed, doing in the website gives a much worse result ~71
+
+### 34. Put RandomForest outside of grid to get values, want to look at importances of features
+	Feature importances (RandomForest Specific):
+	Family/ticket survival known      0.000000
+	Deck_FG                           0.000269
+	Embarked_Q                        0.001114
+	Deck_AC                           0.002082
+	Deck_BT                           0.003505
+	Embarked_S                        0.003576
+	pclass_2                          0.005516
+	Deck_DE                           0.009190
+	Large family                      0.010095
+	Small family                      0.017605
+	Ticket_Frequency                  0.020562
+	pclass_1                          0.023262
+	Age                               0.030158
+	Fare                              0.034578
+	Lady married                      0.038785
+	Male                              0.163035
+	Known family/ticket survived %    0.636666
+based on this, removed the following features for next run: 
+ 'Family/ticket survival known','Deck_FG','Embarked_Q','Deck_AC','Deck_BT','Embarked_S'
+ Also changed the default Random Forest to be 5 max levels, and not 9:
+	Logistic - liblinear - Stats: Default params cross: 0.985 (+-0.01=0.975), grid train: 0.989, best classifier cross: 0.985 (+-0.01=0.975), best classifier:
+	KNN - 14             - Stats: Default params cross: 0.956 (+-0.021=0.935), grid train: 0.964, best classifier cross: 0.956 (+-0.021=0.935), best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.985 (+-0.01=0.975), grid train: 0.993, best classifier cross: 0.985 (+-0.01=0.975), best classifier:
+	SVM - poly           - Stats: Default params cross: 0.981 (+-0.012=0.969), grid train: 0.989, best classifier cross: 0.981 (+-0.012=0.969), best classifier:
+	NB                   - Stats: Default params cross: 0.948 (+-0.02=0.928), grid train: 0.951, best classifier cross: 0.948 (+-0.02=0.928), best classifier:
+	RandomForest - 5     - Stats: Default params cross: 0.984 (+-0.013=0.972), grid train: 0.997, best classifier cross: 0.986 (+-0.011=0.975), best classifier:
+	RandomForest Specific - Stats: Default params cross: grid train: 0.992, best classifier cross: 0.982 (+-0.014=0.968)
+	RandomForest Specific - Stats: Default params cross: grid train: 0.992, best classifier cross: 0.983 (+-0.014=0.969)
+	XGB                  - Stats: Default params cross: 0.987 (+-0.013=0.973), grid train: 0.996, best classifier cross: 0.987 (+-0.013=0.973), best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.992, best classifier cross: 0.988 (+-0.009=0.978), best classifier:
+ 
 

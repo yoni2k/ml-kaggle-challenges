@@ -40,7 +40,7 @@ TODO:
 - Why could it be helpful to have grouped 'Title'? There are a lot of very small categories, 
     and grouping together doesn't add new info, since already know male/female, age etc.  
     Also, Mr and Dr/Military/Noble/Clergy don't have significantly different behavior.
-- 
+- How come didn't remove reference category for one-hot encoded categories?
 '''
 
 
@@ -256,6 +256,10 @@ def prepare_features(x, options):
 
     print(f'YK: Features after dropping: {x.columns.values}')
     print(f'YK: both.info():\n{x.info()}')
+    print(f'YK: Value counts of all values:')
+    for feat in x.columns.values:
+        print(f'--------------- {feat}:')
+        print(x[feat].value_counts())
 
 
 def scale_train(x_train):
@@ -387,10 +391,80 @@ def main(options):
                                           options,
                                           [{}])
 
-    class_rf = single_and_grid_classifier('RandomForest - 9', x_train_scaled, y_train,
-                                          RandomForestClassifier(n_jobs=-1, n_estimators=100, max_depth=9),
+    class_rf = single_and_grid_classifier('RandomForest - 5', x_train_scaled, y_train,
+                                          RandomForestClassifier(n_jobs=-1, n_estimators=100, max_depth=5),
                                           options,
                                           [{}])
+
+    start_time = time.time()
+
+    '''
+    class_rf_spec = single_and_grid_classifier('RandomForest Specific', x_train_scaled, y_train,
+                                               RandomForestClassifier(n_estimators=1100,
+                                                                      max_depth=5,
+                                                                      min_samples_split=4,
+                                                                      min_samples_leaf=5,
+                                                                      max_features='auto',
+                                                                      oob_score=True,
+                                                                      n_jobs=-1),
+                                               options,
+                                               [{}])
+    '''
+    class_rf_spec = RandomForestClassifier(n_estimators=1100,
+                                           max_depth=5,
+                                           min_samples_split=4,
+                                           min_samples_leaf=5,
+                                           max_features='auto',
+                                           n_jobs=-1)
+    class_rf_spec.fit(x_train_scaled, y_train)
+    reg_score = class_rf_spec.score(x_train_scaled, y_train)
+    reg_score_cross, reg_std_cross = cross_valid(class_rf_spec, x_train_scaled, y_train)
+
+    print(f'{"RandomForest Specific".ljust(20)} - Stats: Default params cross: '
+          f'grid train: {round(reg_score, 3)}, '
+          f'best classifier cross: {round(reg_score_cross, 3)} '
+          f'(+-{round(reg_std_cross, 3)}={round(reg_score_cross - reg_std_cross, 3)})')
+
+
+    print(f'YK: Time took (RandomForest Specific): {time.time() - start_time} seconds = '
+          f'{round((time.time() - start_time) / 60)} minutes ')
+    importances = pd.DataFrame({'Importance': class_rf_spec.feature_importances_}, index=x_train.columns)
+    print(f'Feature importances (RandomForest Specific):\n{importances["Importance"].sort_values()}')
+
+    start_time = time.time()
+
+    '''
+    class_rf_spec_leader = single_and_grid_classifier('RandomForest Leader', x_train_scaled, y_train,
+                                                      RandomForestClassifier(n_estimators=1750,
+                                                                             max_depth=7,
+                                                                             min_samples_split=6,
+                                                                             min_samples_leaf=6,
+                                                                             max_features='auto',
+                                                                             oob_score=True,
+                                                                             n_jobs=-1),
+                                                      options,
+                                                      [{}])
+    '''
+    class_rf_spec_leader = RandomForestClassifier(n_estimators=1750,
+                                                  max_depth=7,
+                                                  min_samples_split=6,
+                                                  min_samples_leaf=6,
+                                                  max_features='auto',
+                                                  n_jobs=-1)
+
+    class_rf_spec_leader.fit(x_train_scaled, y_train)
+    reg_score = class_rf_spec_leader.score(x_train_scaled, y_train)
+    reg_score_cross, reg_std_cross = cross_valid(class_rf_spec_leader, x_train_scaled, y_train)
+
+    print(f'{"RandomForest Specific".ljust(20)} - Stats: Default params cross: '
+          f'grid train: {round(reg_score, 3)}, '
+          f'best classifier cross: {round(reg_score_cross, 3)} '
+          f'(+-{round(reg_std_cross, 3)}={round(reg_score_cross - reg_std_cross, 3)})')
+
+    print(f'YK: Time took (RandomForest Leader): {time.time() - start_time} seconds = '
+          f'{round((time.time() - start_time) / 60)} minutes ')
+    importances = pd.DataFrame({'Importance': class_rf_spec_leader.feature_importances_}, index=x_train.columns)
+    print(f'Feature importances (RandomForest Leader):\n{importances["Importance"].sort_values()}')
 
     class_xgb = single_and_grid_classifier('XGB', x_train_scaled, y_train,
                                            xgb.XGBClassifier(objective='binary:logistic', random_state=42, n_jobs=-1),
@@ -448,6 +522,8 @@ def main(options):
         ('svm - poly', class_svm_poly),
         ('nb', class_nb),
         ('rf', class_rf),
+        ('rf_specific', class_rf_spec),
+        ('rf_specific_leader', class_rf_spec_leader),
         ('xgb', class_xgb)
     ]
 
@@ -459,6 +535,12 @@ def main(options):
 
     preds = classifier_voting.predict(x_test_scaled)
     output_preds(preds, x_test, 'best')
+
+    preds = class_rf_spec.predict(x_test_scaled)
+    output_preds(preds, x_test, 'rf_specific')
+
+    preds = class_rf_spec_leader.predict(x_test_scaled)
+    output_preds(preds, x_test, 'rf_specific_leader')
 
     preds = class_xgb.predict(x_test_scaled)
     output_preds(preds, x_test, 'xgb')
@@ -477,6 +559,12 @@ options = {
                         # 'Age',
                         # 'Pclass'
                         # 'Parch'      # doesn't help at the end - border line
+                        'Family/ticket survival known',
+                        'Deck_FG',
+                        'Embarked_Q',
+                        'Deck_AC',
+                        'Deck_BT',
+                        'Embarked_S'
                         ],
     'hyperparams_optimization': False
 
