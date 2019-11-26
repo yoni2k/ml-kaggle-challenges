@@ -407,10 +407,11 @@ def main(options):
 
     start_time = time.time()
 
-    class_rf_exp_5 = RandomForestClassifier(n_estimators=1000,
-                                           max_depth=5,
-                                           #min_samples_split=3,
-                                           #min_samples_leaf=5,
+    class_rf_exp_5 = RandomForestClassifier(n_estimators=1000,  # also tried 2000
+                                           max_depth=5,  # also tried leader 7, but had worse performance
+                                           # min_samples_split=6,
+                                           # min_samples_leaf=6,
+                                           # oob_score=True,
                                            n_jobs=-1)
     class_rf_exp_5.fit(x_train_scaled, y_train)
     reg_score = class_rf_exp_5.score(x_train_scaled, y_train)
@@ -484,7 +485,7 @@ def main(options):
         ('nb', class_nb),
         ('rf_5', class_rf_5),
         ('rf_4', class_rf_4),
-        # ('xgb', class_xgb)
+        ('xgb', class_xgb)
     ]
 
     classifier_voting = voting_only(classifiers_specific_with_params,

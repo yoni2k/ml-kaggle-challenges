@@ -781,4 +781,43 @@ On the site, the voting is ~.80 down from ~.81, try to remove XGB and return oth
 	Line 321: XGB                  - Stats: Default params cross: 0.844 (+-0.025=0.819), grid train: 0.937, best classifier cross: 0.844 (+-0.025=0.819), time took: 9 sec, best classifier:
 	Line 351: FINAL                                        - Stats: Best classifiers + Voting train: 0.859, best classifier cross: 0.838 (+-0.032=0.807), time took: 25 sec, best classifier:
 Conclusion: The scores went down, but perhaps it's due to less overfitting.
-Score of voting on the site: 
+Score of voting on the site - back to ~.81, so it doesn't matter much if XGB is inside or not
+
+### 46. Doing Random Forest with exact parameters as in the kernel I'm learning from
+	Logistic - liblinear - Stats: Default params cross: 0.834 (+-0.025=0.809), grid train: 0.836, best classifier cross: 0.834 (+-0.025=0.809), time took: 14 sec, best classifier:
+	KNN - 14             - Stats: Default params cross: 0.836 (+-0.031=0.805), grid train: 0.852, best classifier cross: 0.836 (+-0.031=0.805), time took: 1 sec, best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.851 (+-0.027=0.823), grid train: 0.87, best classifier cross: 0.851 (+-0.027=0.823), time took: 1 sec, best classifier:
+	SVM - poly           - Stats: Default params cross: 0.837 (+-0.027=0.81), grid train: 0.864, best classifier cross: 0.837 (+-0.027=0.81), time took: 1 sec, best classifier:
+	NB                   - Stats: Default params cross: 0.762 (+-0.053=0.71), grid train: 0.763, best classifier cross: 0.762 (+-0.053=0.71), time took: 0 sec, best classifier:
+	RandomForest - 5     - Stats: Default params cross: 0.836 (+-0.03=0.806), grid train: 0.877, best classifier cross: 0.833 (+-0.022=0.811), time took: 22 sec, best classifier:
+	RandomForest - 4     - Stats: Default params cross: 0.826 (+-0.041=0.785), grid train: 0.859, best classifier cross: 0.831 (+-0.038=0.792), time took: 22 sec, best classifier:
+	RandomForest Explicit 5 - Stats: Default params cross: grid train: 0.864, best classifier cross: 0.837 (+-0.029=0.809), time took: 15 sec = 0 min, importances:
+	XGB                  - Stats: Default params cross: 0.844 (+-0.025=0.819), grid train: 0.937, best classifier cross: 0.844 (+-0.025=0.819), time took: 9 sec, best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.883, best classifier cross: 0.841 (+-0.034=0.807), time took: 35 sec, best classifier:
+Conclusion: locally pretty much the same, on website: no different than default params: ~.82
+
+### 47. Doing Random Forest with exact parameters as in the kernel I'm learning from (Leader kernel - overfitting)
+	Line 236: Logistic - liblinear - Stats: Default params cross: 0.834 (+-0.025=0.809), grid train: 0.836, best classifier cross: 0.834 (+-0.025=0.809), time took: 13 sec, best classifier:
+	Line 248: KNN - 14             - Stats: Default params cross: 0.836 (+-0.031=0.805), grid train: 0.852, best classifier cross: 0.836 (+-0.031=0.805), time took: 1 sec, best classifier:
+	Line 256: SVM - rbf            - Stats: Default params cross: 0.851 (+-0.027=0.823), grid train: 0.87, best classifier cross: 0.851 (+-0.027=0.823), time took: 1 sec, best classifier:
+	Line 265: SVM - poly           - Stats: Default params cross: 0.837 (+-0.027=0.81), grid train: 0.864, best classifier cross: 0.837 (+-0.027=0.81), time took: 1 sec, best classifier:
+	Line 276: NB                   - Stats: Default params cross: 0.762 (+-0.053=0.71), grid train: 0.763, best classifier cross: 0.762 (+-0.053=0.71), time took: 0 sec, best classifier:
+	Line 282: RandomForest - 5     - Stats: Default params cross: 0.836 (+-0.026=0.81), grid train: 0.873, best classifier cross: 0.838 (+-0.028=0.81), time took: 22 sec, best classifier:
+	Line 294: RandomForest - 4     - Stats: Default params cross: 0.831 (+-0.04=0.791), grid train: 0.859, best classifier cross: 0.832 (+-0.037=0.795), time took: 24 sec, best classifier:
+	Line 302: RandomForest Explicit 5 - Stats: Default params cross: grid train: 0.868, best classifier cross: 0.84 (+-0.029=0.811), time took: 28 sec = 0 min, importances:
+	Line 321: XGB                  - Stats: Default params cross: 0.844 (+-0.025=0.819), grid train: 0.937, best classifier cross: 0.844 (+-0.025=0.819), time took: 10 sec, best classifier:
+	Line 351: FINAL                                        - Stats: Best classifiers + Voting train: 0.883, best classifier cross: 0.843 (+-0.033=0.81), time took: 27 sec, best classifier:
+Conclusion: Leader is worse, returning to default params
+
+### 48. Final benchmark results, making a checkpoint:
+	Logistic - liblinear - Stats: Default params cross: 0.834 (+-0.025=0.809), grid train: 0.836, best classifier cross: 0.834 (+-0.025=0.809), time took: 13 sec, best classifier:
+	KNN - 14             - Stats: Default params cross: 0.836 (+-0.031=0.805), grid train: 0.852, best classifier cross: 0.836 (+-0.031=0.805), time took: 1 sec, best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.851 (+-0.027=0.823), grid train: 0.87, best classifier cross: 0.851 (+-0.027=0.823), time took: 1 sec, best classifier:
+	SVM - poly           - Stats: Default params cross: 0.837 (+-0.027=0.81), grid train: 0.864, best classifier cross: 0.837 (+-0.027=0.81), time took: 1 sec, best classifier:
+	NB                   - Stats: Default params cross: 0.762 (+-0.053=0.71), grid train: 0.763, best classifier cross: 0.762 (+-0.053=0.71), time took: 0 sec, best classifier:
+	RandomForest - 5     - Stats: Default params cross: 0.838 (+-0.027=0.812), grid train: 0.875, best classifier cross: 0.842 (+-0.028=0.813), time took: 22 sec, best classifier:
+	RandomForest - 4     - Stats: Default params cross: 0.824 (+-0.042=0.782), grid train: 0.856, best classifier cross: 0.832 (+-0.041=0.791), time took: 24 sec, best classifier:
+	RandomForest Explicit 5 - Stats: Default params cross: grid train: 0.873, best classifier cross: 0.84 (+-0.026=0.813), time took: 11 sec = 0 min, importances:
+	XGB                  - Stats: Default params cross: 0.844 (+-0.025=0.819), grid train: 0.937, best classifier cross: 0.844 (+-0.025=0.819), time took: 10 sec, best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.883, best classifier cross: 0.841 (+-0.034=0.807), time took: 30 sec, best classifier:
+On website: RandomForest (5) ~.82, Voting ~.81, XGB - ~.77
