@@ -187,6 +187,8 @@ def prepare_features(x, options):
         sum_sibs_parch = x['SibSp'] + x['Parch']
         x['Small family'] = sum_sibs_parch.apply(lambda size: 1 if (size < 4) and (size > 0) else 0)
         x['Large family'] = sum_sibs_parch.apply(lambda size: 1 if (size >= 4) else 0)
+        # TODO features - consider removing reference category
+        x['Alone'] = sum_sibs_parch.apply(lambda size: 1 if (size == 0) else 0)
         features_no_drop_after_use.append('SibSp')
         features_no_drop_after_use.append('Parch')
 
@@ -197,12 +199,17 @@ def prepare_features(x, options):
         x['Deck_BT'] = x['Cabin'].apply(lambda cab: 1 if cab.startswith('B') or cab.startswith('T') else 0)
         x['Deck_DE'] = x['Cabin'].apply(lambda cab: 1 if cab.startswith('D') or cab.startswith('E') else 0)
         x['Deck_FG'] = x['Cabin'].apply(lambda cab: 1 if cab.startswith('F') or cab.startswith('G') else 0)
+        # TODO features - consider removing reference category
+        x['Deck_Other'] = x['Cabin'].apply(lambda cab: 1 if cab == '' else 0)
+        print(f'Deck_Other.value_counts:\n{x["Deck_Other"].value_counts()}')
         features_no_drop_after_use.append('Cabin')
 
     # Split 3 categorical unique values (1, 2, 3) of Pclass into 2 dummy variables for classes 1 & 2
     if 'Pclass' not in options['columns_to_drop']:
         x['pclass_1'] = x['Pclass'].apply(lambda cl: 1 if cl == 1 else 0)
         x['pclass_2'] = x['Pclass'].apply(lambda cl: 1 if cl == 2 else 0)
+        # TODO features - consider removing reference category
+        x['pclass_3'] = x['Pclass'].apply(lambda cl: 1 if cl == 3 else 0)
         features_no_drop_after_use.append('Pclass')
 
     # Change categorical feature 'Sex' to be 1 encoded 'Male', 1 = Male, 0 = Female
@@ -218,6 +225,8 @@ def prepare_features(x, options):
     if 'Embarked' not in options['columns_to_drop']:
         x['Embarked_S'] = x['Embarked'].map({np.NaN: 1, 'S': 1, 'C': 0, 'Q': 0})
         x['Embarked_Q'] = x['Embarked'].map({np.NaN: 0, 'S': 0, 'C': 0, 'Q': 1})
+        # TODO features - consider removing reference category
+        x['Embarked_C'] = x['Embarked'].map({np.NaN: 0, 'S': 0, 'C': 1, 'Q': 0})
         features_no_drop_after_use.append('Embarked')
 
     if 'Fare' not in options['columns_to_drop']:
@@ -514,6 +523,8 @@ options = {
                         # 'Age',
                         # 'Pclass'
                         # 'Parch'      # doesn't help at the end - border line
+
+
                         ],
     'hyperparams_optimization': False
 

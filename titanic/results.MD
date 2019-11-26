@@ -615,5 +615,45 @@ Results:
 	FINAL                                        - Stats: Best classifiers + Voting train: 0.869, best classifier cross: 0.832 (+-0.028=0.803), time took: 41 sec, best classifier:
 Conclusion: now ready to remove some features
 
+### 37. Added reference categories 1. To see which ones to delete 2. To see if deleting gives worse results
+	Logistic - liblinear - Stats: Default params cross: 0.829 (+-0.027=0.803), grid train: 0.833, best classifier cross: 0.829 (+-0.027=0.803), time took: 15 sec, best classifier:
+	KNN - 14             - Stats: Default params cross: 0.791 (+-0.034=0.758), grid train: 0.819, best classifier cross: 0.791 (+-0.034=0.758), time took: 1 sec, best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.837 (+-0.039=0.798), grid train: 0.866, best classifier cross: 0.837 (+-0.039=0.798), time took: 2 sec, best classifier:
+	SVM - poly           - Stats: Default params cross: 0.829 (+-0.036=0.794), grid train: 0.875, best classifier cross: 0.829 (+-0.036=0.794), time took: 1 sec, best classifier:
+	NB                   - Stats: Default params cross: 0.758 (+-0.047=0.711), grid train: 0.758, best classifier cross: 0.758 (+-0.047=0.711), time took: 0 sec, best classifier:
+	RandomForest - 5     - Stats: Default params cross: 0.843 (+-0.035=0.808), grid train: 0.873, best classifier cross: 0.845 (+-0.032=0.814), time took: 26 sec, best classifier:
+	RandomForest - 4     - Stats: Default params cross: 0.834 (+-0.035=0.799), grid train: 0.862, best classifier cross: 0.835 (+-0.035=0.8), time took: 25 sec, best classifier:
+	RandomForest - 3     - Stats: Default params cross: 0.81 (+-0.036=0.774), grid train: 0.833, best classifier cross: 0.81 (+-0.035=0.775), time took: 28 sec, best classifier:
+	RandomForest Explicit 5 - Stats: Default params cross: grid train: 0.872, best classifier cross: 0.842 (+-0.03=0.812), time took: 13 sec = 0 min, importances:
+	XGB                  - Stats: Default params cross: 0.837 (+-0.034=0.803), grid train: 0.872, best classifier cross: 0.837 (+-0.034=0.803), time took: 2 sec, best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.865, best classifier cross: 0.836 (+-0.03=0.806), time took: 40 sec, best classifier:
 
+Feature importances:
+	Deck_FG                           0.001825
+	Deck_AC                           0.005390
+	Deck_BT                           0.006403
+	Embarked_Q                        0.006742
+	Embarked_C                        0.008113
+	Family/ticket survival known      0.009555
+	Embarked_S                        0.010505
+	pclass_2                          0.011551
+	Alone                             0.011666
+	Deck_DE                           0.017524
+	Large family                      0.018405
+	Small family                      0.028471
+	pclass_1                          0.035444
+	Ticket_Frequency                  0.049215
+	Deck_Other                        0.054742
+	pclass_3                          0.060746
+	Fare                              0.068090
+	Lady married                      0.081713
+	Age                               0.082346
+	Known family/ticket survived %    0.123656
+	Male                              0.307899
 
+Conclusion: 
+- For pclass remove pclass_2
+- For family size - remove Alone as was before
+- For Deck - only add deck DE, remove rest
+- Remove all the Embarked, don't seem to make a difference
+It's not exactly consisent with notebook I learned different things from, but my model is different https://www.kaggle.com/gunesevitan/advanced-feature-engineering-tutorial-with-titanic
