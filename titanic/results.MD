@@ -693,3 +693,18 @@ Conclusion: both voting, and XGB gave much better results.  Most classifiers did
 	XGB                  - Stats: Default params cross: 0.847 (+-0.034=0.814), grid train: 0.888, best classifier cross: 0.847 (+-0.034=0.814), time took: 2 sec, best classifier:
 	FINAL                                        - Stats: Best classifiers + Voting train: 0.864, best classifier cross: 0.842 (+-0.031=0.811), time took: 44 sec, best classifier:
 Conclusion: similar, but slightly worse results (especially in voting), leave it in
+
+### 40. Doing 'Age' as binned category (that's what was done in kernel I learned from)
+	Logistic - liblinear - Stats: Default params cross: 0.829 (+-0.023=0.806), grid train: 0.832, best classifier cross: 0.829 (+-0.023=0.806), time took: 14 sec, best classifier:
+	KNN - 14             - Stats: Default params cross: 0.831 (+-0.032=0.799), grid train: 0.854, best classifier cross: 0.831 (+-0.032=0.799), time took: 1 sec, best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.842 (+-0.029=0.813), grid train: 0.863, best classifier cross: 0.842 (+-0.029=0.813), time took: 2 sec, best classifier:
+	SVM - poly           - Stats: Default params cross: 0.844 (+-0.027=0.817), grid train: 0.866, best classifier cross: 0.844 (+-0.027=0.817), time took: 1 sec, best classifier:
+	NB                   - Stats: Default params cross: 0.761 (+-0.051=0.711), grid train: 0.762, best classifier cross: 0.761 (+-0.051=0.711), time took: 0 sec, best classifier:
+	RandomForest - 5     - Stats: Default params cross: 0.836 (+-0.025=0.811), grid train: 0.871, best classifier cross: 0.837 (+-0.024=0.813), time took: 25 sec, best classifier:
+	RandomForest - 4     - Stats: Default params cross: 0.833 (+-0.04=0.793), grid train: 0.86, best classifier cross: 0.833 (+-0.038=0.795), time took: 27 sec, best classifier:
+	RandomForest - 3     - Stats: Default params cross: 0.812 (+-0.034=0.778), grid train: 0.822, best classifier cross: 0.814 (+-0.038=0.776), time took: 25 sec, best classifier:
+	RandomForest Explicit 5 - Stats: Default params cross: grid train: 0.871, best classifier cross: 0.842 (+-0.025=0.817), time took: 11 sec = 0 min, importances:
+	XGB                  - Stats: Default params cross: 0.846 (+-0.031=0.816), grid train: 0.881, best classifier cross: 0.846 (+-0.031=0.816), time took: 1 sec, best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.863, best classifier cross: 0.838 (+-0.022=0.817), time took: 40 sec, best classifier:
+Conclusion: seems very similar if Age is binned or not (btw, wasn't able to bin into 10, only 11 because of unique values).  
+Since using not only RandomForests, leaving Age as a number

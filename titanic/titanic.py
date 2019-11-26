@@ -96,6 +96,7 @@ def prepare_age_title_is_married(x):
     # TODO features - consider not binning, or binning into a different number
     #   try without binning, or binning into a different number of bins
     #   make things worse, removing for now
+    #   Conclusion: tried, didn't make much of a difference, made slightly worse, leaving not encoded
     # x['Age'] = LabelEncoder().fit_transform(pd.qcut(x['Age'], 11))
 
     x['Lady married'] = titles_col.apply(lambda title: 1 if title == 'Mrs' else 0)
@@ -104,6 +105,7 @@ def prepare_age_title_is_married(x):
     #   also saved title with grouping, but it doesn't seem to be helpful since
     #   there are a lot of very small categories, and grouping together doesn't add new info, since already know
     #   male/female, age etc.  Also, Mr and Dr/Military/Noble/Clergy don't have significantly different behavior
+    #   DECISION: not to introduce, since also in the kernel learned from gets very low importance
     '''
     x['Title'] = titles_col.replace(['Miss', 'Mrs', 'Ms', 'Mlle', 'Lady', 'Mme', 'the Countess', 'Dona'],
                                               'Miss/Mrs/Ms')
@@ -184,32 +186,32 @@ def prepare_features(x, options):
 
     # TODO - should keep?
     # Create a new feature of number of relatives regardless of who they are
+    # Reference category is being removed later based on importance of each of the categories
     if 'SibSp' not in options['columns_to_drop'] and 'Parch' not in options['columns_to_drop']:
         sum_sibs_parch = x['SibSp'] + x['Parch']
         x['Small family'] = sum_sibs_parch.apply(lambda size: 1 if (size < 4) and (size > 0) else 0)
         x['Large family'] = sum_sibs_parch.apply(lambda size: 1 if (size >= 4) else 0)
-        # TODO features - consider removing reference category
         x['Alone'] = sum_sibs_parch.apply(lambda size: 1 if (size == 0) else 0)
         features_no_drop_after_use.append('SibSp')
         features_no_drop_after_use.append('Parch')
 
     # Prepare Deck features based on first letter of Cabin, unknown Cabin becomes reference category
+    # Reference category is being removed later based on importance of each of the categories
     if 'Cabin' not in options['columns_to_drop']:
         x['Cabin'] = x['Cabin'].fillna('')
         x['Deck_AC'] = x['Cabin'].apply(lambda cab: 1 if cab.startswith('A') or cab.startswith('C') else 0)
         x['Deck_BT'] = x['Cabin'].apply(lambda cab: 1 if cab.startswith('B') or cab.startswith('T') else 0)
         x['Deck_DE'] = x['Cabin'].apply(lambda cab: 1 if cab.startswith('D') or cab.startswith('E') else 0)
         x['Deck_FG'] = x['Cabin'].apply(lambda cab: 1 if cab.startswith('F') or cab.startswith('G') else 0)
-        # TODO features - consider removing reference category
         x['Deck_Other'] = x['Cabin'].apply(lambda cab: 1 if cab == '' else 0)
         print(f'Deck_Other.value_counts:\n{x["Deck_Other"].value_counts()}')
         features_no_drop_after_use.append('Cabin')
 
     # Split 3 categorical unique values (1, 2, 3) of Pclass into 2 dummy variables for classes 1 & 2
+    # Reference category is being removed later based on importance of each of the categories
     if 'Pclass' not in options['columns_to_drop']:
         x['pclass_1'] = x['Pclass'].apply(lambda cl: 1 if cl == 1 else 0)
         x['pclass_2'] = x['Pclass'].apply(lambda cl: 1 if cl == 2 else 0)
-        # TODO features - consider removing reference category
         x['pclass_3'] = x['Pclass'].apply(lambda cl: 1 if cl == 3 else 0)
         features_no_drop_after_use.append('Pclass')
 
@@ -219,29 +221,23 @@ def prepare_features(x, options):
         features_no_drop_after_use.append('Sex')
 
     ''' 
-        Change categorical feature 'Embarked' with 3 values ('S', 'C', 'Q') to be 2 dummy variables: 
-            Embarked_S, Embarked_Q with 'C' being a reference variable
+        Change categorical feature 'Embarked' with 3 values ('S', 'C', 'Q') to be 3 dummy variables: 
+            Reference category is being removed later based on importance of each of the categories
             In addition, handle 2 missing values to have them the most common value 'S'
     '''
     if 'Embarked' not in options['columns_to_drop']:
         x['Embarked_S'] = x['Embarked'].map({np.NaN: 1, 'S': 1, 'C': 0, 'Q': 0})
         x['Embarked_Q'] = x['Embarked'].map({np.NaN: 0, 'S': 0, 'C': 0, 'Q': 1})
-        # TODO features - consider removing reference category
         x['Embarked_C'] = x['Embarked'].map({np.NaN: 0, 'S': 0, 'C': 1, 'Q': 0})
         features_no_drop_after_use.append('Embarked')
 
     if 'Fare' not in options['columns_to_drop']:
-        # TODO feature - not really important since it's only 1, but: We can assume that Fare is related to family size (Parch and SibSp) and Pclass features.Median Fare value of a male with a third class ticket and no family is a logical choice to fill the missing value.
-        ''' - Code copied from notebook online:
-        med_fare = df_all.groupby(['Pclass', 'Parch', 'SibSp']).Fare.median()[3][0][0]
-        # Filling the missing value in Fare with the median Fare of 3rd class alone passenger
-        df_all['Fare'] = df_all['Fare'].fillna(med_fare)
-        '''
         mean_class_3_fare = x[(x['Pclass'] == 3) & (x['SibSp'] == 0) & (x['Parch'] == 0)]['Fare'].median()
         x['Fare'] = x['Fare'].fillna(mean_class_3_fare)
 
         # TODO features - how come 13 bins? Is that based on exploratory analysis? What were we looking for?
         #   Try as optimization input with a different number of bins
+        #   DECISION: for now don't do it, probably won't find something much better
         x['Fare'] = LabelEncoder().fit_transform(pd.qcut(x['Fare'], 13))
 
     if 'Ticket' not in options['columns_to_drop']:
@@ -343,7 +339,7 @@ def voting_only(classifiers, x_train, y_train, weights=None):
 
 
 def main(options):
-    start_time = time.time()
+    start_time_total = time.time()
 
     train, x_test = read_files()
 
@@ -510,7 +506,8 @@ def main(options):
     preds = class_xgb.predict(x_test_scaled)
     output_preds(preds, x_test, 'xgb')
 
-    print(f'YK: Time took: {time.time() - start_time} seconds = {round((time.time() - start_time)/60)} minutes ')
+    print(f'YK: Time took: {time.time() - start_time_total} seconds = '
+          f'{round((time.time() - start_time_total)/60)} minutes ')
 
 
 options = {
