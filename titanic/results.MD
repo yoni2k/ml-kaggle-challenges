@@ -754,3 +754,17 @@ Revert XGB to be depth 4 (default was 3) and not 5 as last time
 Conclusions: XGB is much better now, so better 4 than 5, but not sure if 3 or 4 depth is better. Reverting to default - seems to overfit like this
 SVM - rbf on the website gave ~80.3 score, which is not better than RandomForest, but very good.  
 Removing NB, and RandomForest (4) from voting, since seem to make things worse.  Not sure if also to remove XGB, since with a high score, it could be taking votes from let's say RandomForest
+
+### 44. Removed NB, and RandomForest (4) from voting. Left XGB for now
+	Logistic - liblinear - Stats: Default params cross: 0.834 (+-0.025=0.809), grid train: 0.836, best classifier cross: 0.834 (+-0.025=0.809), time took: 16 sec, best classifier:
+	KNN - 14             - Stats: Default params cross: 0.836 (+-0.031=0.805), grid train: 0.852, best classifier cross: 0.836 (+-0.031=0.805), time took: 1 sec, best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.851 (+-0.027=0.823), grid train: 0.87, best classifier cross: 0.851 (+-0.027=0.823), time took: 3 sec, best classifier:
+	SVM - poly           - Stats: Default params cross: 0.837 (+-0.027=0.81), grid train: 0.864, best classifier cross: 0.837 (+-0.027=0.81), time took: 1 sec, best classifier:
+	NB                   - Stats: Default params cross: 0.762 (+-0.053=0.71), grid train: 0.763, best classifier cross: 0.762 (+-0.053=0.71), time took: 0 sec, best classifier:
+	RandomForest - 5     - Stats: Default params cross: 0.833 (+-0.023=0.81), grid train: 0.872, best classifier cross: 0.841 (+-0.022=0.819), time took: 26 sec, best classifier:
+	RandomForest - 4     - Stats: Default params cross: 0.831 (+-0.043=0.788), grid train: 0.86, best classifier cross: 0.833 (+-0.043=0.79), time took: 28 sec, best classifier:
+	RandomForest Explicit 5 - Stats: Default params cross: grid train: 0.873, best classifier cross: 0.838 (+-0.026=0.812), time took: 10 sec = 0 min, importances:
+	XGB                  - Stats: Default params cross: 0.844 (+-0.025=0.819), grid train: 0.937, best classifier cross: 0.844 (+-0.025=0.819), time took: 9 sec, best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.882, best classifier cross: 0.846 (+-0.032=0.815), time took: 21 sec, best classifier:
+Conclusion: Not clear if better with or without Logistic, KNN, XGB, don't have enough tries on the website to know
+On the site, the voting is ~.80 down from ~.81, try to remove XGB and return others
