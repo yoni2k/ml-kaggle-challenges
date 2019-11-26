@@ -725,3 +725,16 @@ Conclusions:
 - RandomForest 4 is worse than 5, so leaving 4 for now, but completely removing 3
 - Doing directly Random Forest is better than doing voting (perhaps because the specific features are more specific for RandomForest)
 - Voting on website: ~.81, XGB: ~.77 (perhaps need to optimize), RandomForest 5: ~.82, RandomForest 4: ~.815
+
+### 42. Making XGB slightly better parametrized, take SVM directly
+	Logistic - liblinear - Stats: Default params cross: 0.834 (+-0.025=0.809), grid train: 0.836, best classifier cross: 0.834 (+-0.025=0.809), time took: 14 sec, best classifier:
+	KNN - 14             - Stats: Default params cross: 0.836 (+-0.031=0.805), grid train: 0.852, best classifier cross: 0.836 (+-0.031=0.805), time took: 2 sec, best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.851 (+-0.027=0.823), grid train: 0.87, best classifier cross: 0.851 (+-0.027=0.823), time took: 1 sec, best classifier:
+	SVM - poly           - Stats: Default params cross: 0.837 (+-0.027=0.81), grid train: 0.864, best classifier cross: 0.837 (+-0.027=0.81), time took: 1 sec, best classifier:
+	NB                   - Stats: Default params cross: 0.762 (+-0.053=0.71), grid train: 0.763, best classifier cross: 0.762 (+-0.053=0.71), time took: 0 sec, best classifier:
+	RandomForest - 5     - Stats: Default params cross: 0.842 (+-0.025=0.816), grid train: 0.871, best classifier cross: 0.835 (+-0.026=0.809), time took: 25 sec, best classifier:
+	RandomForest - 4     - Stats: Default params cross: 0.831 (+-0.042=0.789), grid train: 0.856, best classifier cross: 0.832 (+-0.041=0.791), time took: 23 sec, best classifier:
+	RandomForest Explicit 5 - Stats: Default params cross: grid train: 0.871, best classifier cross: 0.838 (+-0.028=0.811), time took: 11 sec = 0 min, importances:
+	XGB                  - Stats: Default params cross: 0.827 (+-0.032=0.795), grid train: 0.963, best classifier cross: 0.827 (+-0.032=0.795), time took: 15 sec, best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.895, best classifier cross: 0.844 (+-0.035=0.81), time took: 32 sec, best classifier:
+Conclusions: seems that XGB got worse (perhaps because it's overfitting, since max_depth was changed from 3 to 5), try 4

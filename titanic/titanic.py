@@ -426,7 +426,8 @@ def main(options):
 
 
     class_xgb = single_and_grid_classifier('XGB', x_train_scaled, y_train,
-                                           xgb.XGBClassifier(objective='binary:logistic', random_state=42, n_jobs=-1),
+                                           xgb.XGBClassifier(objective='binary:logistic', random_state=42, n_jobs=-1,
+                                                             n_estimators=1000, max_depth=5),
                                            options,
                                            [{
                                                'max_depth': range(2, 8, 1),  # default 3
@@ -493,6 +494,9 @@ def main(options):
 
     preds = classifier_voting.predict(x_test_scaled)
     output_preds(preds, x_test, 'best')
+
+    preds = class_svm_rbf.predict(x_test_scaled)
+    output_preds(preds, x_test, 'svm_rbf')
 
     preds = class_rf_4.predict(x_test_scaled)
     output_preds(preds, x_test, 'rf_4')
