@@ -427,7 +427,8 @@ def main(options):
 
     class_xgb = single_and_grid_classifier('XGB', x_train_scaled, y_train,
                                            xgb.XGBClassifier(objective='binary:logistic', random_state=42, n_jobs=-1,
-                                                             n_estimators=1000, max_depth=5),
+                                                             n_estimators=1000),
+                                                             # , max_depth=4),
                                            options,
                                            [{
                                                'max_depth': range(2, 8, 1),  # default 3
@@ -479,10 +480,10 @@ def main(options):
         ('lr', class_log),
         ('knn', class_knn),
         ('svm - rbf', class_svm_rbf),
-        ('svm - poly', class_svm_poly),
+        # ('svm - poly', class_svm_poly),
         ('nb', class_nb),
         ('rf_5', class_rf_5),
-        ('rf_4', class_rf_4),
+        # ('rf_4', class_rf_4),
         ('xgb', class_xgb)
     ]
 
