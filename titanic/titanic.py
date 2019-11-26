@@ -405,23 +405,18 @@ def main(options):
                                           options,
                                           [{}])
 
-    class_rf_3 = single_and_grid_classifier('RandomForest - 3', x_train_scaled, y_train,
-                                            RandomForestClassifier(n_jobs=-1, n_estimators=1000, max_depth=3),
-                                            options,
-                                            [{}])
-
     start_time = time.time()
 
-    class_rf_exp = RandomForestClassifier(n_estimators=1000,
+    class_rf_exp_5 = RandomForestClassifier(n_estimators=1000,
                                            max_depth=5,
                                            #min_samples_split=3,
                                            #min_samples_leaf=5,
                                            n_jobs=-1)
-    class_rf_exp.fit(x_train_scaled, y_train)
-    reg_score = class_rf_exp.score(x_train_scaled, y_train)
-    reg_score_cross, reg_std_cross = cross_valid(class_rf_exp, x_train_scaled, y_train)
+    class_rf_exp_5.fit(x_train_scaled, y_train)
+    reg_score = class_rf_exp_5.score(x_train_scaled, y_train)
+    reg_score_cross, reg_std_cross = cross_valid(class_rf_exp_5, x_train_scaled, y_train)
 
-    importances = pd.DataFrame({'Importance': class_rf_exp.feature_importances_}, index=x_train.columns)
+    importances = pd.DataFrame({'Importance': class_rf_exp_5.feature_importances_}, index=x_train.columns)
     print(f'{"RandomForest Explicit 5".ljust(20)} - Stats: Default params cross: '
           f'grid train: {round(reg_score, 3)}, '
           f'best classifier cross: {round(reg_score_cross, 3)} '
@@ -487,7 +482,6 @@ def main(options):
         ('nb', class_nb),
         ('rf_5', class_rf_5),
         ('rf_4', class_rf_4),
-        ('rf_3', class_rf_3),
         ('xgb', class_xgb)
     ]
 
@@ -500,8 +494,11 @@ def main(options):
     preds = classifier_voting.predict(x_test_scaled)
     output_preds(preds, x_test, 'best')
 
-    preds = class_rf_exp.predict(x_test_scaled)
-    output_preds(preds, x_test, 'rf_explicit')
+    preds = class_rf_4.predict(x_test_scaled)
+    output_preds(preds, x_test, 'rf_4')
+
+    preds = class_rf_exp_5.predict(x_test_scaled)
+    output_preds(preds, x_test, 'rf_5_explicit')
 
     preds = class_xgb.predict(x_test_scaled)
     output_preds(preds, x_test, 'xgb')

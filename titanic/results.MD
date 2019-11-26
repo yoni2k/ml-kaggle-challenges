@@ -708,3 +708,20 @@ Conclusion: similar, but slightly worse results (especially in voting), leave it
 	FINAL                                        - Stats: Best classifiers + Voting train: 0.863, best classifier cross: 0.838 (+-0.022=0.817), time took: 40 sec, best classifier:
 Conclusion: seems very similar if Age is binned or not (btw, wasn't able to bin into 10, only 11 because of unique values).  
 Since using not only RandomForests, leaving Age as a number
+
+### 41. Try various options on website
+	Logistic - liblinear - Stats: Default params cross: 0.834 (+-0.025=0.809), grid train: 0.836, best classifier cross: 0.834 (+-0.025=0.809), time took: 15 sec, best classifier:
+	KNN - 14             - Stats: Default params cross: 0.836 (+-0.031=0.805), grid train: 0.852, best classifier cross: 0.836 (+-0.031=0.805), time took: 2 sec, best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.851 (+-0.027=0.823), grid train: 0.87, best classifier cross: 0.851 (+-0.027=0.823), time took: 2 sec, best classifier:
+	SVM - poly           - Stats: Default params cross: 0.837 (+-0.027=0.81), grid train: 0.864, best classifier cross: 0.837 (+-0.027=0.81), time took: 1 sec, best classifier:
+	NB                   - Stats: Default params cross: 0.762 (+-0.053=0.71), grid train: 0.763, best classifier cross: 0.762 (+-0.053=0.71), time took: 0 sec, best classifier:
+	RandomForest - 5     - Stats: Default params cross: 0.838 (+-0.027=0.812), grid train: 0.872, best classifier cross: 0.836 (+-0.025=0.811), time took: 24 sec, best classifier:
+	RandomForest - 4     - Stats: Default params cross: 0.826 (+-0.042=0.785), grid train: 0.856, best classifier cross: 0.825 (+-0.043=0.782), time took: 27 sec, best classifier:
+	RandomForest - 3     - Stats: Default params cross: 0.814 (+-0.039=0.775), grid train: 0.829, best classifier cross: 0.815 (+-0.038=0.777), time took: 25 sec, best classifier:
+	RandomForest Explicit 5 - Stats: Default params cross: grid train: 0.873, best classifier cross: 0.836 (+-0.032=0.804), time took: 11 sec = 0 min, importances:
+	XGB                  - Stats: Default params cross: 0.847 (+-0.034=0.814), grid train: 0.888, best classifier cross: 0.847 (+-0.034=0.814), time took: 1 sec, best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.866, best classifier cross: 0.836 (+-0.026=0.81), time took: 35 sec, best classifier:
+Conclusions: 
+- RandomForest 4 is worse than 5, so leaving 4 for now, but completely removing 3
+- Doing directly Random Forest is better than doing voting (perhaps because the specific features are more specific for RandomForest)
+- Voting on website: ~.81, XGB: ~.77 (perhaps need to optimize), RandomForest 5: ~.82, RandomForest 4: ~.815
