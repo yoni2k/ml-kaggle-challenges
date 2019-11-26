@@ -654,6 +654,28 @@ Feature importances:
 Conclusion: 
 - For pclass remove pclass_2
 - For family size - remove Alone as was before
-- For Deck - only add deck DE, remove rest
+- For Deck - only add deck DE and Deck_Other, remove rest
 - Remove all the Embarked, don't seem to make a difference
 It's not exactly consisent with notebook I learned different things from, but my model is different https://www.kaggle.com/gunesevitan/advanced-feature-engineering-tutorial-with-titanic
+
+### 38. Removed reference features
+Removed:
+	'pclass_2',
+	'Alone',
+	'Deck_FG',
+	'Deck_AC',
+	'Deck_BT',
+	'Embarked' - all embarked
+Results:
+	Logistic - liblinear - Stats: Default params cross: 0.834 (+-0.025=0.809), grid train: 0.836, best classifier cross: 0.834 (+-0.025=0.809), time took: 14 sec, best classifier:
+	KNN - 14             - Stats: Default params cross: 0.836 (+-0.031=0.805), grid train: 0.852, best classifier cross: 0.836 (+-0.031=0.805), time took: 1 sec, best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.851 (+-0.027=0.823), grid train: 0.87, best classifier cross: 0.851 (+-0.027=0.823), time took: 2 sec, best classifier:
+	SVM - poly           - Stats: Default params cross: 0.837 (+-0.027=0.81), grid train: 0.864, best classifier cross: 0.837 (+-0.027=0.81), time took: 1 sec, best classifier:
+	NB                   - Stats: Default params cross: 0.762 (+-0.053=0.71), grid train: 0.763, best classifier cross: 0.762 (+-0.053=0.71), time took: 0 sec, best classifier:
+	RandomForest - 5     - Stats: Default params cross: 0.838 (+-0.03=0.809), grid train: 0.874, best classifier cross: 0.837 (+-0.025=0.812), time took: 27 sec, best classifier:
+	RandomForest - 4     - Stats: Default params cross: 0.832 (+-0.041=0.791), grid train: 0.854, best classifier cross: 0.83 (+-0.039=0.791), time took: 23 sec, best classifier:
+	RandomForest - 3     - Stats: Default params cross: 0.814 (+-0.036=0.778), grid train: 0.831, best classifier cross: 0.815 (+-0.037=0.778), time took: 26 sec, best classifier:
+	RandomForest Explicit 5 - Stats: Default params cross: grid train: 0.87, best classifier cross: 0.833 (+-0.027=0.806), time took: 14 sec = 0 min, importances:
+	XGB                  - Stats: Default params cross: 0.847 (+-0.034=0.814), grid train: 0.888, best classifier cross: 0.847 (+-0.034=0.814), time took: 2 sec, best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.866, best classifier cross: 0.84 (+-0.024=0.816), time took: 40 sec, best classifier:
+Conclusion: both voting, and XGB gave much better results.  Most classifiers did better, besides RandomForest, which is probably a good thing since it probably overfits 

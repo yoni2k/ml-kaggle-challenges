@@ -524,7 +524,12 @@ options = {
                         # 'Pclass'
                         # 'Parch'      # doesn't help at the end - border line
 
-
+                        'pclass_2',
+                        'Alone',
+                        'Deck_FG',
+                        'Deck_AC',
+                        'Deck_BT',
+                        'Embarked',
                         ],
     'hyperparams_optimization': False
 
