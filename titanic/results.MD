@@ -578,5 +578,42 @@ based on this, removed the following features for next run:
 	RandomForest Specific - Stats: Default params cross: grid train: 0.992, best classifier cross: 0.983 (+-0.014=0.969)
 	XGB                  - Stats: Default params cross: 0.987 (+-0.013=0.973), grid train: 0.996, best classifier cross: 0.987 (+-0.013=0.973), best classifier:
 	FINAL                                        - Stats: Best classifiers + Voting train: 0.992, best classifier cross: 0.988 (+-0.009=0.978), best classifier:
- 
+
+### 35. Change survival rate not to take current training survival result into account
+	Logistic - liblinear - Stats: Default params cross: 0.832 (+-0.025=0.807), grid train: 0.833, best classifier cross: 0.832 (+-0.025=0.807), best classifier:
+	KNN - 14             - Stats: Default params cross: 0.798 (+-0.023=0.775), grid train: 0.833, best classifier cross: 0.798 (+-0.023=0.775), best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.836 (+-0.042=0.794), grid train: 0.871, best classifier cross: 0.836 (+-0.042=0.794), best classifier:
+	SVM - poly           - Stats: Default params cross: 0.827 (+-0.038=0.789), grid train: 0.875, best classifier cross: 0.827 (+-0.038=0.789), best classifier:
+	NB                   - Stats: Default params cross: 0.76 (+-0.044=0.716), grid train: 0.761, best classifier cross: 0.76 (+-0.044=0.716), best classifier:
+	RandomForest - 5     - Stats: Default params cross: 0.829 (+-0.019=0.81), grid train: 0.863, best classifier cross: 0.834 (+-0.028=0.806), best classifier:
+	RandomForest Specific - Stats: Default params cross: grid train: 0.859, best classifier cross: 0.836 (+-0.026=0.81)
+	RandomForest Specific - Stats: Default params cross: grid train: 0.877, best classifier cross: 0.834 (+-0.029=0.805)
+	XGB                  - Stats: Default params cross: 0.844 (+-0.034=0.81), grid train: 0.888, best classifier cross: 0.844 (+-0.034=0.81), best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.869, best classifier cross: 0.833 (+-0.026=0.807), best classifier:
+Conclusion: hopefully not overfitting this time, results went down drastically, similar to before.  Got much better result on the website: ~0.89 with voting.
+
+### 36. Cleanup 
+- Remove Random Forest Leader - didn't give better results, overfitting for model I was learning from 
+- Make 2 RandomForests to behave the same way, leave explicit RandomForest to learn about important and not important features
+- Make regular RandomForest do many more trees
+- Cleanup output files to contain only what I want: RandomForest, XGB, Voting
+- Split up regular RandomForest into 4 and 5 depths, possibly since I have slightly less features, depth 4 (and maybe even 3) might do better than 5:
+- Measure time what everything takes so can decide if continue doing it
+- Not to return Grid from Grid, but best classifier
+
+Results:
+	Logistic - liblinear - Stats: Default params cross: 0.832 (+-0.025=0.807), grid train: 0.833, best classifier cross: 0.832 (+-0.025=0.807), time took: 16 sec, best classifier:
+	KNN - 14             - Stats: Default params cross: 0.798 (+-0.023=0.775), grid train: 0.833, best classifier cross: 0.798 (+-0.023=0.775), time took: 2 sec, best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.836 (+-0.042=0.794), grid train: 0.871, best classifier cross: 0.836 (+-0.042=0.794), time took: 2 sec, best classifier:
+	SVM - poly           - Stats: Default params cross: 0.827 (+-0.038=0.789), grid train: 0.875, best classifier cross: 0.827 (+-0.038=0.789), time took: 2 sec, best classifier:
+	NB                   - Stats: Default params cross: 0.76 (+-0.044=0.716), grid train: 0.761, best classifier cross: 0.76 (+-0.044=0.716), time took: 0 sec, best classifier:
+	RandomForest - 5     - Stats: Default params cross: 0.841 (+-0.023=0.818), grid train: 0.869, best classifier cross: 0.834 (+-0.033=0.801), time took: 28 sec, best classifier:
+	RandomForest - 4     - Stats: Default params cross: 0.832 (+-0.025=0.806), grid train: 0.853, best classifier cross: 0.834 (+-0.026=0.808), time took: 30 sec, best classifier:
+	RandomForest - 3     - Stats: Default params cross: 0.821 (+-0.027=0.793), grid train: 0.842, best classifier cross: 0.821 (+-0.031=0.789), time took: 31 sec, best classifier:
+	RandomForest Explicit 5 - Stats: Default params cross: grid train: 0.871, best classifier cross: 0.837 (+-0.028=0.809), time took: 14 sec = 0 min, importances:
+	XGB                  - Stats: Default params cross: 0.844 (+-0.034=0.81), grid train: 0.888, best classifier cross: 0.844 (+-0.034=0.81), time took: 2 sec, best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.869, best classifier cross: 0.832 (+-0.028=0.803), time took: 41 sec, best classifier:
+Conclusion: now ready to remove some features
+
+
 

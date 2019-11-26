@@ -41,6 +41,7 @@ TODO:
     and grouping together doesn't add new info, since already know male/female, age etc.  
     Also, Mr and Dr/Military/Noble/Clergy don't have significantly different behavior.
 - How come didn't remove reference category for one-hot encoded categories?
+- How come Survival_rate came out not so important in the model, for me it was 65%?
 '''
 
 
@@ -114,23 +115,9 @@ def prepare_family_ticket_frequencies(x):
     # add temporary last name who it's going to be decided by if it's the same family
     x['Last name'] = x['Name'].apply(extract_lastname)
 
-    # add information for training only of how many of known survived in the family
     x['Known family survived %'] = np.NaN
-    x.loc[x['Survived'] != 2, 'Known family survived %'] = \
-        x[x['Survived'] != 2].groupby(by='Last name')['Survived'].transform('sum') / \
-        x[x['Survived'] != 2].groupby(by='Last name')['Survived'].transform('count')
-
-    # add information for training only of how many of known survived in the same ticket
     x['Known ticket survived %'] = np.NaN
-    x.loc[x['Survived'] != 2, 'Known ticket survived %'] = \
-        x[x['Survived'] != 2].groupby(by='Ticket')['Survived'].transform('sum') / \
-        x[x['Survived'] != 2].groupby(by='Ticket')['Survived'].transform('count')
-
-    # The real value is survival rate in the family/same ticket is average of family & ticket survival
-    #   useful at this point only for training where survival rate was known
-    x['Known family/ticket survived %'] = (x['Known family survived %'] + x['Known ticket survived %']) / 2
-
-    # set that survival rate was known.  correct for train, will be overridden for test set
+    x['Known family/ticket survived %'] = np.NaN
     x['Family/ticket survival known'] = 1
 
     # to mark same information in test, need to known what last names and ticket names were known
@@ -140,21 +127,23 @@ def prepare_family_ticket_frequencies(x):
 
     # go over all test passengers, and fill in the survival information
     for i in x.index:
-        # skip training passengers
-        if x.loc[i, 'Survived'] != 2:
-            continue
+        is_train = 1 if x.loc[i, 'Survived'] != 2 else 0
+        did_survive = 1 if x.loc[i, 'Survived'] == 1 else 0
         last_name = x.loc[i, 'Last name']
         ticket = x.loc[i, 'Ticket']
 
-        # if last name was known in train, copy the family survival rate from training
-        if last_name in known_last_names:
+        # if have other passengers in training set of same family whose survival information is known, copy average here
+        if x[(x['Survived'] != 2) & (x['Last name'] == last_name)]['Survived'].count() > is_train:
             x.loc[i, 'Known family survived %'] = \
-                x[(x['Survived'] != 2) & (x['Last name'] == last_name)]['Known family survived %'].median()
+                (x[(x['Survived'] != 2) & (x['Last name'] == last_name)]['Survived'].sum() - did_survive) / \
+                (x[(x['Survived'] != 2) & (x['Last name'] == last_name)]['Survived'].count() - is_train)
 
-        # if ticket was known in train, copy the ticket survival rate from training
-        if ticket in known_tickets:
-            x.loc[i, 'Known ticket survived %'] = \
-                x[(x['Survived'] != 2) & (x['Ticket'] == ticket)]['Known ticket survived %'].median()
+        # if have other passengers in training set of same family whose survival information is known, copy average here
+        # add information for training only of how many of known survived in the same ticket
+        if x[(x['Survived'] != 2) & (x['Ticket'] == ticket)]['Survived'].count() > is_train:
+            x.loc[i, 'Known family survived %'] = \
+                (x[(x['Survived'] != 2) & (x['Ticket'] == ticket)]['Survived'].sum() - did_survive) / \
+                (x[(x['Survived'] != 2) & (x['Ticket'] == ticket)]['Survived'].count() - is_train)
 
         # For final value of
         if np.isnan(x.loc[i, 'Known family survived %']) == False:
@@ -291,6 +280,8 @@ def grid_search(classifier, param_grid, x_train, y_train):
 
 
 def single_and_grid_classifier(name_str, x_train, y_train, single_classifier, options, grid_params):
+    start_time = time.time()
+
     reg_score_def, reg_std_def = cross_valid(single_classifier, x_train, y_train)
 
     if not options['hyperparams_optimization']:
@@ -304,10 +295,15 @@ def single_and_grid_classifier(name_str, x_train, y_train, single_classifier, op
           f'grid train: {round(reg_score_grid, 3)}, '
           f'best classifier cross: {round(reg_score_cross, 3)} '
           f'(+-{round(reg_std_cross, 3)}={round(reg_score_cross - reg_std_cross, 3)}), '
+          f'time took: {round(time.time() - start_time)} sec, '
           f'best classifier:\n{classifier.best_estimator_}')
-    return classifier
+    classifier.best_estimator_.fit(x_train, y_train)
+    return classifier.best_estimator_
+    #classifier.fit(x_train, y_train)
+    #return classifier
 
 
+# TODO should leave - if leaving need to change a whole bunch of things, was not updated
 def grid_with_voting(classifiers, param_grid, x_train, y_train, x_test_local, y_test_local):
     voting_classifier = VotingClassifier(estimators=classifiers, voting='soft', n_jobs=-1)
 
@@ -324,12 +320,14 @@ def grid_with_voting(classifiers, param_grid, x_train, y_train, x_test_local, y_
 
 
 def voting_only(classifiers, x_train, y_train, weights=None):
+    start_time = time.time()
     voting_classifier = VotingClassifier(estimators=classifiers, voting='soft', n_jobs=-1, weights=weights)
-    voting_classifier.fit(x_train, y_train)
     reg_score, reg_std = cross_valid(voting_classifier, x_train, y_train)
+    voting_classifier.fit(x_train, y_train)
     print(f'FINAL'.ljust(44) + ' - Stats: Best classifiers + Voting train: '
           f'{round(voting_classifier.score(x_train, y_train), 3)}, '
           f'best classifier cross: {round(reg_score, 3)} (+-{round(reg_std, 3)}={round(reg_score - reg_std, 3)}), '
+          f'time took: {round(time.time() - start_time)} sec, '
           f'best classifier:\n{voting_classifier}')
     return voting_classifier
 
@@ -391,80 +389,40 @@ def main(options):
                                           options,
                                           [{}])
 
-    class_rf = single_and_grid_classifier('RandomForest - 5', x_train_scaled, y_train,
-                                          RandomForestClassifier(n_jobs=-1, n_estimators=100, max_depth=5),
+    class_rf_5 = single_and_grid_classifier('RandomForest - 5', x_train_scaled, y_train,
+                                          RandomForestClassifier(n_jobs=-1, n_estimators=1000, max_depth=5),
                                           options,
                                           [{}])
 
+    class_rf_4 = single_and_grid_classifier('RandomForest - 4', x_train_scaled, y_train,
+                                          RandomForestClassifier(n_jobs=-1, n_estimators=1000, max_depth=4),
+                                          options,
+                                          [{}])
+
+    class_rf_3 = single_and_grid_classifier('RandomForest - 3', x_train_scaled, y_train,
+                                            RandomForestClassifier(n_jobs=-1, n_estimators=1000, max_depth=3),
+                                            options,
+                                            [{}])
+
     start_time = time.time()
 
-    '''
-    class_rf_spec = single_and_grid_classifier('RandomForest Specific', x_train_scaled, y_train,
-                                               RandomForestClassifier(n_estimators=1100,
-                                                                      max_depth=5,
-                                                                      min_samples_split=4,
-                                                                      min_samples_leaf=5,
-                                                                      max_features='auto',
-                                                                      oob_score=True,
-                                                                      n_jobs=-1),
-                                               options,
-                                               [{}])
-    '''
-    class_rf_spec = RandomForestClassifier(n_estimators=1100,
+    class_rf_exp = RandomForestClassifier(n_estimators=1000,
                                            max_depth=5,
-                                           min_samples_split=4,
-                                           min_samples_leaf=5,
-                                           max_features='auto',
+                                           #min_samples_split=3,
+                                           #min_samples_leaf=5,
                                            n_jobs=-1)
-    class_rf_spec.fit(x_train_scaled, y_train)
-    reg_score = class_rf_spec.score(x_train_scaled, y_train)
-    reg_score_cross, reg_std_cross = cross_valid(class_rf_spec, x_train_scaled, y_train)
+    class_rf_exp.fit(x_train_scaled, y_train)
+    reg_score = class_rf_exp.score(x_train_scaled, y_train)
+    reg_score_cross, reg_std_cross = cross_valid(class_rf_exp, x_train_scaled, y_train)
 
-    print(f'{"RandomForest Specific".ljust(20)} - Stats: Default params cross: '
+    importances = pd.DataFrame({'Importance': class_rf_exp.feature_importances_}, index=x_train.columns)
+    print(f'{"RandomForest Explicit 5".ljust(20)} - Stats: Default params cross: '
           f'grid train: {round(reg_score, 3)}, '
           f'best classifier cross: {round(reg_score_cross, 3)} '
-          f'(+-{round(reg_std_cross, 3)}={round(reg_score_cross - reg_std_cross, 3)})')
+          f'(+-{round(reg_std_cross, 3)}={round(reg_score_cross - reg_std_cross, 3)}), '
+          f'time took: {round(time.time() - start_time)} sec = {round((time.time() - start_time) / 60)} min, '
+          f'importances:\n{importances["Importance"].sort_values()}')
 
-
-    print(f'YK: Time took (RandomForest Specific): {time.time() - start_time} seconds = '
-          f'{round((time.time() - start_time) / 60)} minutes ')
-    importances = pd.DataFrame({'Importance': class_rf_spec.feature_importances_}, index=x_train.columns)
-    print(f'Feature importances (RandomForest Specific):\n{importances["Importance"].sort_values()}')
-
-    start_time = time.time()
-
-    '''
-    class_rf_spec_leader = single_and_grid_classifier('RandomForest Leader', x_train_scaled, y_train,
-                                                      RandomForestClassifier(n_estimators=1750,
-                                                                             max_depth=7,
-                                                                             min_samples_split=6,
-                                                                             min_samples_leaf=6,
-                                                                             max_features='auto',
-                                                                             oob_score=True,
-                                                                             n_jobs=-1),
-                                                      options,
-                                                      [{}])
-    '''
-    class_rf_spec_leader = RandomForestClassifier(n_estimators=1750,
-                                                  max_depth=7,
-                                                  min_samples_split=6,
-                                                  min_samples_leaf=6,
-                                                  max_features='auto',
-                                                  n_jobs=-1)
-
-    class_rf_spec_leader.fit(x_train_scaled, y_train)
-    reg_score = class_rf_spec_leader.score(x_train_scaled, y_train)
-    reg_score_cross, reg_std_cross = cross_valid(class_rf_spec_leader, x_train_scaled, y_train)
-
-    print(f'{"RandomForest Specific".ljust(20)} - Stats: Default params cross: '
-          f'grid train: {round(reg_score, 3)}, '
-          f'best classifier cross: {round(reg_score_cross, 3)} '
-          f'(+-{round(reg_std_cross, 3)}={round(reg_score_cross - reg_std_cross, 3)})')
-
-    print(f'YK: Time took (RandomForest Leader): {time.time() - start_time} seconds = '
-          f'{round((time.time() - start_time) / 60)} minutes ')
-    importances = pd.DataFrame({'Importance': class_rf_spec_leader.feature_importances_}, index=x_train.columns)
-    print(f'Feature importances (RandomForest Leader):\n{importances["Importance"].sort_values()}')
 
     class_xgb = single_and_grid_classifier('XGB', x_train_scaled, y_train,
                                            xgb.XGBClassifier(objective='binary:logistic', random_state=42, n_jobs=-1),
@@ -521,9 +479,9 @@ def main(options):
         ('svm - rbf', class_svm_rbf),
         ('svm - poly', class_svm_poly),
         ('nb', class_nb),
-        ('rf', class_rf),
-        ('rf_specific', class_rf_spec),
-        ('rf_specific_leader', class_rf_spec_leader),
+        ('rf_5', class_rf_5),
+        ('rf_4', class_rf_4),
+        ('rf_3', class_rf_3),
         ('xgb', class_xgb)
     ]
 
@@ -536,11 +494,8 @@ def main(options):
     preds = classifier_voting.predict(x_test_scaled)
     output_preds(preds, x_test, 'best')
 
-    preds = class_rf_spec.predict(x_test_scaled)
-    output_preds(preds, x_test, 'rf_specific')
-
-    preds = class_rf_spec_leader.predict(x_test_scaled)
-    output_preds(preds, x_test, 'rf_specific_leader')
+    preds = class_rf_exp.predict(x_test_scaled)
+    output_preds(preds, x_test, 'rf_explicit')
 
     preds = class_xgb.predict(x_test_scaled)
     output_preds(preds, x_test, 'xgb')
@@ -559,12 +514,6 @@ options = {
                         # 'Age',
                         # 'Pclass'
                         # 'Parch'      # doesn't help at the end - border line
-                        'Family/ticket survival known',
-                        'Deck_FG',
-                        'Embarked_Q',
-                        'Deck_AC',
-                        'Deck_BT',
-                        'Embarked_S'
                         ],
     'hyperparams_optimization': False
 
