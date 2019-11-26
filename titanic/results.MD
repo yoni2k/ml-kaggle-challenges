@@ -679,3 +679,17 @@ Results:
 	XGB                  - Stats: Default params cross: 0.847 (+-0.034=0.814), grid train: 0.888, best classifier cross: 0.847 (+-0.034=0.814), time took: 2 sec, best classifier:
 	FINAL                                        - Stats: Best classifiers + Voting train: 0.866, best classifier cross: 0.84 (+-0.024=0.816), time took: 40 sec, best classifier:
 Conclusion: both voting, and XGB gave much better results.  Most classifiers did better, besides RandomForest, which is probably a good thing since it probably overfits 
+
+### 39. Removing 'Family/ticket survival known' since it's both low coefficient, and the mean of survival already coded in 'Known family/ticket survived %'
+	Logistic - liblinear - Stats: Default params cross: 0.833 (+-0.024=0.809), grid train: 0.835, best classifier cross: 0.833 (+-0.024=0.809), time took: 16 sec, best classifier:
+	KNN - 14             - Stats: Default params cross: 0.832 (+-0.032=0.8), grid train: 0.846, best classifier cross: 0.832 (+-0.032=0.8), time took: 1 sec, best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.849 (+-0.026=0.822), grid train: 0.869, best classifier cross: 0.849 (+-0.026=0.822), time took: 2 sec, best classifier:
+	SVM - poly           - Stats: Default params cross: 0.835 (+-0.037=0.798), grid train: 0.872, best classifier cross: 0.835 (+-0.037=0.798), time took: 1 sec, best classifier:
+	NB                   - Stats: Default params cross: 0.762 (+-0.054=0.709), grid train: 0.769, best classifier cross: 0.762 (+-0.054=0.709), time took: 0 sec, best classifier:
+	RandomForest - 5     - Stats: Default params cross: 0.834 (+-0.027=0.807), grid train: 0.873, best classifier cross: 0.834 (+-0.027=0.807), time took: 28 sec, best classifier:
+	RandomForest - 4     - Stats: Default params cross: 0.828 (+-0.041=0.787), grid train: 0.86, best classifier cross: 0.828 (+-0.041=0.788), time took: 25 sec, best classifier:
+	RandomForest - 3     - Stats: Default params cross: 0.813 (+-0.035=0.777), grid train: 0.831, best classifier cross: 0.816 (+-0.036=0.78), time took: 26 sec, best classifier:
+	RandomForest Explicit 5 - Stats: Default params cross: grid train: 0.873, best classifier cross: 0.837 (+-0.025=0.812), time took: 13 sec = 0 min, importances:
+	XGB                  - Stats: Default params cross: 0.847 (+-0.034=0.814), grid train: 0.888, best classifier cross: 0.847 (+-0.034=0.814), time took: 2 sec, best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.864, best classifier cross: 0.842 (+-0.031=0.811), time took: 44 sec, best classifier:
+Conclusion: similar, but slightly worse results (especially in voting), leave it in

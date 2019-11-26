@@ -70,6 +70,7 @@ def prepare_age_title_is_married(x):
     # TODO features - in https://www.kaggle.com/gunesevitan/advanced-feature-engineering-tutorial-with-titanic
     #   did something a bit different, based on Sex and Class, and not on title.  I think doing it on title is
     #   more exact, especially regarding differences between Mrs. and Miss
+    #   DECISION: For now leave as I did, probably will not make a difference
 
     # 'Ms' appears only once in test, so replace it with Mrs since it's basically same ages
     x.loc[(x['Age'].isnull()) & (x['Name'].apply(get_title) == 'Ms'), 'Name'] = "O'Donoghue, Mrs. Bridget"
@@ -530,6 +531,8 @@ options = {
                         'Deck_AC',
                         'Deck_BT',
                         'Embarked',
+
+                        # 'Family/ticket survival known' - removing it gives slightly worse results and larger deltas
                         ],
     'hyperparams_optimization': False
 
