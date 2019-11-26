@@ -480,11 +480,11 @@ def main(options):
         ('lr', class_log),
         ('knn', class_knn),
         ('svm - rbf', class_svm_rbf),
-        # ('svm - poly', class_svm_poly),
+        ('svm - poly', class_svm_poly),
         ('nb', class_nb),
         ('rf_5', class_rf_5),
-        # ('rf_4', class_rf_4),
-        ('xgb', class_xgb)
+        ('rf_4', class_rf_4),
+        # ('xgb', class_xgb)
     ]
 
     classifier_voting = voting_only(classifiers_specific_with_params,
@@ -498,9 +498,6 @@ def main(options):
 
     preds = class_svm_rbf.predict(x_test_scaled)
     output_preds(preds, x_test, 'svm_rbf')
-
-    preds = class_rf_4.predict(x_test_scaled)
-    output_preds(preds, x_test, 'rf_4')
 
     preds = class_rf_exp_5.predict(x_test_scaled)
     output_preds(preds, x_test, 'rf_5_explicit')

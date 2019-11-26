@@ -768,3 +768,17 @@ Removing NB, and RandomForest (4) from voting, since seem to make things worse. 
 	FINAL                                        - Stats: Best classifiers + Voting train: 0.882, best classifier cross: 0.846 (+-0.032=0.815), time took: 21 sec, best classifier:
 Conclusion: Not clear if better with or without Logistic, KNN, XGB, don't have enough tries on the website to know
 On the site, the voting is ~.80 down from ~.81, try to remove XGB and return others
+
+### 45. Returned low performance stuff, removed XGB altogether
+	Line 236: Logistic - liblinear - Stats: Default params cross: 0.834 (+-0.025=0.809), grid train: 0.836, best classifier cross: 0.834 (+-0.025=0.809), time took: 14 sec, best classifier:
+	Line 248: KNN - 14             - Stats: Default params cross: 0.836 (+-0.031=0.805), grid train: 0.852, best classifier cross: 0.836 (+-0.031=0.805), time took: 1 sec, best classifier:
+	Line 256: SVM - rbf            - Stats: Default params cross: 0.851 (+-0.027=0.823), grid train: 0.87, best classifier cross: 0.851 (+-0.027=0.823), time took: 1 sec, best classifier:
+	Line 265: SVM - poly           - Stats: Default params cross: 0.837 (+-0.027=0.81), grid train: 0.864, best classifier cross: 0.837 (+-0.027=0.81), time took: 1 sec, best classifier:
+	Line 276: NB                   - Stats: Default params cross: 0.762 (+-0.053=0.71), grid train: 0.763, best classifier cross: 0.762 (+-0.053=0.71), time took: 0 sec, best classifier:
+	Line 282: RandomForest - 5     - Stats: Default params cross: 0.838 (+-0.022=0.816), grid train: 0.873, best classifier cross: 0.84 (+-0.028=0.812), time took: 24 sec, best classifier:
+	Line 294: RandomForest - 4     - Stats: Default params cross: 0.822 (+-0.036=0.786), grid train: 0.855, best classifier cross: 0.831 (+-0.037=0.794), time took: 24 sec, best classifier:
+	Line 302: RandomForest Explicit 5 - Stats: Default params cross: grid train: 0.873, best classifier cross: 0.837 (+-0.025=0.813), time took: 10 sec = 0 min, importances:
+	Line 321: XGB                  - Stats: Default params cross: 0.844 (+-0.025=0.819), grid train: 0.937, best classifier cross: 0.844 (+-0.025=0.819), time took: 9 sec, best classifier:
+	Line 351: FINAL                                        - Stats: Best classifiers + Voting train: 0.859, best classifier cross: 0.838 (+-0.032=0.807), time took: 25 sec, best classifier:
+Conclusion: The scores went down, but perhaps it's due to less overfitting.
+Score of voting on the site: 
