@@ -89,26 +89,21 @@ def prepare_age_title_is_married(both):
     #   more exact, especially regarding differences between Mrs. and Miss
     #   DECISION: For now leave as I did, probably will not make a difference
 
-    # 'Ms' appears only once in test, so replace it with Mrs since it's basically same ages
-    both.loc[(both['Age'].isnull()) & (both['Name'].apply(get_title) == 'Ms'), 'Name'] = "O'Donoghue, Mrs. Bridget"
-
-    titles_col = both['Name'].apply(get_title)
-
     for title in ['Mr', 'Miss', 'Mrs']:
         for cl in [1, 2, 3]:
             average = both[(both['Age'].isnull() == False) &
-                        (titles_col == title) &
-                        (both['Pclass'] == cl)]['Age'].median()
+                           (both['Title'] == title) &
+                           (both['Pclass'] == cl)]['Age'].median()
             print(f"YK: Replacing title {title} in class {cl} age with {average}")
             both.loc[(both['Age'].isnull()) &
-                  (titles_col == title) &
-                  (both['Pclass'] == cl), 'Age'] = average
+                     (both['Title'] == title) &
+                     (both['Pclass'] == cl), 'Age'] = average
 
     # not enough instances of 'Master' and 'Dr' to take median by class also
     for title in ['Master', 'Dr']:
-        average = both[(both['Age'].isnull() == False) & (titles_col == title)]['Age'].median()
+        average = both[(both['Age'].isnull() == False) & (both['Title'] == title)]['Age'].median()
         print(f"YK: Replacing title {title} age with {average}")
-        both.loc[(both['Age'].isnull()) & (titles_col == title), 'Age'] = average
+        both.loc[(both['Age'].isnull()) & (both['Title'] == title), 'Age'] = average
 
     # TODO features - consider not binning, or binning into a different number
     #   try without binning, or binning into a different number of bins
@@ -201,41 +196,42 @@ def prepare_features(train, x_test, options):
     print(f'YK debug: num_train_samples:{num_train_samples}')
     print(f'YK: Features before adding / dropping: {x_test.columns.values}')
 
-    features_no_drop_after_use = []
+    features_to_drop_after_use = []
+    features_to_add_dummies = []
     both = combine_train_x_test(train, x_test)
     print(f'YK debug: both head:\n{both.head}')
 
     # Adding title, see details in Advanced feature engineering.ipynb
-    both['Title'] = both['Name'].apply(get_title).replace({'Lady': 'Mrs',
-                                              'Mme': 'Mrs',
-                                              'Dona': 'Mrs',
-                                              'the Countess': 'Mrs',
-                                              'Ms': 'Miss',
-                                              'Mlle': 'Miss',
-                                              'Sir': 'Mr',
-                                              'Major': 'Mr',
-                                              'Capt': 'Mr',
-                                              'Jonkheer': 'Mr',
-                                              'Don': 'Mr',
-                                              'Col': 'Mr',
-                                              'Rev': 'Mr',
-                                              'Dr': 'Mr'})
+    both['Title'] = both['Name'].apply(get_title).replace(
+        {'Lady': 'Mrs', 'Mme': 'Mrs', 'Dona': 'Mrs', 'the Countess': 'Mrs',
+         'Ms': 'Miss', 'Mlle': 'Miss',
+         'Sir': 'Mr', 'Major': 'Mr', 'Capt': 'Mr', 'Jonkheer': 'Mr', 'Don': 'Mr', 'Col': 'Mr', 'Rev': 'Mr', 'Dr': 'Mr'})
+    features_to_add_dummies.append('Title')
+    features_to_drop_after_use.append('Name')
 
     # Adding Age, potentially Title, and is Married
     if 'Age' not in options['columns_to_drop']:
         prepare_age_title_is_married(both)
-        features_no_drop_after_use.append('Name')
+        features_to_drop_after_use.append('Name')
 
-    # TODO - should keep?
-    # Create a new feature of number of relatives regardless of who they are
-    # Reference category is being removed later based on importance of each of the categories
+    # Create a new feature of number 'Family size' of relatives regardless of who they are
+    #   Group SibSp, Parch, Family size based on different survival rates
     if 'SibSp' not in options['columns_to_drop'] and 'Parch' not in options['columns_to_drop']:
-        sum_sibs_parch = both['SibSp'] + both['Parch']
-        both['Small family'] = sum_sibs_parch.apply(lambda size: 1 if (size < 4) and (size > 0) else 0)
-        both['Large family'] = sum_sibs_parch.apply(lambda size: 1 if (size >= 4) else 0)
-        both['Alone'] = sum_sibs_parch.apply(lambda size: 1 if (size == 0) else 0)
-        features_no_drop_after_use.append('SibSp')
-        features_no_drop_after_use.append('Parch')
+        both['Family size'] = 1 + both['SibSp'] + both['Parch']
+        both['SibSp'] = both['SibSp'].replace({0: '0', 1: '1', 2: '2', 3: '3', 4: '4',
+                                               5: '5+', 8: '5+'})
+        both['Parch'] = both['Parch'].replace({0: '0',
+                                               1: '1_2_3', 2: '1_2_3', 3: '1_2_3',
+                                               4: '4+', 5: '4+', 6: '4+', 9: '4+'})
+        both['Family size'] = both['Family size'].replace({1: '1',
+                                                           2: '2_3', 3: '2_3',
+                                                           4: '4',
+                                                           5: '5_6_7', 6: '5_6_7', 7: '5_6_7',
+                                                           8: '8+', 11: '8+'})
+        features_to_add_dummies.append('SibSp')
+        features_to_add_dummies.append('Parch')
+        features_to_add_dummies.append('Family size')
+
 
     # Prepare Deck features based on first letter of Cabin, unknown Cabin becomes reference category
     # Reference category is being removed later based on importance of each of the categories
@@ -247,7 +243,7 @@ def prepare_features(train, x_test, options):
         both['Deck_FG'] = both['Cabin'].apply(lambda cab: 1 if cab.startswith('F') or cab.startswith('G') else 0)
         both['Deck_Other'] = both['Cabin'].apply(lambda cab: 1 if cab == '' else 0)
         print(f'Deck_Other.value_counts:\n{both["Deck_Other"].value_counts()}')
-        features_no_drop_after_use.append('Cabin')
+        features_to_drop_after_use.append('Cabin')
 
     # Split 3 categorical unique values (1, 2, 3) of Pclass into 2 dummy variables for classes 1 & 2
     # Reference category is being removed later based on importance of each of the categories
@@ -255,12 +251,12 @@ def prepare_features(train, x_test, options):
         both['pclass_1'] = both['Pclass'].apply(lambda cl: 1 if cl == 1 else 0)
         both['pclass_2'] = both['Pclass'].apply(lambda cl: 1 if cl == 2 else 0)
         both['pclass_3'] = both['Pclass'].apply(lambda cl: 1 if cl == 3 else 0)
-        features_no_drop_after_use.append('Pclass')
+        features_to_drop_after_use.append('Pclass')
 
     # Change categorical feature 'Sex' to be 1 encoded 'Male', 1 = Male, 0 = Female
     if 'Sex' not in options['columns_to_drop']:
         both['Male'] = both['Sex'].map({'male': 1, 'female': 0})
-        features_no_drop_after_use.append('Sex')
+        features_to_drop_after_use.append('Sex')
 
     ''' 
         Change categorical feature 'Embarked' with 3 values ('S', 'C', 'Q') to be 3 dummy variables: 
@@ -271,10 +267,10 @@ def prepare_features(train, x_test, options):
         both['Embarked_S'] = both['Embarked'].map({np.NaN: 1, 'S': 1, 'C': 0, 'Q': 0})
         both['Embarked_Q'] = both['Embarked'].map({np.NaN: 0, 'S': 0, 'C': 0, 'Q': 1})
         both['Embarked_C'] = both['Embarked'].map({np.NaN: 0, 'S': 0, 'C': 1, 'Q': 0})
-        features_no_drop_after_use.append('Embarked')
+        features_to_drop_after_use.append('Embarked')
 
     if 'Fare' not in options['columns_to_drop']:
-        mean_class_3_fare = both[(both['Pclass'] == 3) & (both['SibSp'] == 0) & (both['Parch'] == 0)]['Fare'].median()
+        mean_class_3_fare = both[(both['Pclass'] == 3) & (both['SibSp'] == '0') & (both['Parch'] == '0')]['Fare'].median()
         both['Fare'] = both['Fare'].fillna(mean_class_3_fare)
 
         # TODO features - how come 13 bins? Is that based on exploratory analysis? What were we looking for?
@@ -284,16 +280,16 @@ def prepare_features(train, x_test, options):
 
     if 'Ticket' not in options['columns_to_drop']:
         both['Ticket_Frequency'] = both.groupby('Ticket')['Ticket'].transform('count')
-        features_no_drop_after_use.append('Ticket')
+        features_to_drop_after_use.append('Ticket')
 
     prepare_family_ticket_frequencies(both, train['Survived'])
 
     both.drop(options['columns_to_drop'], axis=1, inplace=True)
-    both.drop(features_no_drop_after_use, axis=1, inplace=True)
+    both.drop(features_to_drop_after_use, axis=1, inplace=True)
 
     print(f'YK: Features after dropping before adding dummy: {both.columns.values}')
 
-    both = pd.get_dummies(both, columns=['Title'])
+    both = pd.get_dummies(both, columns=features_to_add_dummies)
 
     print(f'YK: Features after dropping after adding dummy: {both.columns.values}')
 
@@ -304,6 +300,7 @@ def prepare_features(train, x_test, options):
         print(both[feat].value_counts())
 
     return split_into_x_train_x_test(both)
+
 
 def scale_train(x_train):
     scaler = StandardScaler()

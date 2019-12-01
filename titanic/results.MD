@@ -821,3 +821,16 @@ Conclusion: Leader is worse, returning to default params
 	XGB                  - Stats: Default params cross: 0.844 (+-0.025=0.819), grid train: 0.937, best classifier cross: 0.844 (+-0.025=0.819), time took: 10 sec, best classifier:
 	FINAL                                        - Stats: Best classifiers + Voting train: 0.883, best classifier cross: 0.841 (+-0.034=0.807), time took: 30 sec, best classifier:
 On website: RandomForest (5) ~.82, Voting ~.81, XGB - ~.77
+
+### 49. Adding a title feature: Mr, Mrs, Miss, Master, (everything else was put into these 4 based on gender, age and assumed marital status) 
+	Logistic - liblinear - Stats: Default params cross: 0.844 (+-0.029=0.815), grid train: 0.85, best classifier cross: 0.844 (+-0.029=0.815), time took: 21 sec, best classifier:
+	KNN - 14             - Stats: Default params cross: 0.831 (+-0.033=0.798), grid train: 0.846, best classifier cross: 0.831 (+-0.033=0.798), time took: 1 sec, best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.834 (+-0.038=0.796), grid train: 0.873, best classifier cross: 0.834 (+-0.038=0.796), time took: 2 sec, best classifier:
+	SVM - poly           - Stats: Default params cross: 0.844 (+-0.036=0.808), grid train: 0.881, best classifier cross: 0.844 (+-0.036=0.808), time took: 2 sec, best classifier:
+	NB                   - Stats: Default params cross: 0.793 (+-0.046=0.746), grid train: 0.798, best classifier cross: 0.793 (+-0.046=0.746), time took: 0 sec, best classifier:
+	RandomForest - 5     - Stats: Default params cross: 0.842 (+-0.033=0.809), grid train: 0.859, best classifier cross: 0.844 (+-0.031=0.813), time took: 34 sec, best classifier:
+	RandomForest - 4     - Stats: Default params cross: 0.841 (+-0.03=0.811), grid train: 0.848, best classifier cross: 0.842 (+-0.03=0.812), time took: 31 sec, best classifier:
+	RandomForest Explicit 5 - Stats: Default params cross: grid train: 0.856, best classifier cross: 0.844 (+-0.037=0.807), time took: 14 sec = 0 min, importances:
+	XGB                  - Stats: Default params cross: 0.826 (+-0.031=0.795), grid train: 0.948, best classifier cross: 0.826 (+-0.031=0.795), time took: 20 sec, best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.886, best classifier cross: 0.846 (+-0.033=0.813), time took: 37 sec, best classifier:
+Conclusion: some made better, some worse. Leaving for now, will delete features later
