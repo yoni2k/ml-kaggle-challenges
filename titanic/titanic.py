@@ -238,29 +238,20 @@ def prepare_features(train, x_test, options):
     features_to_drop_after_use.append('Cabin')
     features_to_add_dummies.append('Deck')
 
-    # Split 3 categorical unique values (1, 2, 3) of Pclass into 2 dummy variables for classes 1 & 2
-    # Reference category is being removed later based on importance of each of the categories
-    if 'Pclass' not in options['columns_to_drop']:
-        both['pclass_1'] = both['Pclass'].apply(lambda cl: 1 if cl == 1 else 0)
-        both['pclass_2'] = both['Pclass'].apply(lambda cl: 1 if cl == 2 else 0)
-        both['pclass_3'] = both['Pclass'].apply(lambda cl: 1 if cl == 3 else 0)
-        features_to_drop_after_use.append('Pclass')
+    # 4 ---> Add Pclass category
+    features_to_add_dummies.append('Pclass')
 
-    # Change categorical feature 'Sex' to be 1 encoded 'Male', 1 = Male, 0 = Female
-    if 'Sex' not in options['columns_to_drop']:
-        both['Male'] = both['Sex'].map({'male': 1, 'female': 0})
-        features_to_drop_after_use.append('Sex')
+    # 5 ---> Add Sex
+    both['Sex'] = both['Sex'].map({'male': 1, 'female': 0})
 
-    ''' 
-        Change categorical feature 'Embarked' with 3 values ('S', 'C', 'Q') to be 3 dummy variables: 
-            Reference category is being removed later based on importance of each of the categories
-            In addition, handle 2 missing values to have them the most common value 'S'
-    '''
-    if 'Embarked' not in options['columns_to_drop']:
-        both['Embarked_S'] = both['Embarked'].map({np.NaN: 1, 'S': 1, 'C': 0, 'Q': 0})
-        both['Embarked_Q'] = both['Embarked'].map({np.NaN: 0, 'S': 0, 'C': 0, 'Q': 1})
-        both['Embarked_C'] = both['Embarked'].map({np.NaN: 0, 'S': 0, 'C': 1, 'Q': 0})
-        features_to_drop_after_use.append('Embarked')
+    # 6 ---> Add Embarked, fill the 2 missing values with the most common S
+    both['Embarked'] = both['Embarked'].fillna('S')
+    features_to_add_dummies.append('Embarked')
+
+    # 7 --> Add new feature of Ticked Frequency - how many times this ticket appeared,
+    #   kind of size of family but of ticket
+    both['Ticket_Frequency'] = both.groupby('Ticket')['Ticket'].transform('count')
+    features_to_drop_after_use.append('Ticket')
 
     if 'Fare' not in options['columns_to_drop']:
         mean_class_3_fare = both[(both['Pclass'] == 3) & (both['SibSp'] == '0') & (both['Parch'] == '0')]['Fare'].median()
@@ -271,9 +262,6 @@ def prepare_features(train, x_test, options):
         #   DECISION: for now don't do it, probably won't find something much better
         both['Fare'] = LabelEncoder().fit_transform(pd.qcut(both['Fare'], 13))
 
-    if 'Ticket' not in options['columns_to_drop']:
-        both['Ticket_Frequency'] = both.groupby('Ticket')['Ticket'].transform('count')
-        features_to_drop_after_use.append('Ticket')
 
     # Adding Age, potentially Title, and is Married
     if 'Age' not in options['columns_to_drop']:
