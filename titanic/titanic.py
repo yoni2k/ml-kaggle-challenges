@@ -201,7 +201,7 @@ def prepare_features(train, x_test, options):
     both = combine_train_x_test(train, x_test)
     print(f'YK debug: both head:\n{both.head}')
 
-    # Adding title, see details in Advanced feature engineering.ipynb
+    # 1 ---> Adding title, see details in Advanced feature engineering.ipynb
     both['Title'] = both['Name'].apply(get_title).replace(
         {'Lady': 'Mrs', 'Mme': 'Mrs', 'Dona': 'Mrs', 'the Countess': 'Mrs',
          'Ms': 'Miss', 'Mlle': 'Miss',
@@ -209,41 +209,34 @@ def prepare_features(train, x_test, options):
     features_to_add_dummies.append('Title')
     features_to_drop_after_use.append('Name')
 
-    # Adding Age, potentially Title, and is Married
-    if 'Age' not in options['columns_to_drop']:
-        prepare_age_title_is_married(both)
-        features_to_drop_after_use.append('Name')
-
-    # Create a new feature of number 'Family size' of relatives regardless of who they are
+    # 2 ---> Create a new feature of number 'Family size' of relatives regardless of who they are
     #   Group SibSp, Parch, Family size based on different survival rates
-    if 'SibSp' not in options['columns_to_drop'] and 'Parch' not in options['columns_to_drop']:
-        both['Family size'] = 1 + both['SibSp'] + both['Parch']
-        both['SibSp'] = both['SibSp'].replace({0: '0', 1: '1', 2: '2', 3: '3', 4: '4',
-                                               5: '5+', 8: '5+'})
-        both['Parch'] = both['Parch'].replace({0: '0',
-                                               1: '1_2_3', 2: '1_2_3', 3: '1_2_3',
-                                               4: '4+', 5: '4+', 6: '4+', 9: '4+'})
-        both['Family size'] = both['Family size'].replace({1: '1',
-                                                           2: '2_3', 3: '2_3',
-                                                           4: '4',
-                                                           5: '5_6_7', 6: '5_6_7', 7: '5_6_7',
-                                                           8: '8+', 11: '8+'})
-        features_to_add_dummies.append('SibSp')
-        features_to_add_dummies.append('Parch')
-        features_to_add_dummies.append('Family size')
+    both['Family size'] = 1 + both['SibSp'] + both['Parch']
+    both['SibSp'] = both['SibSp'].replace({0: '0', 1: '1', 2: '2', 3: '3', 4: '4',
+                                           5: '5+', 8: '5+'})
+    both['Parch'] = both['Parch'].replace({0: '0',
+                                           1: '123', 2: '123', 3: '123',
+                                           4: '4+', 5: '4+', 6: '4+', 9: '4+'})
+    both['Family size'] = both['Family size'].replace({1: '1',
+                                                       2: '23', 3: '23',
+                                                       4: '4',
+                                                       5: '567', 6: '567', 7: '567',
+                                                       8: '8+', 11: '8+'})
+    features_to_add_dummies.append('SibSp')
+    features_to_add_dummies.append('Parch')
+    features_to_add_dummies.append('Family size')
 
 
-    # Prepare Deck features based on first letter of Cabin, unknown Cabin becomes reference category
+    # 3. ----> Prepare Deck features based on first letter of Cabin, unknown Cabin becomes reference category
     # Reference category is being removed later based on importance of each of the categories
-    if 'Cabin' not in options['columns_to_drop']:
-        both['Cabin'] = both['Cabin'].fillna('')
-        both['Deck_AC'] = both['Cabin'].apply(lambda cab: 1 if cab.startswith('A') or cab.startswith('C') else 0)
-        both['Deck_BT'] = both['Cabin'].apply(lambda cab: 1 if cab.startswith('B') or cab.startswith('T') else 0)
-        both['Deck_DE'] = both['Cabin'].apply(lambda cab: 1 if cab.startswith('D') or cab.startswith('E') else 0)
-        both['Deck_FG'] = both['Cabin'].apply(lambda cab: 1 if cab.startswith('F') or cab.startswith('G') else 0)
-        both['Deck_Other'] = both['Cabin'].apply(lambda cab: 1 if cab == '' else 0)
-        print(f'Deck_Other.value_counts:\n{both["Deck_Other"].value_counts()}')
-        features_to_drop_after_use.append('Cabin')
+    both['Cabin'] = both['Cabin'].fillna('unknown')
+    both['Deck'] = both['Cabin'].apply(lambda cab: cab[0] if (cab != 'unknown') else cab)
+    both['Deck'] = both['Deck'].replace({'unknown': 'unknown_T', 'T': 'unknown_T',
+                                                'B': 'BDE', 'D': 'BDE', 'E': 'BDE',
+                                                'C': 'CF', 'F': 'CF',
+                                                'A': 'AG', 'G': 'AG'})
+    features_to_drop_after_use.append('Cabin')
+    features_to_add_dummies.append('Deck')
 
     # Split 3 categorical unique values (1, 2, 3) of Pclass into 2 dummy variables for classes 1 & 2
     # Reference category is being removed later based on importance of each of the categories
@@ -281,6 +274,11 @@ def prepare_features(train, x_test, options):
     if 'Ticket' not in options['columns_to_drop']:
         both['Ticket_Frequency'] = both.groupby('Ticket')['Ticket'].transform('count')
         features_to_drop_after_use.append('Ticket')
+
+    # Adding Age, potentially Title, and is Married
+    if 'Age' not in options['columns_to_drop']:
+        prepare_age_title_is_married(both)
+        features_to_drop_after_use.append('Name')
 
     prepare_family_ticket_frequencies(both, train['Survived'])
 
