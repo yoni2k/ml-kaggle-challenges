@@ -44,6 +44,7 @@ TODO:
 - How come Survival_rate came out not so important in the model, for me it was 65%?
 '''
 
+NUM_TRAIN_SAMPLES = 891
 
 def read_files():
     train = pd.read_csv('input/train.csv', index_col='PassengerId')
@@ -51,11 +52,27 @@ def read_files():
     return train, x_test
 
 
-# TODO keep?
-def remove_outliers(x, y):
-    x = x[x['Fare'] < x['Fare'].quantile(.995)]
-    y = y.loc[x.index]
-    return x, y
+# TODO go over all combine and split, remove not used
+def combine_train_x_test(train, x_test):
+    return pd.concat([train.drop('Survived', axis=1), x_test])
+
+
+def combine_x_train_x_test(x_train, x_test):
+    return pd.concat([x_train, x_test])
+
+
+def combine_x_train_y_train(x_train, y_train):
+    train = x_train.copy()
+    train['Survived'] = y_train
+    return train
+
+
+def split_into_x_train_x_test(both):
+    return both.iloc[:NUM_TRAIN_SAMPLES], both.iloc[NUM_TRAIN_SAMPLES:]
+
+
+def split_into_x_train_y_train(train):
+    return train.drop('Survived', axis=1), train['Survived']
 
 
 def get_title(full_name):
@@ -66,40 +83,38 @@ def extract_lastname(full_name):
     return full_name.split(',')[0]
 
 
-def prepare_age_title_is_married(x):
+def prepare_age_title_is_married(both):
     # TODO features - in https://www.kaggle.com/gunesevitan/advanced-feature-engineering-tutorial-with-titanic
     #   did something a bit different, based on Sex and Class, and not on title.  I think doing it on title is
     #   more exact, especially regarding differences between Mrs. and Miss
     #   DECISION: For now leave as I did, probably will not make a difference
 
     # 'Ms' appears only once in test, so replace it with Mrs since it's basically same ages
-    x.loc[(x['Age'].isnull()) & (x['Name'].apply(get_title) == 'Ms'), 'Name'] = "O'Donoghue, Mrs. Bridget"
+    both.loc[(both['Age'].isnull()) & (both['Name'].apply(get_title) == 'Ms'), 'Name'] = "O'Donoghue, Mrs. Bridget"
 
-    titles_col = x['Name'].apply(get_title)
+    titles_col = both['Name'].apply(get_title)
 
     for title in ['Mr', 'Miss', 'Mrs']:
         for cl in [1, 2, 3]:
-            average = x[(x['Age'].isnull() == False) &
+            average = both[(both['Age'].isnull() == False) &
                         (titles_col == title) &
-                        (x['Pclass'] == cl)]['Age'].median()
+                        (both['Pclass'] == cl)]['Age'].median()
             print(f"YK: Replacing title {title} in class {cl} age with {average}")
-            x.loc[(x['Age'].isnull()) &
+            both.loc[(both['Age'].isnull()) &
                   (titles_col == title) &
-                  (x['Pclass'] == cl), 'Age'] = average
+                  (both['Pclass'] == cl), 'Age'] = average
 
     # not enough instances of 'Master' and 'Dr' to take median by class also
     for title in ['Master', 'Dr']:
-        average = x[(x['Age'].isnull() == False) & (titles_col == title)]['Age'].median()
+        average = both[(both['Age'].isnull() == False) & (titles_col == title)]['Age'].median()
         print(f"YK: Replacing title {title} age with {average}")
-        x.loc[(x['Age'].isnull()) & (titles_col == title), 'Age'] = average
+        both.loc[(both['Age'].isnull()) & (titles_col == title), 'Age'] = average
 
     # TODO features - consider not binning, or binning into a different number
     #   try without binning, or binning into a different number of bins
     #   make things worse, removing for now
     #   Conclusion: tried, didn't make much of a difference, made slightly worse, leaving not encoded
     # x['Age'] = LabelEncoder().fit_transform(pd.qcut(x['Age'], 11))
-
-    x['Lady married'] = titles_col.apply(lambda title: 1 if title == 'Mrs' else 0)
 
     # TODO features - https://www.kaggle.com/gunesevitan/advanced-feature-engineering-tutorial-with-titanic
     #   also saved title with grouping, but it doesn't seem to be helpful since
@@ -114,110 +129,137 @@ def prepare_age_title_is_married(x):
     '''
 
 
-def prepare_family_ticket_frequencies(x):
-    # add temporary last name who it's going to be decided by if it's the same family
-    x['Last name'] = x['Name'].apply(extract_lastname)
+def prepare_family_ticket_frequencies(both, y_train):
 
-    x['Known family survived %'] = np.NaN
-    x['Known ticket survived %'] = np.NaN
-    x['Known family/ticket survived %'] = np.NaN
-    x['Family/ticket survival known'] = 1
+    num_training_samples = y_train.shape[0]
+    max_train_index = y_train.index[-1]
+
+    train = combine_x_train_y_train(split_into_x_train_x_test(both)[0], y_train)
+
+    # add temporary last name who it's going to be decided by if it's the same family
+    both['Last name'] = both['Name'].apply(extract_lastname)
+
+    both['Known family survived %'] = np.NaN
+    both['Known ticket survived %'] = np.NaN
+    both['Known family/ticket survived %'] = np.NaN
+    both['Family/ticket survival known'] = 1
 
     # to mark same information in test, need to known what last names and ticket names were known
-    known_last_names = x[x['Survived'] != 2]['Last name'].unique()
-    known_tickets = x[x['Survived'] != 2]['Ticket'].unique()
-    mean_survival_rate = x[x['Survived'] != 2]['Survived'].mean()
+    known_last_names = both.loc[train.index]['Last name'].unique()
+    known_tickets = train['Ticket'].unique()
+    mean_survival_rate = train['Survived'].mean()
 
     # go over all test passengers, and fill in the survival information
-    for i in x.index:
-        is_train = 1 if x.loc[i, 'Survived'] != 2 else 0
-        did_survive = 1 if x.loc[i, 'Survived'] == 1 else 0
-        last_name = x.loc[i, 'Last name']
-        ticket = x.loc[i, 'Ticket']
+    for i in both.index:
+        is_train = 1 if i <= max_train_index else 0
+        did_survive = 1 if (is_train == 1) and (train.loc[i, 'Survived'] == 1) else 0
+        last_name = both.loc[i, 'Last name']
+        ticket = both.loc[i, 'Ticket']
 
         # if have other passengers in training set of same family whose survival information is known, copy average here
-        if x[(x['Survived'] != 2) & (x['Last name'] == last_name)]['Survived'].count() > is_train:
-            x.loc[i, 'Known family survived %'] = \
-                (x[(x['Survived'] != 2) & (x['Last name'] == last_name)]['Survived'].sum() - did_survive) / \
-                (x[(x['Survived'] != 2) & (x['Last name'] == last_name)]['Survived'].count() - is_train)
+        if train[both['Last name'] == last_name]['Survived'].count() > is_train:
+            both.loc[i, 'Known family survived %'] = \
+                (train[both['Last name'] == last_name]['Survived'].sum() - did_survive) / \
+                (train[both['Last name'] == last_name]['Survived'].count() - is_train)
 
         # if have other passengers in training set of same family whose survival information is known, copy average here
         # add information for training only of how many of known survived in the same ticket
-        if x[(x['Survived'] != 2) & (x['Ticket'] == ticket)]['Survived'].count() > is_train:
-            x.loc[i, 'Known family survived %'] = \
-                (x[(x['Survived'] != 2) & (x['Ticket'] == ticket)]['Survived'].sum() - did_survive) / \
-                (x[(x['Survived'] != 2) & (x['Ticket'] == ticket)]['Survived'].count() - is_train)
+        if train[train['Ticket'] == ticket]['Survived'].count() > is_train:
+            both.loc[i, 'Known family survived %'] = \
+                (train[train['Ticket'] == ticket]['Survived'].sum() - did_survive) / \
+                (train[train['Ticket'] == ticket]['Survived'].count() - is_train)
 
         # For final value of
-        if np.isnan(x.loc[i, 'Known family survived %']) == False:
-            if np.isnan(x.loc[i, 'Known ticket survived %']) == False:
+        if np.isnan(both.loc[i, 'Known family survived %']) == False:
+            if np.isnan(both.loc[i, 'Known ticket survived %']) == False:
                 # both family and ticket survival rates known, take average
-                x.loc[i, 'Known family/ticket survived %'] = \
-                    (x.loc[i, 'Known family survived %'] + x.loc[i, 'Known ticket survived %']) / 2
+                both.loc[i, 'Known family/ticket survived %'] = \
+                    (both.loc[i, 'Known family survived %'] + both.loc[i, 'Known ticket survived %']) / 2
             else:
                 # only family survival known, take it
-                x.loc[i, 'Known family/ticket survived %'] = x.loc[i, 'Known family survived %']
-        elif np.isnan(x.loc[i, 'Known ticket survived %']) == False:
+                both.loc[i, 'Known family/ticket survived %'] = both.loc[i, 'Known family survived %']
+        elif np.isnan(both.loc[i, 'Known ticket survived %']) == False:
             # only ticket is known - take value from ticket
-            x.loc[i, 'Known family/ticket survived %'] = x.loc[i, 'Known ticket survived %']
+            both.loc[i, 'Known family/ticket survived %'] = both.loc[i, 'Known ticket survived %']
         else:
             # none known, set mean survival value
-            x.loc[i, 'Known family/ticket survived %'] = mean_survival_rate
-            x.loc[i, 'Family/ticket survival known'] = 0
+            both.loc[i, 'Known family/ticket survived %'] = mean_survival_rate
+            both.loc[i, 'Family/ticket survival known'] = 0
 
     print(f'YK debug: Train survival rates: \n'
-          f'{x[x["Survived"] != 2]["Known family/ticket survived %"].value_counts(dropna=False)}')
+          f'{split_into_x_train_x_test(both)[0]["Known family/ticket survived %"].value_counts(dropna=False)}')
     print(f'YK debug: Test survival rates: \n'
-        f'{x[x["Survived"] == 2]["Known family/ticket survived %"].value_counts(dropna=False)}')
+        f'{split_into_x_train_x_test(both)[1]["Known family/ticket survived %"].value_counts(dropna=False)}')
 
     # drop temporary columns used
-    x.drop(['Last name', 'Known family survived %', 'Known ticket survived %'], axis=1, inplace=True)
+    both.drop(['Last name', 'Known family survived %', 'Known ticket survived %'], axis=1, inplace=True)
 
 
-def prepare_features(x, options):
-    print(f'YK: Features before adding / dropping: {x.columns.values}')
+def prepare_features(train, x_test, options):
+    num_train_samples = train.shape[0]
+
+    print(f'YK debug: num_train_samples:{num_train_samples}')
+    print(f'YK: Features before adding / dropping: {x_test.columns.values}')
 
     features_no_drop_after_use = []
+    both = combine_train_x_test(train, x_test)
+    print(f'YK debug: both head:\n{both.head}')
+
+    # Adding title, see details in Advanced feature engineering.ipynb
+    both['Title'] = both['Name'].apply(get_title).replace({'Lady': 'Mrs',
+                                              'Mme': 'Mrs',
+                                              'Dona': 'Mrs',
+                                              'the Countess': 'Mrs',
+                                              'Ms': 'Miss',
+                                              'Mlle': 'Miss',
+                                              'Sir': 'Mr',
+                                              'Major': 'Mr',
+                                              'Capt': 'Mr',
+                                              'Jonkheer': 'Mr',
+                                              'Don': 'Mr',
+                                              'Col': 'Mr',
+                                              'Rev': 'Mr',
+                                              'Dr': 'Mr'})
 
     # Adding Age, potentially Title, and is Married
     if 'Age' not in options['columns_to_drop']:
-        prepare_age_title_is_married(x)
+        prepare_age_title_is_married(both)
         features_no_drop_after_use.append('Name')
 
     # TODO - should keep?
     # Create a new feature of number of relatives regardless of who they are
     # Reference category is being removed later based on importance of each of the categories
     if 'SibSp' not in options['columns_to_drop'] and 'Parch' not in options['columns_to_drop']:
-        sum_sibs_parch = x['SibSp'] + x['Parch']
-        x['Small family'] = sum_sibs_parch.apply(lambda size: 1 if (size < 4) and (size > 0) else 0)
-        x['Large family'] = sum_sibs_parch.apply(lambda size: 1 if (size >= 4) else 0)
-        x['Alone'] = sum_sibs_parch.apply(lambda size: 1 if (size == 0) else 0)
+        sum_sibs_parch = both['SibSp'] + both['Parch']
+        both['Small family'] = sum_sibs_parch.apply(lambda size: 1 if (size < 4) and (size > 0) else 0)
+        both['Large family'] = sum_sibs_parch.apply(lambda size: 1 if (size >= 4) else 0)
+        both['Alone'] = sum_sibs_parch.apply(lambda size: 1 if (size == 0) else 0)
         features_no_drop_after_use.append('SibSp')
         features_no_drop_after_use.append('Parch')
 
     # Prepare Deck features based on first letter of Cabin, unknown Cabin becomes reference category
     # Reference category is being removed later based on importance of each of the categories
     if 'Cabin' not in options['columns_to_drop']:
-        x['Cabin'] = x['Cabin'].fillna('')
-        x['Deck_AC'] = x['Cabin'].apply(lambda cab: 1 if cab.startswith('A') or cab.startswith('C') else 0)
-        x['Deck_BT'] = x['Cabin'].apply(lambda cab: 1 if cab.startswith('B') or cab.startswith('T') else 0)
-        x['Deck_DE'] = x['Cabin'].apply(lambda cab: 1 if cab.startswith('D') or cab.startswith('E') else 0)
-        x['Deck_FG'] = x['Cabin'].apply(lambda cab: 1 if cab.startswith('F') or cab.startswith('G') else 0)
-        x['Deck_Other'] = x['Cabin'].apply(lambda cab: 1 if cab == '' else 0)
-        print(f'Deck_Other.value_counts:\n{x["Deck_Other"].value_counts()}')
+        both['Cabin'] = both['Cabin'].fillna('')
+        both['Deck_AC'] = both['Cabin'].apply(lambda cab: 1 if cab.startswith('A') or cab.startswith('C') else 0)
+        both['Deck_BT'] = both['Cabin'].apply(lambda cab: 1 if cab.startswith('B') or cab.startswith('T') else 0)
+        both['Deck_DE'] = both['Cabin'].apply(lambda cab: 1 if cab.startswith('D') or cab.startswith('E') else 0)
+        both['Deck_FG'] = both['Cabin'].apply(lambda cab: 1 if cab.startswith('F') or cab.startswith('G') else 0)
+        both['Deck_Other'] = both['Cabin'].apply(lambda cab: 1 if cab == '' else 0)
+        print(f'Deck_Other.value_counts:\n{both["Deck_Other"].value_counts()}')
         features_no_drop_after_use.append('Cabin')
 
     # Split 3 categorical unique values (1, 2, 3) of Pclass into 2 dummy variables for classes 1 & 2
     # Reference category is being removed later based on importance of each of the categories
     if 'Pclass' not in options['columns_to_drop']:
-        x['pclass_1'] = x['Pclass'].apply(lambda cl: 1 if cl == 1 else 0)
-        x['pclass_2'] = x['Pclass'].apply(lambda cl: 1 if cl == 2 else 0)
-        x['pclass_3'] = x['Pclass'].apply(lambda cl: 1 if cl == 3 else 0)
+        both['pclass_1'] = both['Pclass'].apply(lambda cl: 1 if cl == 1 else 0)
+        both['pclass_2'] = both['Pclass'].apply(lambda cl: 1 if cl == 2 else 0)
+        both['pclass_3'] = both['Pclass'].apply(lambda cl: 1 if cl == 3 else 0)
         features_no_drop_after_use.append('Pclass')
 
     # Change categorical feature 'Sex' to be 1 encoded 'Male', 1 = Male, 0 = Female
     if 'Sex' not in options['columns_to_drop']:
-        x['Male'] = x['Sex'].map({'male': 1, 'female': 0})
+        both['Male'] = both['Sex'].map({'male': 1, 'female': 0})
         features_no_drop_after_use.append('Sex')
 
     ''' 
@@ -226,36 +268,42 @@ def prepare_features(x, options):
             In addition, handle 2 missing values to have them the most common value 'S'
     '''
     if 'Embarked' not in options['columns_to_drop']:
-        x['Embarked_S'] = x['Embarked'].map({np.NaN: 1, 'S': 1, 'C': 0, 'Q': 0})
-        x['Embarked_Q'] = x['Embarked'].map({np.NaN: 0, 'S': 0, 'C': 0, 'Q': 1})
-        x['Embarked_C'] = x['Embarked'].map({np.NaN: 0, 'S': 0, 'C': 1, 'Q': 0})
+        both['Embarked_S'] = both['Embarked'].map({np.NaN: 1, 'S': 1, 'C': 0, 'Q': 0})
+        both['Embarked_Q'] = both['Embarked'].map({np.NaN: 0, 'S': 0, 'C': 0, 'Q': 1})
+        both['Embarked_C'] = both['Embarked'].map({np.NaN: 0, 'S': 0, 'C': 1, 'Q': 0})
         features_no_drop_after_use.append('Embarked')
 
     if 'Fare' not in options['columns_to_drop']:
-        mean_class_3_fare = x[(x['Pclass'] == 3) & (x['SibSp'] == 0) & (x['Parch'] == 0)]['Fare'].median()
-        x['Fare'] = x['Fare'].fillna(mean_class_3_fare)
+        mean_class_3_fare = both[(both['Pclass'] == 3) & (both['SibSp'] == 0) & (both['Parch'] == 0)]['Fare'].median()
+        both['Fare'] = both['Fare'].fillna(mean_class_3_fare)
 
         # TODO features - how come 13 bins? Is that based on exploratory analysis? What were we looking for?
         #   Try as optimization input with a different number of bins
         #   DECISION: for now don't do it, probably won't find something much better
-        x['Fare'] = LabelEncoder().fit_transform(pd.qcut(x['Fare'], 13))
+        both['Fare'] = LabelEncoder().fit_transform(pd.qcut(both['Fare'], 13))
 
     if 'Ticket' not in options['columns_to_drop']:
-        x['Ticket_Frequency'] = x.groupby('Ticket')['Ticket'].transform('count')
+        both['Ticket_Frequency'] = both.groupby('Ticket')['Ticket'].transform('count')
         features_no_drop_after_use.append('Ticket')
 
-    prepare_family_ticket_frequencies(x)
+    prepare_family_ticket_frequencies(both, train['Survived'])
 
-    x.drop(options['columns_to_drop'], axis=1, inplace=True)
-    x.drop(features_no_drop_after_use, axis=1, inplace=True)
+    both.drop(options['columns_to_drop'], axis=1, inplace=True)
+    both.drop(features_no_drop_after_use, axis=1, inplace=True)
 
-    print(f'YK: Features after dropping: {x.columns.values}')
-    print(f'YK: both.info():\n{x.info()}')
+    print(f'YK: Features after dropping before adding dummy: {both.columns.values}')
+
+    both = pd.get_dummies(both, columns=['Title'])
+
+    print(f'YK: Features after dropping after adding dummy: {both.columns.values}')
+
+    print(f'YK: both.info():\n{both.info()}')
     print(f'YK: Value counts of all values:')
-    for feat in x.columns.values:
+    for feat in both.columns.values:
         print(f'--------------- {feat}:')
-        print(x[feat].value_counts())
+        print(both[feat].value_counts())
 
+    return split_into_x_train_x_test(both)
 
 def scale_train(x_train):
     scaler = StandardScaler()
@@ -341,22 +389,19 @@ def voting_only(classifiers, x_train, y_train, weights=None):
 def main(options):
     start_time_total = time.time()
 
+    # TODO remove all the compare lines
     train, x_test = read_files()
+    debug_train_index_before = train.index
+    debug_test_index_before = x_test.index
 
-    # Shuffling doesn't seem to help.  Remove for now TODO - should stay?
-    # x_train, y_train = shuffle(x_train, y_train, random_state=42)
+    x_train, x_test = prepare_features(train, x_test, options)
 
-    # TODO keep?
-    # x, y = remove_outliers(x, y)
+    debug_x_train_index_after = x_train.index
+    debug_test_index_after = x_test.index
+    assert(np.array_equal(debug_train_index_before, debug_x_train_index_after))
+    assert (np.array_equal(debug_test_index_before, debug_test_index_after))
 
-    x_test['Survived'] = 2
-    both = pd.concat([train, x_test], axis=0)
-
-    prepare_features(both, options)
-
-    x_train = both[both['Survived'] != 2].drop('Survived', axis=1)
-    y_train = both[both['Survived'] != 2]['Survived']
-    x_test = both[both['Survived'] == 2].drop('Survived', axis=1)
+    y_train = train['Survived']
 
     scaler = scale_train(x_train)
     x_train_scaled = scaler.transform(x_train)
@@ -522,12 +567,12 @@ options = {
                         # 'Pclass'
                         # 'Parch'      # doesn't help at the end - border line
 
-                        'pclass_2',
-                        'Alone',
-                        'Deck_FG',
-                        'Deck_AC',
-                        'Deck_BT',
-                        'Embarked',
+                        #'pclass_2',
+                        #'Alone',
+                        #'Deck_FG',
+                        #'Deck_AC',
+                        #'Deck_BT',
+                        #'Embarked',
 
                         # 'Family/ticket survival known' - removing it gives slightly worse results and larger deltas
                         ],
