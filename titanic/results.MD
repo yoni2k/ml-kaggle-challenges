@@ -834,3 +834,44 @@ On website: RandomForest (5) ~.82, Voting ~.81, XGB - ~.77
 	XGB                  - Stats: Default params cross: 0.826 (+-0.031=0.795), grid train: 0.948, best classifier cross: 0.826 (+-0.031=0.795), time took: 20 sec, best classifier:
 	FINAL                                        - Stats: Best classifiers + Voting train: 0.886, best classifier cross: 0.846 (+-0.033=0.813), time took: 37 sec, best classifier:
 Conclusion: some made better, some worse. Leaving for now, will delete features later
+
+### 50. Adding different categories based on survival rate of family related: SibSp, Parch, and new feature of Family size (1 + SibSp + 1 Parch)
+3 of these features are clearly closely correlated features, we'll remove the less relevant later. (there are 2 more categories below that will also have high correlation, number with same last name, and number with same ticket number).  Can let the models to actually choose what's the most important categories
+Line 363: Logistic - liblinear - Stats: Default params cross: 0.838 (+-0.032=0.807), grid train: 0.853, best classifier cross: 0.838 (+-0.032=0.807), time took: 22 sec, best classifier:
+	KNN - 14             - Stats: Default params cross: 0.814 (+-0.03=0.784), grid train: 0.833, best classifier cross: 0.814 (+-0.03=0.784), time took: 1 sec, best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.827 (+-0.032=0.795), grid train: 0.871, best classifier cross: 0.827 (+-0.032=0.795), time took: 4 sec, best classifier:
+	SVM - poly           - Stats: Default params cross: 0.838 (+-0.037=0.801), grid train: 0.879, best classifier cross: 0.838 (+-0.037=0.801), time took: 2 sec, best classifier:
+	NB                   - Stats: Default params cross: 0.419 (+-0.015=0.404), grid train: 0.433, best classifier cross: 0.419 (+-0.015=0.404), time took: 0 sec, best classifier:
+	RandomForest - 5     - Stats: Default params cross: 0.841 (+-0.033=0.808), grid train: 0.861, best classifier cross: 0.841 (+-0.035=0.805), time took: 33 sec, best classifier:
+	RandomForest - 4     - Stats: Default params cross: 0.835 (+-0.036=0.799), grid train: 0.844, best classifier cross: 0.834 (+-0.033=0.8), time took: 32 sec, best classifier:
+	RandomForest Explicit 5 - Stats: Default params cross: grid train: 0.862, best classifier cross: 0.842 (+-0.034=0.807), time took: 13 sec = 0 min, importances:
+	XGB                  - Stats: Default params cross: 0.833 (+-0.03=0.803), grid train: 0.946, best classifier cross: 0.833 (+-0.03=0.803), time took: 23 sec, best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.886, best classifier cross: 0.838 (+-0.032=0.806), time took: 38 sec, best classifier:
+Conclusion: although accuracy is worse, leaving, will remove most correlated and less relevant later
+
+### 51. Splitting Deck a bit better based on how frequence a category is and survival rate
+	Logistic - liblinear - Stats: Default params cross: 0.84 (+-0.037=0.803), grid train: 0.856, best classifier cross: 0.84 (+-0.037=0.803), time took: 22 sec, best classifier:
+	KNN - 14             - Stats: Default params cross: 0.812 (+-0.029=0.782), grid train: 0.832, best classifier cross: 0.812 (+-0.029=0.782), time took: 2 sec, best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.826 (+-0.034=0.792), grid train: 0.872, best classifier cross: 0.826 (+-0.034=0.792), time took: 4 sec, best classifier:
+	SVM - poly           - Stats: Default params cross: 0.841 (+-0.039=0.801), grid train: 0.878, best classifier cross: 0.841 (+-0.039=0.801), time took: 2 sec, best classifier:
+	NB                   - Stats: Default params cross: 0.416 (+-0.016=0.4), grid train: 0.433, best classifier cross: 0.416 (+-0.016=0.4), time took: 0 sec, best classifier:
+	RandomForest - 5     - Stats: Default params cross: 0.845 (+-0.037=0.809), grid train: 0.864, best classifier cross: 0.844 (+-0.035=0.809), time took: 33 sec, best classifier:
+	RandomForest - 4     - Stats: Default params cross: 0.837 (+-0.035=0.802), grid train: 0.855, best classifier cross: 0.837 (+-0.037=0.8), time took: 36 sec, best classifier:
+	RandomForest Explicit 5 - Stats: Default params cross: grid train: 0.868, best classifier cross: 0.843 (+-0.036=0.807), time took: 15 sec = 0 min, importances:
+	XGB                  - Stats: Default params cross: 0.832 (+-0.034=0.798), grid train: 0.948, best classifier cross: 0.832 (+-0.034=0.798), time took: 24 sec, best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.883, best classifier cross: 0.842 (+-0.027=0.815), time took: 38 sec, best classifier:
+Conclusion: Does't make much of a difference at this point, but nicer code
+
+### 52. Adding category of Fare per ticket, since it was proven that Fare appears for the whole party. Also binned into categories based on KDE and surival rates
+	Logistic - liblinear - Stats: Default params cross: 0.84 (+-0.026=0.813), grid train: 0.86, best classifier cross: 0.84 (+-0.026=0.813), time took: 18 sec, best classifier:
+	KNN - 14             - Stats: Default params cross: 0.809 (+-0.034=0.775), grid train: 0.841, best classifier cross: 0.809 (+-0.034=0.775), time took: 1 sec, best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.82 (+-0.035=0.785), grid train: 0.87, best classifier cross: 0.82 (+-0.035=0.785), time took: 3 sec, best classifier:
+	SVM - poly           - Stats: Default params cross: 0.828 (+-0.036=0.792), grid train: 0.88, best classifier cross: 0.828 (+-0.036=0.792), time took: 3 sec, best classifier:
+	NB                   - Stats: Default params cross: 0.541 (+-0.061=0.48), grid train: 0.558, best classifier cross: 0.541 (+-0.061=0.48), time took: 0 sec, best classifier:
+	RandomForest - 5     - Stats: Default params cross: 0.843 (+-0.036=0.807), grid train: 0.868, best classifier cross: 0.843 (+-0.035=0.808), time took: 30 sec, best classifier:
+	RandomForest - 4     - Stats: Default params cross: 0.838 (+-0.037=0.802), grid train: 0.851, best classifier cross: 0.84 (+-0.035=0.804), time took: 34 sec, best classifier:
+	RandomForest Explicit 5 - Stats: Default params cross: grid train: 0.868, best classifier cross: 0.845 (+-0.038=0.807), time took: 15 sec = 0 min, importances:
+	XGB                  - Stats: Default params cross: 0.842 (+-0.029=0.813), grid train: 0.947, best classifier cross: 0.842 (+-0.029=0.813), time took: 29 sec, best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.883, best classifier cross: 0.845 (+-0.031=0.814), time took: 36 sec, best classifier:
+Conclusion: most didn't change drastically, XGB improved
+

@@ -190,6 +190,57 @@ def prepare_family_ticket_frequencies(both, y_train):
     both.drop(['Last name', 'Known family survived %', 'Known ticket survived %'], axis=1, inplace=True)
 
 
+# TODO decide if to keep
+def manual_fare_bin_numeric(fare):
+    if fare == 0:
+        return 0  # based on kde
+    elif fare < 4:
+        return 1  # based on kde
+    elif fare < 5:
+        return 2  # based on kde
+    elif fare < 7:
+        return 3  # based on kde
+    elif fare <= 7.796:
+        return 4  # based on survival rate
+    elif fare <= 7.896:
+        return 5  # based on survival rate
+    elif fare <= 7.925:
+        return 6  # based on survival rate
+    elif fare <= 8.662:
+        return 7  # based on survival rate and KDE
+    elif fare <= 12.5:
+        return 8  # based on KDE
+    elif fare <= 13.5:
+        return 9  # based on survival rate and KDE
+    else:
+        return 10
+
+
+def manual_fare_bin_categorical(fare):
+    if fare == 0:
+        return '0'  # based on kde
+    elif fare < 4:
+        return '0.1-4'  # based on kde
+    elif fare < 5:
+        return '4-5'  # based on kde
+    elif fare < 7:
+        return '5-7'  # based on kde
+    elif fare <= 7.796:
+        return '7-7.796'  # based on survival rate
+    elif fare <= 7.896:
+        return '7.796-7.896'  # based on survival rate
+    elif fare <= 7.925:
+        return '7.896-7.925'  # based on survival rate
+    elif fare <= 8.662:
+        return '7.925-8.662'  # based on survival rate and KDE
+    elif fare <= 12.5:
+        return '8.662-12.5'  # based on KDE
+    elif fare <= 13.5:
+        return '12.5-13.5'  # based on survival rate and KDE
+    else:
+        return 10
+
+
 def prepare_features(train, x_test, options):
     num_train_samples = train.shape[0]
 
@@ -253,15 +304,20 @@ def prepare_features(train, x_test, options):
     both['Ticket_Frequency'] = both.groupby('Ticket')['Ticket'].transform('count')
     features_to_drop_after_use.append('Ticket')
 
-    if 'Fare' not in options['columns_to_drop']:
-        mean_class_3_fare = both[(both['Pclass'] == 3) & (both['SibSp'] == '0') & (both['Parch'] == '0')]['Fare'].median()
-        both['Fare'] = both['Fare'].fillna(mean_class_3_fare)
-
-        # TODO features - how come 13 bins? Is that based on exploratory analysis? What were we looking for?
-        #   Try as optimization input with a different number of bins
-        #   DECISION: for now don't do it, probably won't find something much better
-        both['Fare'] = LabelEncoder().fit_transform(pd.qcut(both['Fare'], 13))
-
+    # 8 --> Fare. Add new category of "Fare per person" since fares are currently per ticket, and Set missing values
+    both['Fare per person'] = both['Fare'] / both['Ticket_Frequency']
+    # In the same class, Fare per person has a tight distribution, so just take median
+    both['Fare per person'] = both['Fare per person'].fillna(both[both['Pclass'] == 3]['Fare per person'].median())
+    # Since the missing Fare is only of a person with Ticket_Frequency 1, take median of class 3 of Fare per person
+    both['Fare'] = both['Fare'].fillna(both[both['Pclass'] == 3]['Fare per person'].median())
+    # Add categorical category of manual bins of fares (see Advanced feature engineering.ipynb notebook)
+    # TODO decide if to leave 'Fare bin' categorical, or turn into numerical
+    both['Fare bin'] = both['Fare per person'].apply(manual_fare_bin_categorical)
+    features_to_drop_after_use.append('Fare')
+    features_to_drop_after_use.append('Fare per person')
+    features_to_add_dummies.append('Fare bin')
+    # TODO if deleting manual bin, add additional category of free tickets and Fare per person of between 0 and 4.5,
+    #   and above 13.5 that clearly affect the results
 
     # Adding Age, potentially Title, and is Married
     if 'Age' not in options['columns_to_drop']:
