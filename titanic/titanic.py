@@ -83,11 +83,8 @@ def extract_lastname(full_name):
     return full_name.split(',')[0]
 
 
-def prepare_age_title_is_married(both):
-    # TODO features - in https://www.kaggle.com/gunesevitan/advanced-feature-engineering-tutorial-with-titanic
-    #   did something a bit different, based on Sex and Class, and not on title.  I think doing it on title is
-    #   more exact, especially regarding differences between Mrs. and Miss
-    #   DECISION: For now leave as I did, probably will not make a difference
+def impute_age(both):
+    # TODO consider doing regression to predict values of age based on PClass, Title, Deck 10, Parch
 
     for title in ['Mr', 'Miss', 'Mrs']:
         for cl in [1, 2, 3]:
@@ -105,28 +102,9 @@ def prepare_age_title_is_married(both):
         print(f"YK: Replacing title {title} age with {average}")
         both.loc[(both['Age'].isnull()) & (both['Title'] == title), 'Age'] = average
 
-    # TODO features - consider not binning, or binning into a different number
-    #   try without binning, or binning into a different number of bins
-    #   make things worse, removing for now
-    #   Conclusion: tried, didn't make much of a difference, made slightly worse, leaving not encoded
-    # x['Age'] = LabelEncoder().fit_transform(pd.qcut(x['Age'], 11))
-
-    # TODO features - https://www.kaggle.com/gunesevitan/advanced-feature-engineering-tutorial-with-titanic
-    #   also saved title with grouping, but it doesn't seem to be helpful since
-    #   there are a lot of very small categories, and grouping together doesn't add new info, since already know
-    #   male/female, age etc.  Also, Mr and Dr/Military/Noble/Clergy don't have significantly different behavior
-    #   DECISION: not to introduce, since also in the kernel learned from gets very low importance
-    '''
-    x['Title'] = titles_col.replace(['Miss', 'Mrs', 'Ms', 'Mlle', 'Lady', 'Mme', 'the Countess', 'Dona'],
-                                              'Miss/Mrs/Ms')
-    x['Title'] = titles_col.replace(['Dr', 'Col', 'Major', 'Jonkheer', 'Capt', 'Sir', 'Don', 'Rev'],
-                                              'Dr/Military/Noble/Clergy')
-    '''
-
 
 def prepare_family_ticket_frequencies(both, y_train):
 
-    num_training_samples = y_train.shape[0]
     max_train_index = y_train.index[-1]
 
     train = combine_x_train_y_train(split_into_x_train_x_test(both)[0], y_train)
@@ -138,11 +116,6 @@ def prepare_family_ticket_frequencies(both, y_train):
     both['Known ticket survived %'] = np.NaN
     both['Known family/ticket survived %'] = np.NaN
     both['Family/ticket survival known'] = 1
-
-    # to mark same information in test, need to known what last names and ticket names were known
-    known_last_names = both.loc[train.index]['Last name'].unique()
-    known_tickets = train['Ticket'].unique()
-    mean_survival_rate = train['Survived'].mean()
 
     # go over all test passengers, and fill in the survival information
     for i in both.index:
@@ -178,7 +151,7 @@ def prepare_family_ticket_frequencies(both, y_train):
             both.loc[i, 'Known family/ticket survived %'] = both.loc[i, 'Known ticket survived %']
         else:
             # none known, set mean survival value
-            both.loc[i, 'Known family/ticket survived %'] = mean_survival_rate
+            both.loc[i, 'Known family/ticket survived %'] = train['Survived'].mean()
             both.loc[i, 'Family/ticket survival known'] = 0
 
     print(f'YK debug: Train survival rates: \n'
@@ -239,6 +212,32 @@ def manual_fare_bin_categorical(fare):
         return '12.5-13.5'  # based on survival rate and KDE
     else:
         return 10
+
+
+def manual_age_bin(fare):
+    if fare <= 4:
+        return '-4'  # based on survival rate
+    elif fare <= 11:
+        return '4-11'  # based on survival rate
+    elif fare <= 24:
+        return '11-24'  # based on survival rate
+    elif fare <= 26:
+        return '24-26'  # based on survival rate
+    elif fare <= 27:
+        return '26-27'  # based on survival rate
+    elif fare <= 31:
+        return '27-31'  # based on survival rate
+    elif fare <= 32:
+        return '31-32'  # based on survival rate
+    elif fare <= 40:
+        return '32-40'  # based on KDE
+    elif fare <= 48:
+        return '40-48'  # based on KDE
+    elif fare <= 57:
+        return '48-57'  # based on KDE
+    else:
+        return '57+'  # based on KDE
+
 
 
 def prepare_features(train, x_test, options):
@@ -305,6 +304,7 @@ def prepare_features(train, x_test, options):
     features_to_drop_after_use.append('Ticket')
 
     # 8 --> Fare. Add new category of "Fare per person" since fares are currently per ticket, and Set missing values
+    #   Replace with bins, and get rid of regular Fare
     both['Fare per person'] = both['Fare'] / both['Ticket_Frequency']
     # In the same class, Fare per person has a tight distribution, so just take median
     both['Fare per person'] = both['Fare per person'].fillna(both[both['Pclass'] == 3]['Fare per person'].median())
@@ -319,27 +319,30 @@ def prepare_features(train, x_test, options):
     # TODO if deleting manual bin, add additional category of free tickets and Fare per person of between 0 and 4.5,
     #   and above 13.5 that clearly affect the results
 
-    # Adding Age, potentially Title, and is Married
-    if 'Age' not in options['columns_to_drop']:
-        prepare_age_title_is_married(both)
-        features_to_drop_after_use.append('Name')
-
+    # 9 --> Add frequencies of survival per family (based on last name) and ticket
     prepare_family_ticket_frequencies(both, train['Survived'])
+
+    # 10 --> Age - fill in missing values, bin
+    impute_age(both)
+    both['Age'] = both['Age'].apply(manual_age_bin)
+    features_to_add_dummies.append('Age')
 
     both.drop(options['columns_to_drop'], axis=1, inplace=True)
     both.drop(features_to_drop_after_use, axis=1, inplace=True)
 
-    print(f'YK: Features after dropping before adding dummy: {both.columns.values}')
+    print(f'YK: Features after dropping before adding dummy, shape {both.shape}: {both.columns.values}')
 
     both = pd.get_dummies(both, columns=features_to_add_dummies)
 
-    print(f'YK: Features after dropping after adding dummy: {both.columns.values}')
+    print(f'YK: Features after dropping after adding dummy, shape {both.shape}: {both.columns.values}')
 
     print(f'YK: both.info():\n{both.info()}')
     print(f'YK: Value counts of all values:')
     for feat in both.columns.values:
         print(f'--------------- {feat}:')
         print(both[feat].value_counts())
+
+    both.corr().to_csv('output/feature_correlations.csv')
 
     return split_into_x_train_x_test(both)
 

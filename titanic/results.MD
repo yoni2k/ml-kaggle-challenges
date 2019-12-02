@@ -875,3 +875,16 @@ Conclusion: Does't make much of a difference at this point, but nicer code
 	FINAL                                        - Stats: Best classifiers + Voting train: 0.883, best classifier cross: 0.845 (+-0.031=0.814), time took: 36 sec, best classifier:
 Conclusion: most didn't change drastically, XGB improved
 
+### 53. Added binning of age - see Advanced feature engineering.ipynb
+	Logistic - liblinear - Stats: Default params cross: 0.845 (+-0.028=0.817), grid train: 0.86, best classifier cross: 0.845 (+-0.028=0.817), time took: 21 sec, best classifier:
+	KNN - 14             - Stats: Default params cross: 0.808 (+-0.035=0.774), grid train: 0.833, best classifier cross: 0.808 (+-0.035=0.774), time took: 1 sec, best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.826 (+-0.035=0.791), grid train: 0.888, best classifier cross: 0.826 (+-0.035=0.791), time took: 5 sec, best classifier:
+	SVM - poly           - Stats: Default params cross: 0.815 (+-0.035=0.78), grid train: 0.899, best classifier cross: 0.815 (+-0.035=0.78), time took: 4 sec, best classifier:
+	NB                   - Stats: Default params cross: 0.613 (+-0.082=0.531), grid train: 0.65, best classifier cross: 0.613 (+-0.082=0.531), time took: 0 sec, best classifier:
+	RandomForest - 5     - Stats: Default params cross: 0.842 (+-0.035=0.806), grid train: 0.866, best classifier cross: 0.846 (+-0.036=0.81), time took: 43 sec, best classifier:
+	RandomForest - 4     - Stats: Default params cross: 0.84 (+-0.037=0.802), grid train: 0.856, best classifier cross: 0.836 (+-0.036=0.8), time took: 39 sec, best classifier:
+	RandomForest Explicit 5 - Stats: Default params cross: grid train: 0.866, best classifier cross: 0.844 (+-0.038=0.806), time took: 17 sec = 0 min, importances:
+	XGB                  - Stats: Default params cross: 0.833 (+-0.033=0.8), grid train: 0.93, best classifier cross: 0.833 (+-0.033=0.8), time took: 33 sec, best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.893, best classifier cross: 0.84 (+-0.028=0.812), time took: 46 sec, best classifier:
+Conclusion: not drastically different, obviously some features are not useful, need to remove some
+
