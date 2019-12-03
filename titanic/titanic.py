@@ -293,10 +293,13 @@ def prepare_features(train, x_test, options):
     both['SibSpBin'] = both['SibSp'].replace({0: '0', 1: '1', 2: '2', 3: '3', 4: '4',
                                            5: '5+', 8: '5+'})
     both['ParchBin'] = both['Parch'].replace({0: '0',
-                                           1: '123', 2: '123', 3: '123',
-                                           4: '4+', 5: '4+', 6: '4+', 9: '4+'})
+                                              1: '1',
+                                              2: '2',
+                                              3: '3',
+                                              4: '4+', 5: '4+', 6: '4+', 9: '4+'})
     both['Family size'] = both['Family size'].replace({1: '1',
-                                                       2: '23', 3: '23',
+                                                       2: '2',
+                                                       3: '3',
                                                        4: '4',
                                                        5: '567', 6: '567', 7: '567',
                                                        8: '8+', 11: '8+'})
@@ -312,9 +315,10 @@ def prepare_features(train, x_test, options):
     both['Cabin'] = both['Cabin'].fillna('unknown')
     both['Deck'] = both['Cabin'].apply(lambda cab: cab[0] if (cab != 'unknown') else cab)
     both['DeckBin'] = both['Deck'].replace({'unknown': 'unknown_T', 'T': 'unknown_T',
-                                                'B': 'BDE', 'D': 'BDE', 'E': 'BDE',
-                                                'C': 'CF', 'F': 'CF',
-                                                'A': 'AG', 'G': 'AG'})
+                                            'B': 'B',
+                                            'D': 'DE', 'E': 'DE',
+                                            'C': 'CF', 'F': 'CF',
+                                            'A': 'AG', 'G': 'AG'})
     features_to_drop_after_use.append('Cabin')
     features_to_drop_after_use.append('Deck')
     features_to_add_dummies.append('DeckBin')

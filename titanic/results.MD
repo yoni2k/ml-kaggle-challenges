@@ -917,4 +917,17 @@ Not removing for now:
 	- 'Deck' and 'Pclass' - strong connection.  Need to see which of the two will give better results 
 	- 'DeckBin_unknown_T' and 'Fare bin_13.5+' - opposite correlation.  Perhaps need to remove Fare bin_13.5+ since it's included in DeckBin information
 	- 'Pclass' and 'Fare bin', especially 'Pclass_1' and 'Fare bin_13.5+', see which one leaving later, classes or Fares
+	
+### 56. Since most kids and women survived, but some didn't, and most men survived, but some didn't, trying to understand what's different about those men/women
+	Logistic - liblinear - Stats: Default params cross: 0.833 (+-0.031=0.802), grid train: 0.859, best classifier cross: 0.833 (+-0.031=0.802), time took: 17 sec, best classifier:
+	KNN - 14             - Stats: Default params cross: 0.804 (+-0.022=0.781), grid train: 0.838, best classifier cross: 0.804 (+-0.022=0.781), time took: 1 sec, best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.824 (+-0.034=0.79), grid train: 0.888, best classifier cross: 0.824 (+-0.034=0.79), time took: 4 sec, best classifier:
+	SVM - poly           - Stats: Default params cross: 0.804 (+-0.039=0.765), grid train: 0.899, best classifier cross: 0.804 (+-0.039=0.765), time took: 4 sec, best classifier:
+	NB                   - Stats: Default params cross: 0.634 (+-0.077=0.558), grid train: 0.673, best classifier cross: 0.634 (+-0.077=0.558), time took: 0 sec, best classifier:
+	RandomForest - 5     - Stats: Default params cross: 0.838 (+-0.034=0.804), grid train: 0.864, best classifier cross: 0.841 (+-0.03=0.811), time took: 37 sec, best classifier:
+	RandomForest - 4     - Stats: Default params cross: 0.84 (+-0.039=0.801), grid train: 0.848, best classifier cross: 0.838 (+-0.037=0.802), time took: 33 sec, best classifier:
+	RandomForest Explicit 5 - Stats: Default params cross: grid train: 0.863, best classifier cross: 0.836 (+-0.029=0.807), time took: 14 sec = 0 min, importances:
+	XGB                  - Stats: Default params cross: 0.829 (+-0.036=0.793), grid train: 0.929, best classifier cross: 0.829 (+-0.036=0.793), time took: 31 sec, best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.897, best classifier cross: 0.832 (+-0.032=0.8), time took: 41 sec, best classifier:
+Conclusion: Similar, slightly worse results.  Did split up of a few categories of ParchBin, Family size, Deck due to different survival rates
 
