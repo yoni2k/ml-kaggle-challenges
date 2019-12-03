@@ -239,7 +239,7 @@ def manual_fare_bin_categorical(fare):
     elif fare <= 13.5:
         return '12.5-13.5'  # based on survival rate and KDE
     else:
-        return 10
+        return '13.5+'
 
 
 def manual_age_bin(fare):

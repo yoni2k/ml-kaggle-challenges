@@ -901,3 +901,20 @@ Conclusion: not drastically different, obviously some features are not useful, n
 	FINAL                                        - Stats: Best classifiers + Voting train: 0.898, best classifier cross: 0.838 (+-0.032=0.807), time took: 40 sec, best classifier:
 Conclusion: results very similar, slightly worse.  But the spread is pretty different, less concentrated around means especially of class 3.
 
+### 55. Removing some features with highest correlation
+See included file: output\feature_correlations.xlsx 
+Consider removing soon:
+	- 'Title_Master' - already included in age categories Age_-4, Age_4-11.  However, if we are removing 'Sex', need to double check that survival rate between little girls and boys is not different
+	- 'Title_Miss' - same. Consider leaving Sex, and removing 'Title_Master' and 'Title_Miss'
+	- 'Sex' - fully included in 'Title' feature
+Not removing for now:
+	- 'Ticket_Frequency' and 'SibSpBin', 'ParchBin', 'Family size' - high correlation, but not exactly the same thing.  Let's see what features will be important. 
+	- 'Family/ticket survival known' and 'SibSpBin', 'ParchBin', 'Family size' - makes sense the higher number of people in the family, the more of a chance we know their survival, but not the same thing
+	- 'Title' and 'SibSpBin', 'ParchBin', 'Family size' - makes sense, specific title means more of a chance for specific family
+	- 'SibSpBin', 'ParchBin', 'Family size' have connections with each other.  Consider later leaving only 1 or 2 of them.
+	- 'SibSpBin', 'ParchBin', 'Family size' and 'FareBin' - perhaps there were sales for tickets for a family.  But correlation is not critically high.
+	- 'SibSpBin', 'ParchBin', 'Family size' and 'Age' - makes sense that number of family members connected to Age.  No critical correlations.
+	- 'Deck' and 'Pclass' - strong connection.  Need to see which of the two will give better results 
+	- 'DeckBin_unknown_T' and 'Fare bin_13.5+' - opposite correlation.  Perhaps need to remove Fare bin_13.5+ since it's included in DeckBin information
+	- 'Pclass' and 'Fare bin', especially 'Pclass_1' and 'Fare bin_13.5+', see which one leaving later, classes or Fares
+
