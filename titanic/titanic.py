@@ -24,9 +24,6 @@ sns.set()
 """
 TODO:
 - Update titanic.MD
-- Add more options of different algorithms - when have better features
-- Consider adding XGBoost
-- Copy from here into my summaries code that I used for the first time
 """
 
 
@@ -46,6 +43,7 @@ TODO:
 '''
 
 NUM_TRAIN_SAMPLES = 891
+
 
 def read_files():
     train = pd.read_csv('input/train.csv', index_col='PassengerId')
@@ -401,12 +399,6 @@ def cross_valid(classifier, x_train, y_train):
     return accuracies.mean(), accuracies.std()
 
 
-def fit_single_classifier(classifier, x_train, y_train):
-    classifier = classifier
-    classifier.fit(x_train, y_train)
-    return classifier.score(x_train, y_train), classifier
-
-
 def grid_search(classifier, param_grid, x_train, y_train):
     grid = GridSearchCV(classifier, param_grid, verbose=1, cv=10, n_jobs=-1)
     grid.fit(x_train, y_train)
@@ -433,59 +425,118 @@ def single_and_grid_classifier(name_str, x_train, y_train, single_classifier, op
           f'best classifier:\n{classifier.best_estimator_}')
     classifier.best_estimator_.fit(x_train, y_train)
     return classifier.best_estimator_
-    #classifier.fit(x_train, y_train)
-    #return classifier
 
 
-# TODO should leave - if leaving need to change a whole bunch of things, was not updated
-def grid_with_voting(classifiers, param_grid, x_train, y_train, x_test_local, y_test_local):
-    voting_classifier = VotingClassifier(estimators=classifiers, voting='soft', n_jobs=-1)
-
-    grid = GridSearchCV(voting_classifier, param_grid, verbose=1, cv=10, n_jobs=-1)
-    reg_score, reg_std = cross_valid(grid, x_train, y_train)
-    grid.fit(x_train, y_train)
-    test_score = grid.score(x_test_local, y_test_local)
-    print(f'FINAL'.ljust(44) + ' - Stats: Grid + Voting train: {round(grid.score(x_train, y_train), 3)}, '
-          f'test: {round(test_score, 3)}, '
-          f'best classifier cross: {round(reg_score, 3)} (+-{round(reg_std, 3)}={round(reg_score - reg_std, 3)}), '
-          f'min (test/cross): {round(min(reg_score, test_score), 3)}, '
-          f'best classifier:\n{grid.best_estimator_}')
-    return grid
-
-
-def voting_only(classifiers, x_train, y_train, weights=None):
+def fit_single_classifier(name_str, x_train, y_train, x_test, classifier, results, preds):
     start_time = time.time()
-    voting_classifier = VotingClassifier(estimators=classifiers, voting='soft', n_jobs=-1, weights=weights)
+
+    reg_score, reg_std = cross_valid(classifier, x_train, y_train)
+
+    results.append({'Name': name_str,
+                    'Cross accuracy': round(reg_score, 3),
+                    'STD': round(reg_std, 3),
+                    'Cross accuracy-STD': round(reg_score - reg_std, 3),
+                    'Time sec': round(time.time() - start_time)})
+    print(f'Stats single: {results[-1]}')
+
+    classifier.fit(x_train, y_train)
+    preds[name_str] = classifier.predict(x_test)
+
+    return classifier
+
+
+def fit_predict_voting(classifiers, name_str, voting_type, x_train, y_train, x_test, results, preds):
+    start_time = time.time()
+
+    voting_classifier = VotingClassifier(estimators=classifiers, voting=voting_type, n_jobs=-1)
+
     reg_score, reg_std = cross_valid(voting_classifier, x_train, y_train)
+
+    results.append({'Name': name_str,
+                    'Cross accuracy': round(reg_score, 3),
+                    'STD': round(reg_std, 3),
+                    'Cross accuracy-STD': round(reg_score - reg_std, 3),
+                    'Time sec': round(time.time() - start_time)})
+    print(f'Stats single: {results[-1]}')
+
     voting_classifier.fit(x_train, y_train)
-    print(f'FINAL'.ljust(44) + ' - Stats: Best classifiers + Voting train: '
-          f'{round(voting_classifier.score(x_train, y_train), 3)}, '
-          f'best classifier cross: {round(reg_score, 3)} (+-{round(reg_std, 3)}={round(reg_score - reg_std, 3)}), '
-          f'time took: {round(time.time() - start_time)} sec, '
-          f'best classifier:\n{voting_classifier}')
+    preds[name_str] = voting_classifier.predict(x_test)
     return voting_classifier
 
 
 def main(options):
     start_time_total = time.time()
 
-    # TODO remove all the compare lines
     train, x_test = read_files()
-    debug_train_index_before = train.index
-    debug_test_index_before = x_test.index
 
     x_train, x_test = prepare_features(train, x_test, options)
-
-    debug_x_train_index_after = x_train.index
-    debug_test_index_after = x_test.index
-    assert(np.array_equal(debug_train_index_before, debug_x_train_index_after))
-    assert (np.array_equal(debug_test_index_before, debug_test_index_after))
 
     y_train = train['Survived']
 
     scaler = scale_train(x_train)
     x_train_scaled = scaler.transform(x_train)
     x_test_scaled = scaler.transform(x_test)
+
+    results = []
+    preds = pd.DataFrame()
+
+    single_classifiers = {
+        'Log': {'clas': LogisticRegression(solver='liblinear', n_jobs=-1)},
+        'KNN 14': {'clas': KNeighborsClassifier(n_jobs=-1, n_neighbors=14)},
+        'SVM rbf': {'clas': SVC(gamma='auto', kernel='rbf', probability=True)},
+        'SVM poly': {'clas': SVC(gamma='auto', kernel='poly', probability=True)},
+        'NB': {'clas': GaussianNB()},
+        'RF 5': {'clas': RandomForestClassifier(n_jobs=-1, n_estimators=1000, max_depth=5), 'importances': True},
+        'RF 4': {'clas': RandomForestClassifier(n_jobs=-1, n_estimators=1000, max_depth=4), 'importances': True},
+        'XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', random_state=42, n_jobs=-1, n_estimators=1000)}
+    }
+
+    classifiers_for_voting = []
+
+    for cl in single_classifiers:
+        classifier = fit_single_classifier(cl, x_train_scaled, y_train, x_test_scaled, single_classifiers[cl]['clas'], results, preds)
+        classifiers_for_voting.append((cl, classifier))
+        if cl == 'Log':
+            importances = pd.DataFrame({'Importance': classifier.coef_[0]}, index=x_train.columns). \
+                sort_values(by='Importance', ascending=False)
+            print(f'YK: "{cl}" feature importances:\n{pd.DataFrame(importances)}')
+        elif 'RF' in cl:
+            importances = pd.DataFrame({'Importance': classifier.feature_importances_}, index=x_train.columns).\
+                sort_values(by='Importance', ascending=False)
+            print(f'YK: "{cl}" feature importances:\n{importances}')
+        elif cl == 'XGB':
+            print(f'YK: "{cl}" feature importances:\n'
+                  f'{pd.DataFrame(classifier.get_booster().get_score(importance_type="gain"), index=["Importance"]).transpose().sort_values(by="Importance", ascending=False)}')
+
+
+    clas_vote_soft = fit_predict_voting(classifiers_for_voting, 'Voting soft', 'soft',
+                               x_train_scaled, y_train, x_test_scaled,
+                               results, preds)
+    clas_vote_hard = fit_predict_voting(classifiers_for_voting, 'Voting hard', 'hard',
+                               x_train_scaled, y_train, x_test_scaled,
+                               results, preds)
+
+
+    output_preds(preds['Voting soft'], x_test, 'voting_soft')
+    output_preds(preds['SVM rbf'], x_test, 'svm_rbf')
+    output_preds(preds['RF 5'], x_test, 'rf_5')
+    output_preds(preds['XGB'], x_test, 'xgb')
+
+    pd.DataFrame(results).to_csv('output/results.csv')
+
+    print(f'YK: Time took: {time.time() - start_time_total} seconds = '
+          f'{round((time.time() - start_time_total) / 60)} minutes ')
+
+    exit()
+
+
+
+
+
+
+
+
+
 
     class_log = single_and_grid_classifier('Logistic - liblinear', x_train_scaled, y_train,
                                            LogisticRegression(solver='liblinear', n_jobs=-1),
@@ -530,26 +581,6 @@ def main(options):
                                           options,
                                           [{}])
 
-    start_time = time.time()
-
-    class_rf_exp_5 = RandomForestClassifier(n_estimators=1000,  # also tried 2000
-                                           max_depth=5,  # also tried leader 7, but had worse performance
-                                           # min_samples_split=6,
-                                           # min_samples_leaf=6,
-                                           # oob_score=True,
-                                           n_jobs=-1)
-    class_rf_exp_5.fit(x_train_scaled, y_train)
-    reg_score = class_rf_exp_5.score(x_train_scaled, y_train)
-    reg_score_cross, reg_std_cross = cross_valid(class_rf_exp_5, x_train_scaled, y_train)
-
-    importances = pd.DataFrame({'Importance': class_rf_exp_5.feature_importances_}, index=x_train.columns)
-    print(f'{"RandomForest Explicit 5".ljust(20)} - Stats: Default params cross: '
-          f'grid train: {round(reg_score, 3)}, '
-          f'best classifier cross: {round(reg_score_cross, 3)} '
-          f'(+-{round(reg_std_cross, 3)}={round(reg_score_cross - reg_std_cross, 3)}), '
-          f'time took: {round(time.time() - start_time)} sec = {round((time.time() - start_time) / 60)} min, '
-          f'importances:\n{importances["Importance"].sort_values()}')
-
 
     class_xgb = single_and_grid_classifier('XGB', x_train_scaled, y_train,
                                            xgb.XGBClassifier(objective='binary:logistic', random_state=42, n_jobs=-1,
@@ -566,73 +597,6 @@ def main(options):
                                                # 'gamma': [i / 10.0 for i in range(3)]  # default 0
                                             }])
 
-    # TODO keep?
-    '''
-    for i in range(2, 21):
-        reg_score, classifier = grid_search(RandomForestClassifier(max_depth=i, n_estimators=100),
-                                            [{}],
-                                            x_train, y_train)
-        print(f'max_depth {i}: Grid Search train classification score: {round(reg_score, 3)}, '
-              f'local test score: {round(classifier.score(x_test_local, y_test_local), 3)}, ')
-    '''
-
-    '''
-    classifiers_all = [
-        ('lr', LogisticRegression(solver='liblinear')),
-        ('knn', KNeighborsClassifier()),
-        ('svm', SVC(probability=True, gamma='auto')),
-        ('nb', GaussianNB()),
-        ('rf', RandomForestClassifier())
-    ]
-
-    grid_voting_params_all = [
-        {'lr__solver': ['liblinear', 'lbfgs'],
-         'knn__n_neighbors': [10, 14, 20],
-         'svm__C': [0.1, 0.5, 1.0],
-         'svm__gamma': [0.1, 0.05, 0.01, 'auto_deprecated', 'scale'],
-         'svm__kernel': ['rbf', 'sigmoid', 'poly'],
-         'svm__degree': [2, 3, 4],
-         'rf__n_estimators': [100],
-         'rf__max_depth': [9]}
-    ]
-
-    classifier_all = grid_with_voting(classifiers_all, grid_voting_params_all,
-                                                 x_train_scaled, y_train, x_test_local_scaled, y_test_local)
-    preds = classifier_all.predict(x_test_scaled)
-    output_preds(preds, x_test, 'grid')
-    '''
-
-    classifiers_specific_with_params = [
-        ('lr', class_log),
-        ('knn', class_knn),
-        ('svm - rbf', class_svm_rbf),
-        ('svm - poly', class_svm_poly),
-        ('nb', class_nb),
-        ('rf_5', class_rf_5),
-        ('rf_4', class_rf_4),
-        ('xgb', class_xgb)
-    ]
-
-    classifier_voting = voting_only(classifiers_specific_with_params,
-                                    x_train_scaled, y_train)
-                                    # TODO - should stay?
-                                    # Give weights not to give rf too much weight, since it overfits
-                                    # [1, 1, 1, 1, 1, 0.3])
-
-    preds = classifier_voting.predict(x_test_scaled)
-    output_preds(preds, x_test, 'best')
-
-    preds = class_svm_rbf.predict(x_test_scaled)
-    output_preds(preds, x_test, 'svm_rbf')
-
-    preds = class_rf_exp_5.predict(x_test_scaled)
-    output_preds(preds, x_test, 'rf_5_explicit')
-
-    preds = class_xgb.predict(x_test_scaled)
-    output_preds(preds, x_test, 'xgb')
-
-    print(f'YK: Time took: {time.time() - start_time_total} seconds = '
-          f'{round((time.time() - start_time_total)/60)} minutes ')
 
 
 options = {
