@@ -888,3 +888,16 @@ Conclusion: most didn't change drastically, XGB improved
 	FINAL                                        - Stats: Best classifiers + Voting train: 0.893, best classifier cross: 0.84 (+-0.028=0.812), time took: 46 sec, best classifier:
 Conclusion: not drastically different, obviously some features are not useful, need to remove some
 
+### 54. Add imputing Age based on Regressor based on following features: ['Pclass', 'Title', 'Parch', 'SibSp', 'Ticket_Frequency', 'Embarked'], the rest didn't help to predict
+	Logistic - liblinear - Stats: Default params cross: 0.838 (+-0.028=0.81), grid train: 0.859, best classifier cross: 0.838 (+-0.028=0.81), time took: 17 sec, best classifier:
+	KNN - 14             - Stats: Default params cross: 0.806 (+-0.027=0.779), grid train: 0.832, best classifier cross: 0.806 (+-0.027=0.779), time took: 1 sec, best classifier:
+	SVM - rbf            - Stats: Default params cross: 0.829 (+-0.037=0.792), grid train: 0.889, best classifier cross: 0.829 (+-0.037=0.792), time took: 4 sec, best classifier:
+	SVM - poly           - Stats: Default params cross: 0.814 (+-0.037=0.777), grid train: 0.899, best classifier cross: 0.814 (+-0.037=0.777), time took: 4 sec, best classifier:
+	NB                   - Stats: Default params cross: 0.592 (+-0.074=0.518), grid train: 0.631, best classifier cross: 0.592 (+-0.074=0.518), time took: 0 sec, best classifier:
+	RandomForest - 5     - Stats: Default params cross: 0.842 (+-0.035=0.806), grid train: 0.868, best classifier cross: 0.844 (+-0.033=0.811), time took: 33 sec, best classifier:
+	RandomForest - 4     - Stats: Default params cross: 0.838 (+-0.034=0.805), grid train: 0.856, best classifier cross: 0.84 (+-0.037=0.803), time took: 54 sec, best classifier:
+	RandomForest Explicit 5 - Stats: Default params cross: grid train: 0.866, best classifier cross: 0.846 (+-0.035=0.812), time took: 14 sec = 0 min, importances:
+	XGB                  - Stats: Default params cross: 0.832 (+-0.037=0.795), grid train: 0.924, best classifier cross: 0.832 (+-0.037=0.795), time took: 31 sec, best classifier:
+	FINAL                                        - Stats: Best classifiers + Voting train: 0.898, best classifier cross: 0.838 (+-0.032=0.807), time took: 40 sec, best classifier:
+Conclusion: results very similar, slightly worse.  But the spread is pretty different, less concentrated around means especially of class 3.
+

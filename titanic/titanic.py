@@ -15,6 +15,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.utils import shuffle
 import xgboost as xgb
 sns.set()
@@ -83,24 +84,51 @@ def extract_lastname(full_name):
     return full_name.split(',')[0]
 
 
-def impute_age(both):
-    # TODO consider doing regression to predict values of age based on PClass, Title, Deck 10, Parch
+def impute_age_regression(both):
+    # Conclusions:
+    # - Sex doesn't seem to help (because there is title)
+    # - Didn't try, harder to add, and probably won't help much: 'Fare bin', 'Deck' has size issues
+    features_base_age_on = ['Pclass', 'Title', 'Parch', 'SibSp', 'Ticket_Frequency', 'Embarked']
+    x_test = both.loc[both['Age'].isnull(), features_base_age_on]
+    x_train = both.loc[both['Age'].isnull() == False, features_base_age_on]
+    y_train = both.loc[both['Age'].isnull() == False, 'Age']
 
+    for cat in ['Title', 'Embarked']:
+        x_test[cat] = LabelEncoder().fit_transform(x_test[cat])
+        x_train[cat] = LabelEncoder().fit_transform(x_train[cat])
+
+    age_model = RandomForestRegressor(n_estimators=1000)
+    age_model.fit(x_train, y_train)
+    print(f"Age prediction feature importance, features: {features_base_age_on}, importance:\n{age_model.feature_importances_}")
+    age_preds = age_model.predict(x_test)
+
+    both.loc[both['Age'].isnull(), 'Age'] = age_preds
+
+    print(f'YK: Age prediction score: {round(age_model.score(x_train, y_train) * 100,1)}')
+    return age_preds
+
+
+# TODO decide if leaving
+def impute_age_by_title_pclass(both):
     for title in ['Mr', 'Miss', 'Mrs']:
         for cl in [1, 2, 3]:
             average = both[(both['Age'].isnull() == False) &
                            (both['Title'] == title) &
                            (both['Pclass'] == cl)]['Age'].median()
-            print(f"YK: Replacing title {title} in class {cl} age with {average}")
+            print(f"YK: Replacing title {title} in class {cl} age ("
+                  f"{both.loc[(both['Age'].isnull()) & (both['Title'] == title) & (both['Pclass'] == cl), 'Age'].shape[0]}"
+                  f" observations) with {average}")
             both.loc[(both['Age'].isnull()) &
                      (both['Title'] == title) &
                      (both['Pclass'] == cl), 'Age'] = average
 
-    # not enough instances of 'Master' and 'Dr' to take median by class also
-    for title in ['Master', 'Dr']:
-        average = both[(both['Age'].isnull() == False) & (both['Title'] == title)]['Age'].median()
-        print(f"YK: Replacing title {title} age with {average}")
-        both.loc[(both['Age'].isnull()) & (both['Title'] == title), 'Age'] = average
+    # not enough instances of 'Master' to take median by class also
+    title = 'Master'
+    average = both[(both['Age'].isnull() == False) & (both['Title'] == title)]['Age'].median()
+    print(f"YK: Replacing title {title} age ("
+          f"{both.loc[(both['Age'].isnull()) & (both['Title'] == title), 'Age'].shape[0]}"
+          f" observations) with {average}")
+    both.loc[(both['Age'].isnull()) & (both['Title'] == title), 'Age'] = average
 
 
 def prepare_family_ticket_frequencies(both, y_train):
@@ -262,9 +290,9 @@ def prepare_features(train, x_test, options):
     # 2 ---> Create a new feature of number 'Family size' of relatives regardless of who they are
     #   Group SibSp, Parch, Family size based on different survival rates
     both['Family size'] = 1 + both['SibSp'] + both['Parch']
-    both['SibSp'] = both['SibSp'].replace({0: '0', 1: '1', 2: '2', 3: '3', 4: '4',
+    both['SibSpBin'] = both['SibSp'].replace({0: '0', 1: '1', 2: '2', 3: '3', 4: '4',
                                            5: '5+', 8: '5+'})
-    both['Parch'] = both['Parch'].replace({0: '0',
+    both['ParchBin'] = both['Parch'].replace({0: '0',
                                            1: '123', 2: '123', 3: '123',
                                            4: '4+', 5: '4+', 6: '4+', 9: '4+'})
     both['Family size'] = both['Family size'].replace({1: '1',
@@ -272,21 +300,25 @@ def prepare_features(train, x_test, options):
                                                        4: '4',
                                                        5: '567', 6: '567', 7: '567',
                                                        8: '8+', 11: '8+'})
-    features_to_add_dummies.append('SibSp')
-    features_to_add_dummies.append('Parch')
+    features_to_add_dummies.append('SibSpBin')
+    features_to_add_dummies.append('ParchBin')
     features_to_add_dummies.append('Family size')
+    features_to_drop_after_use.append('SibSp')
+    features_to_drop_after_use.append('Parch')
 
 
     # 3. ----> Prepare Deck features based on first letter of Cabin, unknown Cabin becomes reference category
     # Reference category is being removed later based on importance of each of the categories
     both['Cabin'] = both['Cabin'].fillna('unknown')
     both['Deck'] = both['Cabin'].apply(lambda cab: cab[0] if (cab != 'unknown') else cab)
-    both['Deck'] = both['Deck'].replace({'unknown': 'unknown_T', 'T': 'unknown_T',
+    both['DeckBin'] = both['Deck'].replace({'unknown': 'unknown_T', 'T': 'unknown_T',
                                                 'B': 'BDE', 'D': 'BDE', 'E': 'BDE',
                                                 'C': 'CF', 'F': 'CF',
                                                 'A': 'AG', 'G': 'AG'})
     features_to_drop_after_use.append('Cabin')
-    features_to_add_dummies.append('Deck')
+    features_to_drop_after_use.append('Deck')
+    features_to_add_dummies.append('DeckBin')
+
 
     # 4 ---> Add Pclass category
     features_to_add_dummies.append('Pclass')
@@ -323,8 +355,10 @@ def prepare_features(train, x_test, options):
     prepare_family_ticket_frequencies(both, train['Survived'])
 
     # 10 --> Age - fill in missing values, bin
-    impute_age(both)
+    impute_age_regression(both)
+    #impute_age_by_title_pclass(both)
     both['Age'] = both['Age'].apply(manual_age_bin)
+    print(f"Age value_counts:\n{both['Age'].value_counts().sort_index()}")
     features_to_add_dummies.append('Age')
 
     both.drop(options['columns_to_drop'], axis=1, inplace=True)
