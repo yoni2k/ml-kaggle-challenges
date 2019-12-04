@@ -1135,4 +1135,16 @@ Removing the following low importance features:
 	Stats single: {'Name': 'Voting hard', 'Cross accuracy': 0.847, 'STD': 0.029, 'Cross accuracy-STD': 0.819, 'Time sec': 51}
 Conclusions: Similar, but prevents overfitting so presumably will give better answers on the website
 
+### 65. Removing NB classifer since it consistently gives worse results
+	Stats single: {'Name': 'Log', 'Cross accuracy': 0.84, 'STD': 0.032, 'Cross accuracy-STD': 0.807, 'Time sec': 0}
+	Stats single: {'Name': 'KNN 14', 'Cross accuracy': 0.825, 'STD': 0.03, 'Cross accuracy-STD': 0.794, 'Time sec': 12}
+	Stats single: {'Name': 'SVM rbf', 'Cross accuracy': 0.847, 'STD': 0.034, 'Cross accuracy-STD': 0.813, 'Time sec': 1}
+	Stats single: {'Name': 'SVM poly', 'Cross accuracy': 0.843, 'STD': 0.027, 'Cross accuracy-STD': 0.815, 'Time sec': 1}
+	Stats single: {'Name': 'RF 7', 'Cross accuracy': 0.856, 'STD': 0.028, 'Cross accuracy-STD': 0.828, 'Time sec': 14}
+	Stats single: {'Name': 'RF 5', 'Cross accuracy': 0.843, 'STD': 0.027, 'Cross accuracy-STD': 0.816, 'Time sec': 12}
+	Stats single: {'Name': 'RF 4', 'Cross accuracy': 0.842, 'STD': 0.029, 'Cross accuracy-STD': 0.813, 'Time sec': 12}
+	Stats single: {'Name': 'XGB', 'Cross accuracy': 0.846, 'STD': 0.026, 'Cross accuracy-STD': 0.82, 'Time sec': 7}
+	Stats single: {'Name': 'Voting soft', 'Cross accuracy': 0.852, 'STD': 0.031, 'Cross accuracy-STD': 0.821, 'Time sec': 52}
+	Stats single: {'Name': 'Voting hard', 'Cross accuracy': 0.847, 'STD': 0.031, 'Cross accuracy-STD': 0.817, 'Time sec': 46}
+Conclusions: Slightly improved soft and made slightly worse hard (perhaps was helping in special cases, like not to overfit).  Perhaps reconsider adding later.
 

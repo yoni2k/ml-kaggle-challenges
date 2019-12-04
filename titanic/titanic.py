@@ -498,7 +498,7 @@ def main(options):
         'KNN 14': {'clas': KNeighborsClassifier(n_jobs=-1, n_neighbors=14)},
         'SVM rbf': {'clas': SVC(gamma='auto', kernel='rbf', probability=True, random_state=RANDOM_STATE)},
         'SVM poly': {'clas': SVC(gamma='auto', kernel='poly', probability=True, random_state=RANDOM_STATE)},
-        'NB': {'clas': GaussianNB()},
+        # 'NB': {'clas': GaussianNB()},  # consistently gives worse results
         'RF 7': {'clas': RandomForestClassifier(n_jobs=-1, n_estimators=1000, max_depth=7, random_state=RANDOM_STATE),
                  'importances': True},
         'RF 5': {'clas': RandomForestClassifier(n_jobs=-1, n_estimators=1000, max_depth=5, random_state=RANDOM_STATE),
