@@ -1080,4 +1080,34 @@ Conclusions: continue removing what was already removed: 'Family/ticket survival
 	Stats single: {'Name': 'Voting hard', 'Cross accuracy': 0.85, 'STD': 0.034, 'Cross accuracy-STD': 0.816, 'Time sec': 48}
 Conclusions: mostly better
 
+### 63: Removing Embarked_Q (low importance), Parch (low importance, and high correlation with family size)
+	Stats single: {'Name': 'Log', 'Cross accuracy': 0.838, 'STD': 0.025, 'Cross accuracy-STD': 0.813, 'Time sec': 0}
+	Stats single: {'Name': 'KNN 14', 'Cross accuracy': 0.773, 'STD': 0.031, 'Cross accuracy-STD': 0.743, 'Time sec': 14}
+	Stats single: {'Name': 'SVM rbf', 'Cross accuracy': 0.836, 'STD': 0.036, 'Cross accuracy-STD': 0.8, 'Time sec': 2}
+	Stats single: {'Name': 'SVM poly', 'Cross accuracy': 0.827, 'STD': 0.023, 'Cross accuracy-STD': 0.804, 'Time sec': 2}
+	Stats single: {'Name': 'NB', 'Cross accuracy': 0.747, 'STD': 0.08, 'Cross accuracy-STD': 0.667, 'Time sec': 0}
+	Stats single: {'Name': 'RF 7', 'Cross accuracy': 0.851, 'STD': 0.028, 'Cross accuracy-STD': 0.823, 'Time sec': 14}
+	Stats single: {'Name': 'RF 5', 'Cross accuracy': 0.843, 'STD': 0.033, 'Cross accuracy-STD': 0.81, 'Time sec': 14}
+	Stats single: {'Name': 'RF 4', 'Cross accuracy': 0.841, 'STD': 0.032, 'Cross accuracy-STD': 0.808, 'Time sec': 13}
+	Stats single: {'Name': 'XGB', 'Cross accuracy': 0.842, 'STD': 0.031, 'Cross accuracy-STD': 0.811, 'Time sec': 13}
+	Stats single: {'Name': 'Voting soft', 'Cross accuracy': 0.842, 'STD': 0.032, 'Cross accuracy-STD': 0.81, 'Time sec': 73}
+	Stats single: {'Name': 'Voting hard', 'Cross accuracy': 0.853, 'STD': 0.033, 'Cross accuracy-STD': 0.82, 'Time sec': 45}
+Conclusions: much better.  Removing many more fields: 
+	'Age_4-11','Age_27-31','Age_11-24','Age_31-32','Age_48-57'
+	'Family size_4'
+	'Fare bin_0.1-4',
+	'Fare bin_0','Fare bin_12.5-13.5','Fare bin_4-5','Fare bin_5-7','Fare bin_7.925-8.662','Fare bin_7.796-7.896',
+	'DeckBin_AG'
+	Stats single: {'Name': 'Log', 'Cross accuracy': 0.84, 'STD': 0.026, 'Cross accuracy-STD': 0.814, 'Time sec': 0}
+	Stats single: {'Name': 'KNN 14', 'Cross accuracy': 0.816, 'STD': 0.035, 'Cross accuracy-STD': 0.781, 'Time sec': 14}
+	Stats single: {'Name': 'SVM rbf', 'Cross accuracy': 0.846, 'STD': 0.037, 'Cross accuracy-STD': 0.809, 'Time sec': 2}
+	Stats single: {'Name': 'SVM poly', 'Cross accuracy': 0.826, 'STD': 0.037, 'Cross accuracy-STD': 0.789, 'Time sec': 1}
+	Stats single: {'Name': 'NB', 'Cross accuracy': 0.586, 'STD': 0.041, 'Cross accuracy-STD': 0.544, 'Time sec': 0}
+	Stats single: {'Name': 'RF 7', 'Cross accuracy': 0.854, 'STD': 0.029, 'Cross accuracy-STD': 0.825, 'Time sec': 13}
+	Stats single: {'Name': 'RF 5', 'Cross accuracy': 0.847, 'STD': 0.03, 'Cross accuracy-STD': 0.818, 'Time sec': 14}
+	Stats single: {'Name': 'RF 4', 'Cross accuracy': 0.842, 'STD': 0.029, 'Cross accuracy-STD': 0.812, 'Time sec': 16}
+	Stats single: {'Name': 'XGB', 'Cross accuracy': 0.848, 'STD': 0.027, 'Cross accuracy-STD': 0.822, 'Time sec': 10}
+	Stats single: {'Name': 'Voting soft', 'Cross accuracy': 0.846, 'STD': 0.036, 'Cross accuracy-STD': 0.811, 'Time sec': 66}
+	Stats single: {'Name': 'Voting hard', 'Cross accuracy': 0.852, 'STD': 0.029, 'Cross accuracy-STD': 0.823, 'Time sec': 47}
+Conclusions: much better
 
