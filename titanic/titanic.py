@@ -403,7 +403,9 @@ def scale_train(x_train):
 
 
 def output_preds(preds, x_test, name_suffix):
-    pred_df = pd.DataFrame(preds, index=x_test.index, columns=['Survived'])
+    pred_df = pd.DataFrame(preds)
+    pred_df.set_index(x_test.index, inplace=True)
+    pred_df.columns = ['Survived']
     pred_df.to_csv(f'output/preds_{name_suffix}.csv')
 
 
@@ -530,7 +532,6 @@ def main(options):
             print(f'YK: "{cl}" feature importances:\n{importance.sort_values(by="Importance", ascending=False).reset_index()}')
 
 
-
     clas_vote_soft = fit_predict_voting(classifiers_for_voting, 'Voting soft', 'soft',
                                x_train_scaled, y_train, x_test_scaled,
                                results, preds)
@@ -538,10 +539,16 @@ def main(options):
                                x_train_scaled, y_train, x_test_scaled,
                                results, preds)
 
-    output_preds(preds['Voting soft'], x_test, 'voting_soft')
+    print(f'YK: correlations between predictions:\n{preds.corr()}')
+    preds.corr().to_csv('output/classifiers_correlations.csv')
+
+    output_preds(preds['Log'], x_test, 'log')
     output_preds(preds['SVM rbf'], x_test, 'svm_rbf')
+    output_preds(preds['RF 7'], x_test, 'rf_7')
     output_preds(preds['RF 5'], x_test, 'rf_5')
     output_preds(preds['XGB'], x_test, 'xgb')
+    output_preds(preds['Voting soft'], x_test, 'voting_soft')
+    output_preds(preds['Voting hard'], x_test, 'voting_hard')
 
     pd.DataFrame(results).to_csv('output/results.csv')
 
