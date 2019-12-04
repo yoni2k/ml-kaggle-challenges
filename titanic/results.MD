@@ -1067,5 +1067,17 @@ Conclusions: results similar, slightly worse. Leaving as is, makes sense and mak
 	Stats single: {'Name': 'Voting soft', 'Cross accuracy': 0.835, 'STD': 0.033, 'Cross accuracy-STD': 0.802, 'Time sec': 85}
 	Stats single: {'Name': 'Voting hard', 'Cross accuracy': 0.84, 'STD': 0.033, 'Cross accuracy-STD': 0.806, 'Time sec': 62}
 Conclusions: continue removing what was already removed: 'Family/ticket survival known', 'SibSp' 
+	Stats single: {'Name': 'Log', 'Cross accuracy': 0.829, 'STD': 0.029, 'Cross accuracy-STD': 0.801, 'Time sec': 0}
+	Stats single: {'Name': 'KNN 14', 'Cross accuracy': 0.783, 'STD': 0.023, 'Cross accuracy-STD': 0.761, 'Time sec': 15}
+	Stats single: {'Name': 'SVM rbf', 'Cross accuracy': 0.826, 'STD': 0.032, 'Cross accuracy-STD': 0.794, 'Time sec': 2}
+	Stats single: {'Name': 'SVM poly', 'Cross accuracy': 0.806, 'STD': 0.021, 'Cross accuracy-STD': 0.785, 'Time sec': 2}
+	Stats single: {'Name': 'NB', 'Cross accuracy': 0.734, 'STD': 0.085, 'Cross accuracy-STD': 0.65, 'Time sec': 0}
+	Stats single: {'Name': 'RF 7', 'Cross accuracy': 0.844, 'STD': 0.034, 'Cross accuracy-STD': 0.81, 'Time sec': 15}
+	Stats single: {'Name': 'RF 5', 'Cross accuracy': 0.842, 'STD': 0.037, 'Cross accuracy-STD': 0.804, 'Time sec': 16}
+	Stats single: {'Name': 'RF 4', 'Cross accuracy': 0.838, 'STD': 0.03, 'Cross accuracy-STD': 0.809, 'Time sec': 12}
+	Stats single: {'Name': 'XGB', 'Cross accuracy': 0.832, 'STD': 0.031, 'Cross accuracy-STD': 0.8, 'Time sec': 11}
+	Stats single: {'Name': 'Voting soft', 'Cross accuracy': 0.837, 'STD': 0.03, 'Cross accuracy-STD': 0.808, 'Time sec': 76}
+	Stats single: {'Name': 'Voting hard', 'Cross accuracy': 0.85, 'STD': 0.034, 'Cross accuracy-STD': 0.816, 'Time sec': 48}
+Conclusions: mostly better
 
 

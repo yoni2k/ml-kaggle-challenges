@@ -631,7 +631,7 @@ options = {
         # -- Embarked - not very important, but at least Embarked_S is place 15-16 in most, consider removing altogether
         #       Update 1: S 13-17, C 14,20,25. Consider removing C
         #       Update 2: S 11,17,33. C 11,17,29 - Consider removing both, but not this time around
-        # YK_TEMP 'Embarked_Q',  # low in all 4
+        'Embarked_Q',  # low in all 4
         # -- Age - not extemely important, most models Age_-4 is important (15), XGB gives more age importance (6,8)
         #       Update 1: Age_-4 is only very important in 1 model, removing another age 'Age_27-31'
         #       Update 2: Age is not extremely important, only 1 model has 8, rest > 15, remove Age_11-24
