@@ -328,7 +328,8 @@ def prepare_features(train, x_test, options):
     features_to_add_dummies.append('Pclass')
 
     # 5 ---> Add Sex
-    both['Sex'] = both['Sex'].map({'male': 1, 'female': 0})
+    if 'Sex' not in options['major_columns_to_drop']:
+        both['Sex'] = both['Sex'].map({'male': 1, 'female': 0})
 
     # 6 ---> Add Embarked, fill the 2 missing values with the most common S
     both['Embarked'] = both['Embarked'].fillna('S')
@@ -622,7 +623,9 @@ options = {
         # -- 'Family/ticket survival known'  # low in all 4
         'Family/ticket survival known',
         # -- SibSp/SibSpBin - not extremely important in general (>17 in all models).  Consider removing altogether
-        'SibSp'  # very low in all models
+        'SibSp',  # very low in all models
+        'Sex'  # Since titles are important, need to remove Sex
+
     ],
     'minor_columns_to_drop': [
         # -- Embarked - not very important, but at least Embarked_S is place 15-16 in most, consider removing altogether

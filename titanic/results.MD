@@ -1016,4 +1016,39 @@ Conclusion: some models improved slightly
 	Stats single: {'Name': 'Voting hard', 'Cross accuracy': 0.851, 'STD': 0.032, 'Cross accuracy-STD': 0.818, 'Time sec': 71}
 Conclusions: improvement!!
 
+### 60. Removing some low categories
+Removing the following low importance categories:
+- Age_11-24
+- ParchBin_2
+- Family size_3
+- 'Fare bin_12.5-13.5'
+- 'Fare bin_4-5'
+- 'Fare bin_5-7',
+- 'Fare bin_7.925-8.662'
+	Stats single: {'Name': 'Log', 'Cross accuracy': 0.836, 'STD': 0.029, 'Cross accuracy-STD': 0.808, 'Time sec': 0}
+	Stats single: {'Name': 'KNN 14', 'Cross accuracy': 0.825, 'STD': 0.027, 'Cross accuracy-STD': 0.798, 'Time sec': 15}
+	Stats single: {'Name': 'SVM rbf', 'Cross accuracy': 0.841, 'STD': 0.035, 'Cross accuracy-STD': 0.806, 'Time sec': 2}
+	Stats single: {'Name': 'SVM poly', 'Cross accuracy': 0.832, 'STD': 0.037, 'Cross accuracy-STD': 0.795, 'Time sec': 1}
+	Stats single: {'Name': 'NB', 'Cross accuracy': 0.563, 'STD': 0.046, 'Cross accuracy-STD': 0.517, 'Time sec': 0}
+	Stats single: {'Name': 'RF 7', 'Cross accuracy': 0.853, 'STD': 0.028, 'Cross accuracy-STD': 0.825, 'Time sec': 19}
+	Stats single: {'Name': 'RF 5', 'Cross accuracy': 0.845, 'STD': 0.034, 'Cross accuracy-STD': 0.811, 'Time sec': 16}
+	Stats single: {'Name': 'RF 4', 'Cross accuracy': 0.842, 'STD': 0.038, 'Cross accuracy-STD': 0.804, 'Time sec': 15}
+	Stats single: {'Name': 'XGB', 'Cross accuracy': 0.838, 'STD': 0.03, 'Cross accuracy-STD': 0.808, 'Time sec': 12}
+	Stats single: {'Name': 'Voting soft', 'Cross accuracy': 0.85, 'STD': 0.036, 'Cross accuracy-STD': 0.814, 'Time sec': 89}
+	Stats single: {'Name': 'Voting hard', 'Cross accuracy': 0.849, 'STD': 0.032, 'Cross accuracy-STD': 0.816, 'Time sec': 47}
+Conclusions: results similar
 
+### 61. Removing Sex category
+Since Sex category has an extremely high correlation with Title, left till now to see if Title will be important.  Since it is, removing Sex.
+	Stats single: {'Name': 'Log', 'Cross accuracy': 0.835, 'STD': 0.03, 'Cross accuracy-STD': 0.805, 'Time sec': 0}
+	Stats single: {'Name': 'KNN 14', 'Cross accuracy': 0.806, 'STD': 0.032, 'Cross accuracy-STD': 0.774, 'Time sec': 13}
+	Stats single: {'Name': 'SVM rbf', 'Cross accuracy': 0.841, 'STD': 0.034, 'Cross accuracy-STD': 0.806, 'Time sec': 1}
+	Stats single: {'Name': 'SVM poly', 'Cross accuracy': 0.833, 'STD': 0.034, 'Cross accuracy-STD': 0.798, 'Time sec': 2}
+	Stats single: {'Name': 'NB', 'Cross accuracy': 0.497, 'STD': 0.04, 'Cross accuracy-STD': 0.457, 'Time sec': 0}
+	Stats single: {'Name': 'RF 7', 'Cross accuracy': 0.854, 'STD': 0.031, 'Cross accuracy-STD': 0.823, 'Time sec': 13}
+	Stats single: {'Name': 'RF 5', 'Cross accuracy': 0.841, 'STD': 0.027, 'Cross accuracy-STD': 0.813, 'Time sec': 13}
+	Stats single: {'Name': 'RF 4', 'Cross accuracy': 0.846, 'STD': 0.028, 'Cross accuracy-STD': 0.818, 'Time sec': 13}
+	Stats single: {'Name': 'XGB', 'Cross accuracy': 0.838, 'STD': 0.039, 'Cross accuracy-STD': 0.799, 'Time sec': 10}
+	Stats single: {'Name': 'Voting soft', 'Cross accuracy': 0.844, 'STD': 0.034, 'Cross accuracy-STD': 0.81, 'Time sec': 68}
+	Stats single: {'Name': 'Voting hard', 'Cross accuracy': 0.845, 'STD': 0.033, 'Cross accuracy-STD': 0.813, 'Time sec': 44}
+Conclusions: results similar, slightly worse. Leaving as is, makes sense and makes model more stable
