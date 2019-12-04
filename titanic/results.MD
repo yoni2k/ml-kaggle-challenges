@@ -1229,5 +1229,8 @@ Keep:
 	- RF 7 - since Grid RF chooses RF 8, and it might be overfitting, leave RF 7 separately
 	- XGB - even though Grid XGB does better, leave it since they are not extremely correlated, and Grid might be overfitting
 Output best: RF 7, Grid SVM, Grid RF, Grid XGB, Voting soft with grid, Voting hard with grid
+
+### 68 Submit conclusions of all the work online
+TBD - fill in the results
  
 	

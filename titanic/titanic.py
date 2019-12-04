@@ -581,8 +581,8 @@ def main(options):
     output_preds(preds['Grid RF'], x_test, 'rf_grid')
     output_preds(preds['Grid XGB'], x_test, 'xgb_grid')
 
-    output_preds(preds['Voting soft single'], x_test, 'voting_soft')
-    output_preds(preds['Voting hard single'], x_test, 'voting_hard')
+    output_preds(preds['Voting soft with grid'], x_test, 'voting_soft')
+    output_preds(preds['Voting hard with grid'], x_test, 'voting_hard')
 
     pd.DataFrame(results).to_csv('output/results.csv')
 
