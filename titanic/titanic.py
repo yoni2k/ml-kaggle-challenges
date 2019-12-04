@@ -414,32 +414,27 @@ def cross_valid(classifier, x_train, y_train):
     return accuracies.mean(), accuracies.std()
 
 
-def grid_search(classifier, param_grid, x_train, y_train):
-    grid = GridSearchCV(classifier, param_grid, verbose=1, cv=10, n_jobs=-1)
-    grid.fit(x_train, y_train)
-    return grid.score(x_train, y_train), grid
-
-
-def single_and_grid_classifier(name_str, x_train, y_train, single_classifier, options, grid_params):
+def fit_grid_classifier(name_str, x_train, y_train, x_test, single_classifier, grid_params, results, preds):
     start_time = time.time()
 
-    reg_score_def, reg_std_def = cross_valid(single_classifier, x_train, y_train)
+    grid = GridSearchCV(single_classifier, grid_params, verbose=1, cv=10, n_jobs=-1)
+    grid.fit(x_train, y_train)
+    best_estimator = grid.best_estimator_
 
-    if not options['hyperparams_optimization']:
-        grid_params = [{}]
+    reg_score, reg_std = cross_valid(best_estimator, x_train, y_train)
 
-    reg_score_grid, classifier = grid_search(single_classifier, grid_params, x_train, y_train)
-    reg_score_cross, reg_std_cross = cross_valid(classifier.best_estimator_, x_train, y_train)
+    print(f'{name_str} best classifier:\n{best_estimator}')
 
-    print(f'{name_str.ljust(20)} - Stats: Default params cross: '
-          f'{round(reg_score_def, 3)} (+-{round(reg_std_def, 3)}={round(reg_score_def - reg_std_def, 3)}), '
-          f'grid train: {round(reg_score_grid, 3)}, '
-          f'best classifier cross: {round(reg_score_cross, 3)} '
-          f'(+-{round(reg_std_cross, 3)}={round(reg_score_cross - reg_std_cross, 3)}), '
-          f'time took: {round(time.time() - start_time)} sec, '
-          f'best classifier:\n{classifier.best_estimator_}')
-    classifier.best_estimator_.fit(x_train, y_train)
-    return classifier.best_estimator_
+    results.append({'Name': name_str,
+                    'Cross accuracy': round(reg_score, 3),
+                    'STD': round(reg_std, 3),
+                    'Cross accuracy-STD': round(reg_score - reg_std, 3),
+                    'Time sec': round(time.time() - start_time)})
+    print(f'Stats grid: {results[-1]}')
+
+    best_estimator.fit(x_train, y_train)
+    preds[name_str] = best_estimator.predict(x_test)
+    return best_estimator
 
 
 def fit_single_classifier(name_str, x_train, y_train, x_test, classifier, results, preds):
@@ -472,7 +467,7 @@ def fit_predict_voting(classifiers, name_str, voting_type, x_train, y_train, x_t
                     'STD': round(reg_std, 3),
                     'Cross accuracy-STD': round(reg_score - reg_std, 3),
                     'Time sec': round(time.time() - start_time)})
-    print(f'Stats single: {results[-1]}')
+    print(f'Stats voting: {results[-1]}')
 
     voting_classifier.fit(x_train, y_train)
     preds[name_str] = voting_classifier.predict(x_test)
@@ -497,18 +492,17 @@ def main(options):
 
     single_classifiers = {
         'Log': {'clas': LogisticRegression(solver='liblinear', n_jobs=-1, random_state=RANDOM_STATE)},
-        'KNN 14': {'clas': KNeighborsClassifier(n_jobs=-1, n_neighbors=14)},
-        'SVM rbf': {'clas': SVC(gamma='auto', kernel='rbf', probability=True, random_state=RANDOM_STATE)},
+        # 'KNN 14': {'clas': KNeighborsClassifier(n_jobs=-1, n_neighbors=14)},
+        # 'SVM rbf': {'clas': SVC(gamma='auto', kernel='rbf', probability=True, random_state=RANDOM_STATE)},
         'SVM poly': {'clas': SVC(gamma='auto', kernel='poly', probability=True, random_state=RANDOM_STATE)},
         # 'NB': {'clas': GaussianNB()},  # consistently gives worse results
         'RF 7': {'clas': RandomForestClassifier(n_jobs=-1, n_estimators=1000, max_depth=7, random_state=RANDOM_STATE),
                  'importances': True},
-        'RF 5': {'clas': RandomForestClassifier(n_jobs=-1, n_estimators=1000, max_depth=5, random_state=RANDOM_STATE),
-                 'importances': True},
-        'RF 4': {'clas': RandomForestClassifier(n_jobs=-1, n_estimators=1000, max_depth=4, random_state=RANDOM_STATE),
-                 'importances': True},
-        'XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', random_state=RANDOM_STATE, n_jobs=-1, n_estimators=1000,
-                                          feature_names=x_train.columns)}
+        #'RF 5': {'clas': RandomForestClassifier(n_jobs=-1, n_estimators=1000, max_depth=5, random_state=RANDOM_STATE),
+        #         'importances': True},
+        #'RF 4': {'clas': RandomForestClassifier(n_jobs=-1, n_estimators=1000, max_depth=4, random_state=RANDOM_STATE),
+        #         'importances': True},
+        'XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', random_state=RANDOM_STATE, n_jobs=-1, n_estimators=1000)}
     }
 
     classifiers_for_voting = []
@@ -531,102 +525,69 @@ def main(options):
                                       index=["Importance"]).transpose()
             print(f'YK: "{cl}" feature importances:\n{importance.sort_values(by="Importance", ascending=False).reset_index()}')
 
+    # TODO keep?
+    #grid_classifiers = {
+    #    'Grid Log': {'clas': LogisticRegression(solver='liblinear', n_jobs=-1, random_state=RANDOM_STATE),
+    #                 'grid_params': [{'solver': ['liblinear', 'lbfgs']}]}}
 
-    clas_vote_soft = fit_predict_voting(classifiers_for_voting, 'Voting soft', 'soft',
+    grid_classifiers = {
+        #'Grid Log': {'clas': LogisticRegression(solver='liblinear', n_jobs=-1, random_state=RANDOM_STATE),
+        #             'grid_params': [{'solver': ['liblinear', 'lbfgs', 'newton-cg', 'sag', 'saga']}]},
+        'Grid KNN': {'clas': KNeighborsClassifier(n_jobs=-1, n_neighbors=14),
+                     'grid_params': [{'n_neighbors': range(3, 25)}]},
+        'Grid SVM': {'clas': SVC(gamma='auto', kernel='rbf', probability=True, random_state=RANDOM_STATE),
+                     'grid_params':
+                         [{
+                            'kernel': ['rbf', 'poly', 'sigmoid'],
+                            'C': [0.3, 0.5, 1.0, 1.5, 2.0],
+                            'gamma': [0.3, 0.2, 0.1, 0.05, 0.01, 'auto_deprecated', 'scale']
+                         }]
+                     },
+        'Grid RF': {'clas': RandomForestClassifier(n_jobs=-1, n_estimators=1000, max_depth=7, random_state=RANDOM_STATE),
+                    'grid_params': [{'max_depth': range(3, 10)}]},
+        'Grid XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', random_state=RANDOM_STATE, n_jobs=-1, n_estimators=1000),
+                     'grid_params':
+                         [{
+                             'max_depth': range(1, 8, 1)  # default 3
+                             # 'n_estimators': range(60, 260, 40), # default 100
+                             # 'learning_rate': [0.3, 0.2, 0.1, 0.01],  # , 0.001, 0.0001
+                             # 'min_child_weight': [0.5, 1, 2],  # default 1
+                             # 'subsample': [i / 10.0 for i in range(6, 11)], # default 1, not sure needed
+                             # 'colsample_bytree': [i / 10.0 for i in range(6, 11)] # default 1, not sure needed
+                             # 'gamma': [i / 10.0 for i in range(3)]  # default 0
+                         }]
+                     }
+    }
+
+    for cl in grid_classifiers:
+        classifier = fit_grid_classifier(cl, x_train_scaled, y_train, x_test_scaled,
+                                         grid_classifiers[cl]['clas'], grid_classifiers[cl]['grid_params'],
+                                         results, preds)
+        classifiers_for_voting.append((cl, classifier))
+
+    fit_predict_voting(classifiers_for_voting, 'Voting soft with grid', 'soft',
                                x_train_scaled, y_train, x_test_scaled,
                                results, preds)
-    clas_vote_hard = fit_predict_voting(classifiers_for_voting, 'Voting hard', 'hard',
+    fit_predict_voting(classifiers_for_voting, 'Voting hard with grid', 'hard',
                                x_train_scaled, y_train, x_test_scaled,
                                results, preds)
 
     print(f'YK: correlations between predictions:\n{preds.corr()}')
     preds.corr().to_csv('output/classifiers_correlations.csv')
 
-    output_preds(preds['Log'], x_test, 'log')
-    output_preds(preds['SVM rbf'], x_test, 'svm_rbf')
     output_preds(preds['RF 7'], x_test, 'rf_7')
-    output_preds(preds['RF 5'], x_test, 'rf_5')
-    output_preds(preds['XGB'], x_test, 'xgb')
-    output_preds(preds['Voting soft'], x_test, 'voting_soft')
-    output_preds(preds['Voting hard'], x_test, 'voting_hard')
+
+    output_preds(preds['Grid SVM'], x_test, 'svm_grid')
+    output_preds(preds['Grid RF'], x_test, 'rf_grid')
+    output_preds(preds['Grid XGB'], x_test, 'xgb_grid')
+
+    output_preds(preds['Voting soft single'], x_test, 'voting_soft')
+    output_preds(preds['Voting hard single'], x_test, 'voting_hard')
 
     pd.DataFrame(results).to_csv('output/results.csv')
 
     print(f'YK: Time took: {time.time() - start_time_total} seconds = '
           f'{round((time.time() - start_time_total) / 60)} minutes ')
-
-    exit()
-
-
-
-
-
-
-
-
-
-
-    class_log = single_and_grid_classifier('Logistic - liblinear', x_train_scaled, y_train,
-                                           LogisticRegression(solver='liblinear', n_jobs=-1, random_state=RANDOM_STATE),
-                                           options,
-                                           [{'solver': ['liblinear', 'lbfgs', 'newton-cg', 'sag', 'saga']}],) # TODO was empty
-    # Following was tried also for Logistic and didn't make it much better: solver=['lbfgs', 'newton-cg', 'sag', 'saga']
-
-    class_knn = single_and_grid_classifier('KNN - 14', x_train_scaled, y_train,
-                                           KNeighborsClassifier(n_jobs=-1, n_neighbors=14),
-                                           options,
-                                           [{'n_neighbors': range(5, 25)}])  # # TODO was empty
-    # Following was tried also and found 14 to be best: n_neighbors=[range(1, 25), 5 (lower scores), 25 (lower scored)]
-
-    class_svm_rbf = single_and_grid_classifier('SVM - rbf', x_train_scaled, y_train,
-                                               SVC(gamma='auto', kernel='rbf', probability=True, random_state=RANDOM_STATE),
-                                               options,
-                                               [{
-                                                   'C': [0.5, 1.0, 1.5, 2.0],
-                                                   'gamma': [0.2, 0.1, 0.05, 0.01, 'auto_deprecated', 'scale']}
-                                               ])
-    class_svm_poly = single_and_grid_classifier('SVM - poly', x_train_scaled, y_train,
-                                                SVC(gamma='auto', kernel='poly', probability=True, random_state=RANDOM_STATE),
-                                                options,
-                                                [{
-                                                    'C': [0.5, 1.0, 1.5, 2.0],
-                                                    'gamma': [0.2, 0.1, 0.05, 0.01, 'auto_deprecated', 'scale']}
-                                                ])
-    # sigmoid kerned was also tried for SVM, but gave worse results
-
-    class_nb = single_and_grid_classifier('NB', x_train_scaled, y_train,
-                                          GaussianNB(),
-                                          options,
-                                          [{}])
-
-    class_rf_5 = single_and_grid_classifier('RandomForest - 5', x_train_scaled, y_train,
-                                          RandomForestClassifier(n_jobs=-1, n_estimators=1000, max_depth=5, random_state=RANDOM_STATE),
-                                          options,
-                                          [{}])
-
-    class_rf_4 = single_and_grid_classifier('RandomForest - 4', x_train_scaled, y_train,
-                                          RandomForestClassifier(n_jobs=-1, n_estimators=1000, max_depth=4, random_state=RANDOM_STATE),
-                                          options,
-                                          [{}])
-
-
-    class_xgb = single_and_grid_classifier('XGB', x_train_scaled, y_train,
-                                           xgb.XGBClassifier(objective='binary:logistic', random_state=RANDOM_STATE,
-                                                             n_jobs=-1,
-                                                             n_estimators=1000),
-                                                             # , max_depth=4),
-                                           options,
-                                           [{
-                                               'max_depth': range(2, 8, 1),  # default 3
-                                               # 'n_estimators': range(60, 260, 40), # default 100
-                                               # 'learning_rate': [0.3, 0.2, 0.1, 0.01],  # , 0.001, 0.0001
-                                               # 'min_child_weight': [0.5, 1, 2],  # default 1
-                                               # 'subsample': [i / 10.0 for i in range(6, 11)], # default 1, not sure needed
-                                               # 'colsample_bytree': [i / 10.0 for i in range(6, 11)] # default 1, not sure needed
-                                               # 'gamma': [i / 10.0 for i in range(3)]  # default 0
-                                            }])
-
-
 
 options = {
     'major_columns_to_drop': [
@@ -644,60 +605,22 @@ options = {
         #       Update 1: Age_-4 is only very important in 1 model, removing another age 'Age_27-31'
         #       Update 2: Age is not extremely important, only 1 model has 8, rest > 15, remove Age_11-24
         'Age_4-11',  # low in all 4 (perhaps because of titles that serve same purpose)
-        'Age_11-24',
-        'Age_27-31',
-        'Age_31-32',
-        'Age_40-48',
-        'Age_48-57',
-        'Age_57+',
+        'Age_11-24', 'Age_27-31', 'Age_31-32', 'Age_40-48', 'Age_48-57', 'Age_57+',
         # -- Family size - seems more important than ParchBin and SibSpBin, but less consistent between models:
-        #       - Family size_1 - consistently important (0, 11, 16)
-        #       - Family size_2 - consistently not important (>19, and more)
-        #       - Family size_3 - consistently not important (>20, and more)
-        #       - Family size_4 - consistently not important (>24, and more)
-        #       - Family size_567 important in 3 models, not in XGB
-        #       - Family size_8+ - extremely low in 3 models, high (6) in logistic
-        #       Conclusion: remove 4, later can remove also 3, 2
         #       Update 1: 567 seems important in all by XGB, 1 important in all, 8+ not consistent, Family size_2 low in all
         #       Update 2: important in most models, least important category Family size_3, remove
-        'Family size_2',
-        'Family size_3',
-        'Family size_4',
+        'Family size_2', 'Family size_3', 'Family size_4',
         # -- Fare bin - mostly not very important, a few important:
         #       - Fare bin_13.5+ - places 2-10
-        #       - Fare bin_7.896-7.925 - not consistent, sometimes very important, sometimes not
-        #       - For now only removing 'Fare bin_0.1-4' (low in all)
-        #       - Consider removing all others
-        #       Update 1: Fare bin_13.5+ still important, many not very important, Fare bin_0 low in all
-        #       Update 2: Fare bin_13.5+ still important, many not important, removing:
-        #           Fare bin_12.5-13.5, Fare bin_4-5, Fare bin_5-7, Fare bin_7.925-8.662
-        'Fare bin_0',
-        'Fare bin_0.1-4',
-        'Fare bin_4-5',
-        'Fare bin_5-7',
-        'Fare bin_7.796-7.896',
-        'Fare bin_7.925-8.662',
-        'Fare bin_12.5-13.5',
-        # -- Deck - some important, some not
-        #       - DeckBin_AG - very low in all
-        #       - DeckBin_B - low in all
-        #       - DeckBin_CF - low in all
-        #       - DeckBin_DE - high in all (5-10) - need to leave
-        #       - DeckBin_unknown_T - very high in all (3,6,23) - need to leave
-        #       Conclusion: for now removing DeckBin_AG, consider removing B and CF also
-        #       Update: unknown_T and DE still important, B, CF not.  Removing both
-        #       Update 2: what's left is important, unknown_T and DE
-        'DeckBin_AG',
-        'DeckBin_B',
-        'DeckBin_CF',
+        'Fare bin_0', 'Fare bin_0.1-4', 'Fare bin_4-5', 'Fare bin_5-7', 'Fare bin_7.796-7.896',
+        'Fare bin_7.925-8.662', 'Fare bin_12.5-13.5',
+        # -- Deck - some important, some not. what's left is important, unknown_T and DE
+        'DeckBin_AG', 'DeckBin_B', 'DeckBin_CF'
         # -- Title - most important in most models: Mr important in all, XGB considers everything besides Mr low. Leaving all
         # -- Pclass - 3 is most important (1,5,8), 1 second (9,19,22 - perhaps have other proxies), 2 - lowest (12,13,24,38).
-        #       Conclusion: for now not removing, consider removing 2, and maybe 1 later
         # -- Ticket_Frequency - place 7,10,14, leaving
         # -- Known family/ticket survived % - places 2,4 - one of the most important
-                        ],
-    'hyperparams_optimization': False
-
+    ]
 }
 
 main(options)

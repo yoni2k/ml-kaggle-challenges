@@ -1184,3 +1184,50 @@ Some interesting coefficients (taken from Logistic Regression):
         Pclass_3   -0.214395
 	- Ticket_Frequency    0.209756 - this is where Logistic Regression is not accurate, since the relationship with ticket frequency is not linear, see family size above
 	- Known family/ticket survived %    0.711410 - extremely important, families mostly either survived together or died together
+	
+### 67. Adding Grid with some basic configurations.
+Results:
+	Name	Cross accuracy	STD		Cross accuracy-STD	Time sec
+	Log		0.84			0.032		0.807			0
+	KNN 14	0.825			0.03		0.794			9
+	SVM rbf	0.847			0.034		0.813			1
+	SVM poly	0.843		0.027		0.815			1
+	RF 7	0.856			0.028		0.828			12
+	RF 5	0.843			0.027		0.816			12
+	RF 4	0.842			0.029		0.813			12
+	XGB		0.846			0.026		0.82			4
+	Voting soft single	0.852	0.031	0.821			46
+	Voting hard single	0.847	0.031	0.817			41
+	Grid Log	0.84		0.032		0.807			6
+	Grid KNN	0.843		0.024		0.819			4
+	Grid SVM	0.853		0.028		0.825			26
+	Grid RF		0.86		0.028		0.832			158
+	Grid XGB	0.851		0.026		0.825			122
+	Voting soft with grid	0.852	0.034	0.818		650
+	Voting hard with grid	0.853	0.025	0.828		46
+
+Best results: Grid RF, RF 7, Voting hard with grid
+Worst results: KNN 14, Log and Grid Log, RF 4, RF 5
+Correlations (see classifiers_correlations file):
+	- Log is not highly correlated with anything (but 1.00 correlation with and without grid, leave without grid), so even though doesn't give great results, perhaps better to leave because of low correlation
+	- KNN Grid - not highly correlated with anything. KNN 14 gives bad results (KNN grid chooses 5 and not 14 neighbors). KNN Grid gives decent results.
+	- SVM poly - doesn't give great results, but low correlation with others
+	- RF 5, RF 4, RF 7 - low correlation with everything.  
+	- XGB - low correlation with everything, even not extremely high between XGB default and Grid
+	- Voting soft single - high correlation with RFs and SVM rbf.
+	- Voting hard single - goes mostly with the RF
+	- Voting soft everything - takes mostly SVM rbf
+	- Voting hard everything - RF and SVM
+Remove:
+	- Grid Log - to return if adding more hyperparameters
+	- KNN 14 - KNN Grid gives much better results
+	- SVM rbg - remove, leave Grid
+	- RF 4, RF 5 - not great results, very high correlation with RF 7 and Grid RF
+	- Voting soft single, Voting hard single. Results are not better than with the grid, especially for hard.  Just do 1 voting with everything
+Keep: 
+	- SVM poly - doesn't give great results, but low correlation with others
+	- RF 7 - since Grid RF chooses RF 8, and it might be overfitting, leave RF 7 separately
+	- XGB - even though Grid XGB does better, leave it since they are not extremely correlated, and Grid might be overfitting
+Output best: RF 7, Grid SVM, Grid RF, Grid XGB, Voting soft with grid, Voting hard with grid
+ 
+	
