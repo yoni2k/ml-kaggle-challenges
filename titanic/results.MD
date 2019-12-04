@@ -931,3 +931,14 @@ Not removing for now:
 	FINAL                                        - Stats: Best classifiers + Voting train: 0.897, best classifier cross: 0.832 (+-0.032=0.8), time took: 41 sec, best classifier:
 Conclusion: Similar, slightly worse results.  Did split up of a few categories of ParchBin, Family size, Deck due to different survival rates
 
+### 57. Before removing features, remember benchmark with random_state 50
+	Stats single: {'Name': 'Log', 'Cross accuracy': 0.833, 'STD': 0.031, 'Cross accuracy-STD': 0.802, 'Time sec': 0}
+	Stats single: {'Name': 'KNN 14', 'Cross accuracy': 0.804, 'STD': 0.022, 'Cross accuracy-STD': 0.781, 'Time sec': 13}
+	Stats single: {'Name': 'SVM rbf', 'Cross accuracy': 0.824, 'STD': 0.034, 'Cross accuracy-STD': 0.79, 'Time sec': 2}
+	Stats single: {'Name': 'SVM poly', 'Cross accuracy': 0.803, 'STD': 0.04, 'Cross accuracy-STD': 0.763, 'Time sec': 2}
+	Stats single: {'Name': 'NB', 'Cross accuracy': 0.639, 'STD': 0.081, 'Cross accuracy-STD': 0.558, 'Time sec': 0}
+	Stats single: {'Name': 'RF 5', 'Cross accuracy': 0.836, 'STD': 0.032, 'Cross accuracy-STD': 0.804, 'Time sec': 14}
+	Stats single: {'Name': 'RF 4', 'Cross accuracy': 0.833, 'STD': 0.036, 'Cross accuracy-STD': 0.797, 'Time sec': 13}
+	Stats single: {'Name': 'XGB', 'Cross accuracy': 0.833, 'STD': 0.035, 'Cross accuracy-STD': 0.798, 'Time sec': 14}
+	Stats single: {'Name': 'Voting soft', 'Cross accuracy': 0.834, 'STD': 0.032, 'Cross accuracy-STD': 0.802, 'Time sec': 49}
+	Stats single: {'Name': 'Voting hard', 'Cross accuracy': 0.838, 'STD': 0.036, 'Cross accuracy-STD': 0.803, 'Time sec': 41}

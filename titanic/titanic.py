@@ -43,7 +43,7 @@ TODO:
 '''
 
 NUM_TRAIN_SAMPLES = 891
-
+RANDOM_STATE = 50
 
 def read_files():
     train = pd.read_csv('input/train.csv', index_col='PassengerId')
@@ -363,14 +363,17 @@ def prepare_features(train, x_test, options):
     print(f"Age value_counts:\n{both['Age'].value_counts().sort_index()}")
     features_to_add_dummies.append('Age')
 
-    both.drop(options['columns_to_drop'], axis=1, inplace=True)
     both.drop(features_to_drop_after_use, axis=1, inplace=True)
 
-    print(f'YK: Features after dropping before adding dummy, shape {both.shape}: {both.columns.values}')
+    print(f'YK: Features after dropping not used at all, before dummies, shape {both.shape}: {both.columns.values}')
 
     both = pd.get_dummies(both, columns=features_to_add_dummies)
 
-    print(f'YK: Features after dropping after adding dummy, shape {both.shape}: {both.columns.values}')
+    print(f'YK: Features after dummies before dropping specific, shape {both.shape}: {both.columns.values}')
+
+    both.drop(options['columns_to_drop'], axis=1, inplace=True)
+
+    print(f'YK: Features after dummies after dropping specific, shape {both.shape}: {both.columns.values}')
 
     print(f'YK: both.info():\n{both.info()}')
     print(f'YK: Value counts of all values:')
@@ -481,14 +484,17 @@ def main(options):
     preds = pd.DataFrame()
 
     single_classifiers = {
-        'Log': {'clas': LogisticRegression(solver='liblinear', n_jobs=-1)},
+        'Log': {'clas': LogisticRegression(solver='liblinear', n_jobs=-1, random_state=RANDOM_STATE)},
         'KNN 14': {'clas': KNeighborsClassifier(n_jobs=-1, n_neighbors=14)},
-        'SVM rbf': {'clas': SVC(gamma='auto', kernel='rbf', probability=True)},
-        'SVM poly': {'clas': SVC(gamma='auto', kernel='poly', probability=True)},
+        'SVM rbf': {'clas': SVC(gamma='auto', kernel='rbf', probability=True, random_state=RANDOM_STATE)},
+        'SVM poly': {'clas': SVC(gamma='auto', kernel='poly', probability=True, random_state=RANDOM_STATE)},
         'NB': {'clas': GaussianNB()},
-        'RF 5': {'clas': RandomForestClassifier(n_jobs=-1, n_estimators=1000, max_depth=5), 'importances': True},
-        'RF 4': {'clas': RandomForestClassifier(n_jobs=-1, n_estimators=1000, max_depth=4), 'importances': True},
-        'XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', random_state=42, n_jobs=-1, n_estimators=1000)}
+        'RF 5': {'clas': RandomForestClassifier(n_jobs=-1, n_estimators=1000, max_depth=5, random_state=RANDOM_STATE),
+                 'importances': True},
+        'RF 4': {'clas': RandomForestClassifier(n_jobs=-1, n_estimators=1000, max_depth=4, random_state=RANDOM_STATE),
+                 'importances': True},
+        'XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', random_state=RANDOM_STATE, n_jobs=-1, n_estimators=1000,
+                                          feature_names=x_train.columns)}
     }
 
     classifiers_for_voting = []
@@ -498,15 +504,19 @@ def main(options):
         classifiers_for_voting.append((cl, classifier))
         if cl == 'Log':
             importances = pd.DataFrame({'Importance': classifier.coef_[0]}, index=x_train.columns). \
-                sort_values(by='Importance', ascending=False)
+                reset_index().sort_values(by='Importance', ascending=False)
             print(f'YK: "{cl}" feature importances:\n{pd.DataFrame(importances)}')
+            importances['Importance'] = importances['Importance'].abs()
+            print(f'YK: "{cl}" feature importances (abs):\n{pd.DataFrame(importances).sort_values(by="Importance", ascending=False)}')
         elif 'RF' in cl:
             importances = pd.DataFrame({'Importance': classifier.feature_importances_}, index=x_train.columns).\
-                sort_values(by='Importance', ascending=False)
+                reset_index().sort_values(by='Importance', ascending=False)
             print(f'YK: "{cl}" feature importances:\n{importances}')
         elif cl == 'XGB':
-            print(f'YK: "{cl}" feature importances:\n'
-                  f'{pd.DataFrame(classifier.get_booster().get_score(importance_type="gain"), index=["Importance"]).transpose().sort_values(by="Importance", ascending=False)}')
+            importance = pd.DataFrame(classifier.get_booster().get_score(importance_type="gain"),
+                                      index=["Importance"]).transpose()
+            print(f'YK: "{cl}" feature importances:\n{importance.sort_values(by="Importance", ascending=False)}')
+
 
 
     clas_vote_soft = fit_predict_voting(classifiers_for_voting, 'Voting soft', 'soft',
@@ -515,7 +525,6 @@ def main(options):
     clas_vote_hard = fit_predict_voting(classifiers_for_voting, 'Voting hard', 'hard',
                                x_train_scaled, y_train, x_test_scaled,
                                results, preds)
-
 
     output_preds(preds['Voting soft'], x_test, 'voting_soft')
     output_preds(preds['SVM rbf'], x_test, 'svm_rbf')
@@ -539,7 +548,7 @@ def main(options):
 
 
     class_log = single_and_grid_classifier('Logistic - liblinear', x_train_scaled, y_train,
-                                           LogisticRegression(solver='liblinear', n_jobs=-1),
+                                           LogisticRegression(solver='liblinear', n_jobs=-1, random_state=RANDOM_STATE),
                                            options,
                                            [{'solver': ['liblinear', 'lbfgs', 'newton-cg', 'sag', 'saga']}],) # TODO was empty
     # Following was tried also for Logistic and didn't make it much better: solver=['lbfgs', 'newton-cg', 'sag', 'saga']
@@ -551,14 +560,14 @@ def main(options):
     # Following was tried also and found 14 to be best: n_neighbors=[range(1, 25), 5 (lower scores), 25 (lower scored)]
 
     class_svm_rbf = single_and_grid_classifier('SVM - rbf', x_train_scaled, y_train,
-                                               SVC(gamma='auto', kernel='rbf', probability=True),
+                                               SVC(gamma='auto', kernel='rbf', probability=True, random_state=RANDOM_STATE),
                                                options,
                                                [{
                                                    'C': [0.5, 1.0, 1.5, 2.0],
                                                    'gamma': [0.2, 0.1, 0.05, 0.01, 'auto_deprecated', 'scale']}
                                                ])
     class_svm_poly = single_and_grid_classifier('SVM - poly', x_train_scaled, y_train,
-                                                SVC(gamma='auto', kernel='poly', probability=True),
+                                                SVC(gamma='auto', kernel='poly', probability=True, random_state=RANDOM_STATE),
                                                 options,
                                                 [{
                                                     'C': [0.5, 1.0, 1.5, 2.0],
@@ -572,18 +581,19 @@ def main(options):
                                           [{}])
 
     class_rf_5 = single_and_grid_classifier('RandomForest - 5', x_train_scaled, y_train,
-                                          RandomForestClassifier(n_jobs=-1, n_estimators=1000, max_depth=5),
+                                          RandomForestClassifier(n_jobs=-1, n_estimators=1000, max_depth=5, random_state=RANDOM_STATE),
                                           options,
                                           [{}])
 
     class_rf_4 = single_and_grid_classifier('RandomForest - 4', x_train_scaled, y_train,
-                                          RandomForestClassifier(n_jobs=-1, n_estimators=1000, max_depth=4),
+                                          RandomForestClassifier(n_jobs=-1, n_estimators=1000, max_depth=4, random_state=RANDOM_STATE),
                                           options,
                                           [{}])
 
 
     class_xgb = single_and_grid_classifier('XGB', x_train_scaled, y_train,
-                                           xgb.XGBClassifier(objective='binary:logistic', random_state=42, n_jobs=-1,
+                                           xgb.XGBClassifier(objective='binary:logistic', random_state=RANDOM_STATE,
+                                                             n_jobs=-1,
                                                              n_estimators=1000),
                                                              # , max_depth=4),
                                            options,
@@ -600,25 +610,8 @@ def main(options):
 
 
 options = {
-    'columns_to_drop': [# 'Embarked',  # doesn't help always
-                        # 'Ticket' - used for ticket frequency
-                        # 'Name' - used for title
-                        # 'Fare',     # doesn't help always TODO consider returning in a different way
-                        # 'Cabin' - helps if take out 'Deck' from first letter, currently doesn't make a difference to have it or not
-                        # 'Sex',
-                        # 'SibSp',
-                        # 'Age',
-                        # 'Pclass'
-                        # 'Parch'      # doesn't help at the end - border line
-
-                        #'pclass_2',
-                        #'Alone',
-                        #'Deck_FG',
-                        #'Deck_AC',
-                        #'Deck_BT',
-                        #'Embarked',
-
-                        # 'Family/ticket survival known' - removing it gives slightly worse results and larger deltas
+    'columns_to_drop': [
+                        # 'DeckBin_AG'  # all 4 consider low
                         ],
     'hyperparams_optimization': False
 
