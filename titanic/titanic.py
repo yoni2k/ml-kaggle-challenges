@@ -631,19 +631,19 @@ options = {
         # -- Embarked - not very important, but at least Embarked_S is place 15-16 in most, consider removing altogether
         #       Update 1: S 13-17, C 14,20,25. Consider removing C
         #       Update 2: S 11,17,33. C 11,17,29 - Consider removing both, but not this time around
-        'Embarked_Q',  # low in all 4
+        # YK_TEMP 'Embarked_Q',  # low in all 4
         # -- Age - not extemely important, most models Age_-4 is important (15), XGB gives more age importance (6,8)
         #       Update 1: Age_-4 is only very important in 1 model, removing another age 'Age_27-31'
         #       Update 2: Age is not extremely important, only 1 model has 8, rest > 15, remove Age_11-24
-        'Age_4-11',  # low in all 4 (perhaps because of titles that serve same purpose)
-        'Age_27-31',
-        'Age_11-24',
+        # YK_TEMP 'Age_4-11',  # low in all 4 (perhaps because of titles that serve same purpose)
+        # YK_TEMP 'Age_27-31',
+        # YK_TEMP 'Age_11-24',
         # -- ParchBin - not extremely important in general (besides one exception > 15 in all models). Consider removing altogether
         #       Update 1: not important for all models, besides LogisticRegression, but ParchBin_4+ not important for all models
         #       Update 2: not important enough all modes, besides LogisticRegression, ParchBin_2 is less important everywhere, removing
-        'ParchBin_3',  # all models very low, in logistic place 9, removing since perhaps logistic overfitting.
-        'ParchBin_4+',
-        'ParchBin_2',
+        # YK_TEMP 'ParchBin_3',  # all models very low, in logistic place 9, removing since perhaps logistic overfitting.
+        # YK_TEMP 'ParchBin_4+',
+        # YK_TEMP 'ParchBin_2',
         # -- Family size - seems more important than ParchBin and SibSpBin, but less consistent between models:
         #       - Family size_1 - consistently important (0, 11, 16)
         #       - Family size_2 - consistently not important (>19, and more)
@@ -654,9 +654,9 @@ options = {
         #       Conclusion: remove 4, later can remove also 3, 2
         #       Update 1: 567 seems important in all by XGB, 1 important in all, 8+ not consistent, Family size_2 low in all
         #       Update 2: important in most models, least important category Family size_3, remove
-        'Family size_4',
-        'Family size_2',
-        'Family size_3',
+        # YK_TEMP 'Family size_4',
+        # YK_TEMP 'Family size_2',
+        # YK_TEMP 'Family size_3',
         # -- Fare bin - mostly not very important, a few important:
         #       - Fare bin_13.5+ - places 2-10
         #       - Fare bin_7.896-7.925 - not consistent, sometimes very important, sometimes not
@@ -665,12 +665,12 @@ options = {
         #       Update 1: Fare bin_13.5+ still important, many not very important, Fare bin_0 low in all
         #       Update 2: Fare bin_13.5+ still important, many not important, removing:
         #           Fare bin_12.5-13.5, Fare bin_4-5, Fare bin_5-7, Fare bin_7.925-8.662
-        'Fare bin_0.1-4',
-        'Fare bin_0',
-        'Fare bin_12.5-13.5',
-        'Fare bin_4-5',
-        'Fare bin_5-7',
-        'Fare bin_7.925-8.662',
+        # YK_TEMP 'Fare bin_0.1-4',
+        # YK_TEMP 'Fare bin_0',
+        # YK_TEMP 'Fare bin_12.5-13.5',
+        # YK_TEMP 'Fare bin_4-5',
+        # YK_TEMP 'Fare bin_5-7',
+        # YK_TEMP 'Fare bin_7.925-8.662',
         # -- Deck - some important, some not
         #       - DeckBin_AG - very low in all
         #       - DeckBin_B - low in all
@@ -680,9 +680,9 @@ options = {
         #       Conclusion: for now removing DeckBin_AG, consider removing B and CF also
         #       Update: unknown_T and DE still important, B, CF not.  Removing both
         #       Update 2: what's left is important, unknown_T and DE
-        'DeckBin_AG',
-        'DeckBin_B',
-        'DeckBin_CF',
+        # YK_TEMP 'DeckBin_AG',
+        # YK_TEMP 'DeckBin_B',
+        # YK_TEMP 'DeckBin_CF',
         # -- Title - most important in most models: Mr important in all, XGB considers everything besides Mr low. Leaving all
         # -- Pclass - 3 is most important (1,5,8), 1 second (9,19,22 - perhaps have other proxies), 2 - lowest (12,13,24,38).
         #       Conclusion: for now not removing, consider removing 2, and maybe 1 later

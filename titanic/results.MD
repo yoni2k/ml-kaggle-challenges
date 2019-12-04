@@ -1052,3 +1052,20 @@ Since Sex category has an extremely high correlation with Title, left till now t
 	Stats single: {'Name': 'Voting soft', 'Cross accuracy': 0.844, 'STD': 0.034, 'Cross accuracy-STD': 0.81, 'Time sec': 68}
 	Stats single: {'Name': 'Voting hard', 'Cross accuracy': 0.845, 'STD': 0.033, 'Cross accuracy-STD': 0.813, 'Time sec': 44}
 Conclusions: results similar, slightly worse. Leaving as is, makes sense and makes model more stable
+
+
+### 62. Readding all that was removed before Sex removed to make sure that removing Sex didn't change some conclusions.  Use as benchmark later.
+	Stats single: {'Name': 'Log', 'Cross accuracy': 0.836, 'STD': 0.031, 'Cross accuracy-STD': 0.805, 'Time sec': 0}
+	Stats single: {'Name': 'KNN 14', 'Cross accuracy': 0.775, 'STD': 0.032, 'Cross accuracy-STD': 0.742, 'Time sec': 12}
+	Stats single: {'Name': 'SVM rbf', 'Cross accuracy': 0.824, 'STD': 0.032, 'Cross accuracy-STD': 0.792, 'Time sec': 2}
+	Stats single: {'Name': 'SVM poly', 'Cross accuracy': 0.792, 'STD': 0.028, 'Cross accuracy-STD': 0.765, 'Time sec': 2}
+	Stats single: {'Name': 'NB', 'Cross accuracy': 0.605, 'STD': 0.072, 'Cross accuracy-STD': 0.533, 'Time sec': 0}
+	Stats single: {'Name': 'RF 7', 'Cross accuracy': 0.842, 'STD': 0.031, 'Cross accuracy-STD': 0.811, 'Time sec': 14}
+	Stats single: {'Name': 'RF 5', 'Cross accuracy': 0.842, 'STD': 0.029, 'Cross accuracy-STD': 0.813, 'Time sec': 13}
+	Stats single: {'Name': 'RF 4', 'Cross accuracy': 0.841, 'STD': 0.034, 'Cross accuracy-STD': 0.807, 'Time sec': 13}
+	Stats single: {'Name': 'XGB', 'Cross accuracy': 0.833, 'STD': 0.035, 'Cross accuracy-STD': 0.797, 'Time sec': 12}
+	Stats single: {'Name': 'Voting soft', 'Cross accuracy': 0.835, 'STD': 0.033, 'Cross accuracy-STD': 0.802, 'Time sec': 85}
+	Stats single: {'Name': 'Voting hard', 'Cross accuracy': 0.84, 'STD': 0.033, 'Cross accuracy-STD': 0.806, 'Time sec': 62}
+Conclusions: continue removing what was already removed: 'Family/ticket survival known', 'SibSp' 
+
+
