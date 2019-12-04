@@ -294,20 +294,22 @@ def prepare_features(train, x_test, options):
                                                   5: '5+', 8: '5+'})
         features_to_add_dummies.append('SibSpBin')
         features_to_drop_after_use.append('SibSp')
-    both['ParchBin'] = both['Parch'].replace({0: '0',
-                                              1: '1',
-                                              2: '2',
-                                              3: '3',
-                                              4: '4+', 5: '4+', 6: '4+', 9: '4+'})
+    if 'Parch' not in options['major_columns_to_drop']:
+        both['ParchBin'] = both['Parch'].replace({0: '0',
+                                                  1: '1',
+                                                  2: '2',
+                                                  3: '3',
+                                                  4: '4+', 5: '4+', 6: '4+', 9: '4+'})
+        features_to_add_dummies.append('ParchBin')
+        features_to_drop_after_use.append('Parch')
+
     both['Family size'] = both['Family size'].replace({1: '1',
                                                        2: '2',
                                                        3: '3',
                                                        4: '4',
                                                        5: '567', 6: '567', 7: '567',
                                                        8: '8+', 11: '8+'})
-    features_to_add_dummies.append('ParchBin')
     features_to_add_dummies.append('Family size')
-    features_to_drop_after_use.append('Parch')
 
 
     # 3. ----> Prepare Deck features based on first letter of Cabin, unknown Cabin becomes reference category
@@ -620,11 +622,12 @@ def main(options):
 
 options = {
     'major_columns_to_drop': [
+        'Sex',  # Since titles are important, need to remove Sex
         # -- 'Family/ticket survival known'  # low in all 4
         'Family/ticket survival known',
         # -- SibSp/SibSpBin - not extremely important in general (>17 in all models).  Consider removing altogether
         'SibSp',  # very low in all models
-        'Sex'  # Since titles are important, need to remove Sex
+        'Parch'  # the only one that has high importance is ParchBin_0, but it has high correlation with Family size_0 anyways, so can remove
 
     ],
     'minor_columns_to_drop': [
@@ -638,12 +641,6 @@ options = {
         # YK_TEMP 'Age_4-11',  # low in all 4 (perhaps because of titles that serve same purpose)
         # YK_TEMP 'Age_27-31',
         # YK_TEMP 'Age_11-24',
-        # -- ParchBin - not extremely important in general (besides one exception > 15 in all models). Consider removing altogether
-        #       Update 1: not important for all models, besides LogisticRegression, but ParchBin_4+ not important for all models
-        #       Update 2: not important enough all modes, besides LogisticRegression, ParchBin_2 is less important everywhere, removing
-        # YK_TEMP 'ParchBin_3',  # all models very low, in logistic place 9, removing since perhaps logistic overfitting.
-        # YK_TEMP 'ParchBin_4+',
-        # YK_TEMP 'ParchBin_2',
         # -- Family size - seems more important than ParchBin and SibSpBin, but less consistent between models:
         #       - Family size_1 - consistently important (0, 11, 16)
         #       - Family size_2 - consistently not important (>19, and more)
@@ -688,7 +685,6 @@ options = {
         #       Conclusion: for now not removing, consider removing 2, and maybe 1 later
         # -- Ticket_Frequency - place 7,10,14, leaving
         # -- Known family/ticket survived % - places 2,4 - one of the most important
-        # -- Sex - place 1 in all but XGB (23), leaving
                         ],
     'hyperparams_optimization': False
 
