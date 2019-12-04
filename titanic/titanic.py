@@ -269,6 +269,7 @@ def manual_age_bin(fare):
 def prepare_features(train, x_test, options):
     num_train_samples = train.shape[0]
 
+    print(f'YK: RANDOM_STATE:{RANDOM_STATE}')
     print(f'YK debug: num_train_samples:{num_train_samples}')
     print(f'YK: Features before adding / dropping: {x_test.columns.values}')
 
@@ -365,15 +366,19 @@ def prepare_features(train, x_test, options):
 
     both.drop(features_to_drop_after_use, axis=1, inplace=True)
 
-    print(f'YK: Features after dropping not used at all, before dummies, shape {both.shape}: {both.columns.values}')
+    print(f'YK: Features after dropping not used at all, before major dropping, shape {both.shape}: {both.columns.values}')
+
+    both.drop(options['major_columns_to_drop'], axis=1, inplace=True)
+
+    print(f'YK: Features after dropping major, before dummies, shape {both.shape}: {both.columns.values}')
 
     both = pd.get_dummies(both, columns=features_to_add_dummies)
 
-    print(f'YK: Features after dummies before dropping specific, shape {both.shape}: {both.columns.values}')
+    print(f'YK: Features after dummies before dropping minor, shape {both.shape}: {both.columns.values}')
 
-    both.drop(options['columns_to_drop'], axis=1, inplace=True)
+    both.drop(options['minor_columns_to_drop'], axis=1, inplace=True)
 
-    print(f'YK: Features after dummies after dropping specific, shape {both.shape}: {both.columns.values}')
+    print(f'YK: Features after dummies after dropping minor, shape {both.shape}: {both.columns.values}')
 
     print(f'YK: both.info():\n{both.info()}')
     print(f'YK: Value counts of all values:')
@@ -507,15 +512,15 @@ def main(options):
                 reset_index().sort_values(by='Importance', ascending=False)
             print(f'YK: "{cl}" feature importances:\n{pd.DataFrame(importances)}')
             importances['Importance'] = importances['Importance'].abs()
-            print(f'YK: "{cl}" feature importances (abs):\n{pd.DataFrame(importances).sort_values(by="Importance", ascending=False)}')
+            print(f'YK: "{cl}" feature importances (abs):\n{pd.DataFrame(importances).sort_values(by="Importance", ascending=False).reset_index()}')
         elif 'RF' in cl:
             importances = pd.DataFrame({'Importance': classifier.feature_importances_}, index=x_train.columns).\
-                reset_index().sort_values(by='Importance', ascending=False)
+                reset_index().sort_values(by='Importance', ascending=False).reset_index()
             print(f'YK: "{cl}" feature importances:\n{importances}')
         elif cl == 'XGB':
             importance = pd.DataFrame(classifier.get_booster().get_score(importance_type="gain"),
                                       index=["Importance"]).transpose()
-            print(f'YK: "{cl}" feature importances:\n{importance.sort_values(by="Importance", ascending=False)}')
+            print(f'YK: "{cl}" feature importances:\n{importance.sort_values(by="Importance", ascending=False).reset_index()}')
 
 
 
@@ -610,7 +615,51 @@ def main(options):
 
 
 options = {
-    'columns_to_drop': [
+    'major_columns_to_drop': [],
+    'minor_columns_to_drop': [
+        # -- Embarked - not very important, but at least Embarked_S is place 15-16 in most, consider removing altogether
+        'Embarked_Q',  # low in all 4
+        # -- Age - not extemely important, most models Age_-4 is important (15), XGB gives more age importance (6,8)
+        'Age_4-11',  # low in all 4 (perhaps because of titles that serve same purpose)
+        # -- ParchBin - not extremely important in general (besides one exception > 15 in all models). Consider removing altogether
+        'ParchBin_3',  # all models very low, in logistic place 9, removing since perhaps logistic overfitting.
+        # -- SibSpBin - not extremely important in general (>17 in all models).  Consider removing altogether
+        'SibSpBin_4',  # very low in all models
+        # -- Family size - seems more important than ParchBin and SibSpBin, but less consistent between models:
+        #       - Family size_1 - consistently important (0, 11, 16)
+        #       - Family size_2 - consistently not important (>19, and more)
+        #       - Family size_3 - consistently not important (>20, and more)
+        #       - Family size_4 - consistently not important (>24, and more)
+        #       - Family size_567 important in 3 models, not in XGB
+        #       - Family size_8+ - extremely low in 3 models, high (6) in logistic
+        #       Conclusion: remove 4, later can remove also 3, 2
+        'Family size_4',
+        # -- Fare bin - mostly not very important, a few important:
+        #       - Fare bin_13.5+ - places 2-10
+        #       - Fare bin_7.896-7.925 - not consistent, sometimes very important, sometimes not
+        #       - For now only removing 'Fare bin_0.1-4' (low in all)
+        #       - Consider removing all others
+        'Fare bin_0.1-4',
+        # -- Deck - some important, some not
+        #       - DeckBin_AG - very low in all
+        #       - DeckBin_B - low in all
+        #       - DeckBin_CF - low in all
+        #       - DeckBin_DE - high in all (5-10) - need to leave
+        #       - DeckBin_unknown_T - very high in all (3,6,23) - need to leave
+        #       Conclusion: for now removing DeckBin_AG, consider removing B and CF also
+        'DeckBin_AG',
+        # -- 'Family/ticket survival known'  # low in all 4
+        'Family/ticket survival known',
+        # -- Title - most important in most models: Mr important in all, XGB considers everything besides Mr low. Leaving all
+        # -- Pclass - 3 is most important (1,5,8), 1 second (9,19,22 - perhaps have other proxies), 2 - lowest (12,13,24,38).
+        #       Conclusion: for now not removing, consider removing 2, and maybe 1 later
+        # -- Ticket_Frequency - place 7,10,14, leaving
+        # -- Known family/ticket survived % - places 2,4 - one of the most important
+        # -- Sex - place 1 in all but XGB (23), leaving
+
+
+        # Title - most important
+
                         # 'DeckBin_AG'  # all 4 consider low
                         ],
     'hyperparams_optimization': False

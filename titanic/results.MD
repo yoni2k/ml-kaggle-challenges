@@ -942,3 +942,56 @@ Conclusion: Similar, slightly worse results.  Did split up of a few categories o
 	Stats single: {'Name': 'XGB', 'Cross accuracy': 0.833, 'STD': 0.035, 'Cross accuracy-STD': 0.798, 'Time sec': 14}
 	Stats single: {'Name': 'Voting soft', 'Cross accuracy': 0.834, 'STD': 0.032, 'Cross accuracy-STD': 0.802, 'Time sec': 49}
 	Stats single: {'Name': 'Voting hard', 'Cross accuracy': 0.838, 'STD': 0.036, 'Cross accuracy-STD': 0.803, 'Time sec': 41}
+	
+### 58. Removing one feature per category from categories where some features are not important
+	Stats single: {'Name': 'Log', 'Cross accuracy': 0.835, 'STD': 0.032, 'Cross accuracy-STD': 0.803, 'Time sec': 0}
+	Stats single: {'Name': 'KNN 14', 'Cross accuracy': 0.804, 'STD': 0.029, 'Cross accuracy-STD': 0.774, 'Time sec': 13}
+	Stats single: {'Name': 'SVM rbf', 'Cross accuracy': 0.827, 'STD': 0.029, 'Cross accuracy-STD': 0.798, 'Time sec': 2}
+	Stats single: {'Name': 'SVM poly', 'Cross accuracy': 0.816, 'STD': 0.032, 'Cross accuracy-STD': 0.784, 'Time sec': 2}
+	Stats single: {'Name': 'NB', 'Cross accuracy': 0.469, 'STD': 0.04, 'Cross accuracy-STD': 0.429, 'Time sec': 0}
+	Stats single: {'Name': 'RF 5', 'Cross accuracy': 0.84, 'STD': 0.035, 'Cross accuracy-STD': 0.805, 'Time sec': 13}
+	Stats single: {'Name': 'RF 4', 'Cross accuracy': 0.84, 'STD': 0.034, 'Cross accuracy-STD': 0.805, 'Time sec': 13}
+	Stats single: {'Name': 'XGB', 'Cross accuracy': 0.835, 'STD': 0.033, 'Cross accuracy-STD': 0.802, 'Time sec': 10}
+	Stats single: {'Name': 'Voting soft', 'Cross accuracy': 0.84, 'STD': 0.036, 'Cross accuracy-STD': 0.803, 'Time sec': 50}
+	Stats single: {'Name': 'Voting hard', 'Cross accuracy': 0.837, 'STD': 0.028, 'Cross accuracy-STD': 0.809, 'Time sec': 39}
+Conclusion: some models improved slightly
+    'minor_columns_to_drop': [
+        # -- Embarked - not very important, but at least Embarked_S is place 15-16 in most, consider removing altogether
+        'Embarked_Q',  # low in all 4
+        # -- Age - not extemely important, most models Age_-4 is important (15), XGB gives more age importance (6,8)
+        'Age_4-11',  # low in all 4 (perhaps because of titles that serve same purpose)
+        # -- ParchBin - not extremely important in general (besides one exception > 15 in all models). Consider removing altogether
+        'ParchBin_3',  # all models very low, in logistic place 9, removing since perhaps logistic overfitting.
+        # -- SibSpBin - not extremely important in general (>17 in all models).  Consider removing altogether
+        'SibSpBin_4',  # very low in all models
+        # -- Family size - seems more important than ParchBin and SibSpBin, but less consistent between models:
+        #       - Family size_1 - consistently important (0, 11, 16)
+        #       - Family size_2 - consistently not important (>19, and more)
+        #       - Family size_3 - consistently not important (>20, and more)
+        #       - Family size_4 - consistently not important (>24, and more)
+        #       - Family size_567 important in 3 models, not in XGB
+        #       - Family size_8+ - extremely low in 3 models, high (6) in logistic
+        #       Conclusion: remove 4, later can remove also 3, 2
+        'Family size_4',
+        # -- Fare bin - mostly not very important, a few important:
+        #       - Fare bin_13.5+ - places 2-10
+        #       - Fare bin_7.896-7.925 - not consistent, sometimes very important, sometimes not
+        #       - For now only removing 'Fare bin_0.1-4' (low in all)
+        #       - Consider removing all others
+        'Fare bin_0.1-4',
+        # -- Deck - some important, some not
+        #       - DeckBin_AG - very low in all
+        #       - DeckBin_B - low in all
+        #       - DeckBin_CF - low in all
+        #       - DeckBin_DE - high in all (5-10) - need to leave
+        #       - DeckBin_unknown_T - very high in all (3,6,23) - need to leave
+        #       Conclusion: for now removing DeckBin_AG, consider removing B and CF also
+        'DeckBin_AG',
+        # -- 'Family/ticket survival known'  # low in all 4
+        'Family/ticket survival known',
+        # -- Title - most important in most models: Mr important in all, XGB considers everything besides Mr low. Leaving all
+        # -- Pclass - 3 is most important (1,5,8), 1 second (9,19,22 - perhaps have other proxies), 2 - lowest (12,13,24,38).
+        #       Conclusion: for now not removing, consider removing 2, and maybe 1 later
+        # -- Ticket_Frequency - place 7,10,14, leaving
+        # -- Known family/ticket survived % - places 2,4 - one of the most important
+        # -- Sex - place 1 in all but XGB (23), leaving
