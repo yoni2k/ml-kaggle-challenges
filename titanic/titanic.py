@@ -289,8 +289,11 @@ def prepare_features(train, x_test, options):
     # 2 ---> Create a new feature of number 'Family size' of relatives regardless of who they are
     #   Group SibSp, Parch, Family size based on different survival rates
     both['Family size'] = 1 + both['SibSp'] + both['Parch']
-    both['SibSpBin'] = both['SibSp'].replace({0: '0', 1: '1', 2: '2', 3: '3', 4: '4',
-                                           5: '5+', 8: '5+'})
+    if 'SibSp' not in options['major_columns_to_drop']:
+        both['SibSpBin'] = both['SibSp'].replace({0: '0', 1: '1', 2: '2', 3: '3', 4: '4',
+                                                  5: '5+', 8: '5+'})
+        features_to_add_dummies.append('SibSpBin')
+        features_to_drop_after_use.append('SibSp')
     both['ParchBin'] = both['Parch'].replace({0: '0',
                                               1: '1',
                                               2: '2',
@@ -302,10 +305,8 @@ def prepare_features(train, x_test, options):
                                                        4: '4',
                                                        5: '567', 6: '567', 7: '567',
                                                        8: '8+', 11: '8+'})
-    features_to_add_dummies.append('SibSpBin')
     features_to_add_dummies.append('ParchBin')
     features_to_add_dummies.append('Family size')
-    features_to_drop_after_use.append('SibSp')
     features_to_drop_after_use.append('Parch')
 
 
@@ -615,16 +616,24 @@ def main(options):
 
 
 options = {
-    'major_columns_to_drop': [],
+    'major_columns_to_drop': [
+        # -- 'Family/ticket survival known'  # low in all 4
+        'Family/ticket survival known',
+        # -- SibSp/SibSpBin - not extremely important in general (>17 in all models).  Consider removing altogether
+        'SibSp'  # very low in all models
+    ],
     'minor_columns_to_drop': [
         # -- Embarked - not very important, but at least Embarked_S is place 15-16 in most, consider removing altogether
+        #       Update 1: S 13-17, C 14,20,25. Consider removing C
         'Embarked_Q',  # low in all 4
         # -- Age - not extemely important, most models Age_-4 is important (15), XGB gives more age importance (6,8)
+        #       Update 1: Age_-4 is only very important in 1 model, removing another age 'Age_27-31'
         'Age_4-11',  # low in all 4 (perhaps because of titles that serve same purpose)
+        'Age_27-31',
         # -- ParchBin - not extremely important in general (besides one exception > 15 in all models). Consider removing altogether
+        #       Update 1: not important for all models, besides LogisticRegression, but ParchBin_4+ not important for all models
         'ParchBin_3',  # all models very low, in logistic place 9, removing since perhaps logistic overfitting.
-        # -- SibSpBin - not extremely important in general (>17 in all models).  Consider removing altogether
-        'SibSpBin_4',  # very low in all models
+        'ParchBin_4+',
         # -- Family size - seems more important than ParchBin and SibSpBin, but less consistent between models:
         #       - Family size_1 - consistently important (0, 11, 16)
         #       - Family size_2 - consistently not important (>19, and more)
@@ -633,13 +642,17 @@ options = {
         #       - Family size_567 important in 3 models, not in XGB
         #       - Family size_8+ - extremely low in 3 models, high (6) in logistic
         #       Conclusion: remove 4, later can remove also 3, 2
+        #       Update 1: 567 seems important in all by XGB, 1 important in all, 8+ not consistent, Family size_2 low in all
         'Family size_4',
+        'Family size_2',
         # -- Fare bin - mostly not very important, a few important:
         #       - Fare bin_13.5+ - places 2-10
         #       - Fare bin_7.896-7.925 - not consistent, sometimes very important, sometimes not
         #       - For now only removing 'Fare bin_0.1-4' (low in all)
         #       - Consider removing all others
+        #       Update 1: Fare bin_13.5+ still important, many not very important, Fare bin_0 low in all
         'Fare bin_0.1-4',
+        'Fare bin_0',
         # -- Deck - some important, some not
         #       - DeckBin_AG - very low in all
         #       - DeckBin_B - low in all
@@ -647,20 +660,16 @@ options = {
         #       - DeckBin_DE - high in all (5-10) - need to leave
         #       - DeckBin_unknown_T - very high in all (3,6,23) - need to leave
         #       Conclusion: for now removing DeckBin_AG, consider removing B and CF also
+        #       Update: unknown_T and DE still important, B, CF not.  Removing both
         'DeckBin_AG',
-        # -- 'Family/ticket survival known'  # low in all 4
-        'Family/ticket survival known',
+        'DeckBin_B',
+        'DeckBin_CF',
         # -- Title - most important in most models: Mr important in all, XGB considers everything besides Mr low. Leaving all
         # -- Pclass - 3 is most important (1,5,8), 1 second (9,19,22 - perhaps have other proxies), 2 - lowest (12,13,24,38).
         #       Conclusion: for now not removing, consider removing 2, and maybe 1 later
         # -- Ticket_Frequency - place 7,10,14, leaving
         # -- Known family/ticket survived % - places 2,4 - one of the most important
         # -- Sex - place 1 in all but XGB (23), leaving
-
-
-        # Title - most important
-
-                        # 'DeckBin_AG'  # all 4 consider low
                         ],
     'hyperparams_optimization': False
 

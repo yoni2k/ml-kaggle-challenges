@@ -994,4 +994,26 @@ Conclusion: some models improved slightly
         #       Conclusion: for now not removing, consider removing 2, and maybe 1 later
         # -- Ticket_Frequency - place 7,10,14, leaving
         # -- Known family/ticket survived % - places 2,4 - one of the most important
-        # -- Sex - place 1 in all but XGB (23), leaving
+        # -- Sex - place 1 in all but XGB (23), leaving]
+		
+### 59. Removing low importance categories:
+	- SibSpBin altogether
+	- Age_27-31
+	- ParchBin_4+
+	- Family size_2
+	- Fare bin_0
+	- DeckBin_B
+	- DeckBin_CF
+	Stats single: {'Name': 'Log', 'Cross accuracy': 0.836, 'STD': 0.023, 'Cross accuracy-STD': 0.814, 'Time sec': 0}
+	Stats single: {'Name': 'KNN 14', 'Cross accuracy': 0.813, 'STD': 0.028, 'Cross accuracy-STD': 0.785, 'Time sec': 11}
+	Stats single: {'Name': 'SVM rbf', 'Cross accuracy': 0.835, 'STD': 0.034, 'Cross accuracy-STD': 0.801, 'Time sec': 1}
+	Stats single: {'Name': 'SVM poly', 'Cross accuracy': 0.828, 'STD': 0.038, 'Cross accuracy-STD': 0.79, 'Time sec': 1}
+	Stats single: {'Name': 'NB', 'Cross accuracy': 0.593, 'STD': 0.051, 'Cross accuracy-STD': 0.542, 'Time sec': 0}
+	Stats single: {'Name': 'RF 5', 'Cross accuracy': 0.844, 'STD': 0.034, 'Cross accuracy-STD': 0.81, 'Time sec': 12}
+	Stats single: {'Name': 'RF 4', 'Cross accuracy': 0.843, 'STD': 0.035, 'Cross accuracy-STD': 0.808, 'Time sec': 11}
+	Stats single: {'Name': 'XGB', 'Cross accuracy': 0.843, 'STD': 0.034, 'Cross accuracy-STD': 0.809, 'Time sec': 8}
+	Stats single: {'Name': 'Voting soft', 'Cross accuracy': 0.837, 'STD': 0.034, 'Cross accuracy-STD': 0.803, 'Time sec': 44}
+	Stats single: {'Name': 'Voting hard', 'Cross accuracy': 0.851, 'STD': 0.032, 'Cross accuracy-STD': 0.818, 'Time sec': 71}
+Conclusions: improvement!!
+
+
