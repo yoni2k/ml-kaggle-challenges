@@ -1148,3 +1148,39 @@ Conclusions: Similar, but prevents overfitting so presumably will give better an
 	Stats single: {'Name': 'Voting hard', 'Cross accuracy': 0.847, 'STD': 0.031, 'Cross accuracy-STD': 0.817, 'Time sec': 46}
 Conclusions: Slightly improved soft and made slightly worse hard (perhaps was helping in special cases, like not to overfit).  Perhaps reconsider adding later.
 
+### 66. Check what else can remove
+Conclusion: not removing anything.
+Regarding highly correlated, checked and besides comments in commit #64 above, nothing else to do
+Also, no categories that are clearly not important in all classifiers.
+Some interesting coefficients (taken from Logistic Regression):
+	- Age: 	Little kids had a higher chance, 24-40 had a higher chance, with 26-27 being the highest
+			Age_26-27    0.194947
+			Age_-4    0.131562
+			Age_32-40    0.032291
+			Age_24-26    0.016200
+	- Family size:  Person alone had the highest chance, large families had lower chance of survival, the larger the family the smaller chance
+			Family size_1    0.434602
+            Family size_567   -0.453681
+            Family size_8+   -0.599514
+	- Fares:  Highest fare had the highest chance to survive, there is something special about categories of Fare bin_7.896-7.925, Fare bin_7-7.796.  
+			Fare bin_13.5+    0.466894
+            Fare bin_7.896-7.925    0.323510
+            Fare bin_7-7.796    0.233029
+            Fare bin_8.662-12.5   -0.019845			# Has much more effect in XGB
+		Warning: it could be overfitting, since we don't know to explain why these categories have this different change from categories next to it.
+		TODO: consider removing 3 above besides 13.5+.  Although it could be that they explain something else that we removed: specific Deck etc., so need to be careful.
+	- Deck: DE - higher chance, perhaps because those were mixed cabins, class 3 had a higher chance than in other places.
+		DeckBin_DE    0.252210
+        DeckBin_unknown_T   -0.186332
+	- Title:  Known - men had lower chance, women and children higher.  Perhaps the reason Miss and Master don't have such high numbers is that other features
+			took some importance from them, like age etc.
+		Title_Mrs    0.702535
+        Title_Miss    0.474255
+        Title_Master    0.397960
+        Title_Mr   -1.065580
+	- Pclass: Known: 1 - highest chance, 2 - high, 3 - low.  Perhaps 1 appears low here since other features took some of the significance: Decks, Fare bins etc.
+		Pclass_2    0.202671
+        Pclass_1    0.057393
+        Pclass_3   -0.214395
+	- Ticket_Frequency    0.209756 - this is where Logistic Regression is not accurate, since the relationship with ticket frequency is not linear, see family size above
+	- Known family/ticket survived %    0.711410 - extremely important, families mostly either survived together or died together
