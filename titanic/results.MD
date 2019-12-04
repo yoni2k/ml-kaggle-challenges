@@ -1111,3 +1111,28 @@ Conclusions: much better.  Removing many more fields:
 	Stats single: {'Name': 'Voting hard', 'Cross accuracy': 0.852, 'STD': 0.029, 'Cross accuracy-STD': 0.823, 'Time sec': 47}
 Conclusions: much better
 
+### 64. Removing many other features
+Regarding following features with high correlation: 
+	- Title_Master and Age_-4 - although there is a high correlation, both important and don't overlap because of girls, and masters being > 4 also
+	- Fare bin_13.5+ and Pclass_1 - although there is a high correlation they don't completely overlap and each predicts survival
+	- Decks 'B','C','D','E','F' and high correlation to 1st class and negative correlation to class 3 - it's not the same thing, since some decks were mixed (DEF), 
+		and even same class might have different survival per Deck.  So leaving both.
+Removing the following low importance features:
+	- Embarked completely - low importance mostly, and probably connection comes due to high correlation between embarkation and class
+	- Age_40-48, Age_57+
+	- Family size_2, Family size_3
+	- DeckBin_B, DeckBin_CF. Btw, seems that the reasons Decks D, E are important is due to different survival rate there because it's a mixed cabin
+	Stats single: {'Name': 'Log', 'Cross accuracy': 0.84, 'STD': 0.032, 'Cross accuracy-STD': 0.807, 'Time sec': 0}
+	Stats single: {'Name': 'KNN 14', 'Cross accuracy': 0.825, 'STD': 0.03, 'Cross accuracy-STD': 0.794, 'Time sec': 11}
+	Stats single: {'Name': 'SVM rbf', 'Cross accuracy': 0.848, 'STD': 0.035, 'Cross accuracy-STD': 0.814, 'Time sec': 1}
+	Stats single: {'Name': 'SVM poly', 'Cross accuracy': 0.846, 'STD': 0.029, 'Cross accuracy-STD': 0.817, 'Time sec': 1}
+	Stats single: {'Name': 'NB', 'Cross accuracy': 0.435, 'STD': 0.021, 'Cross accuracy-STD': 0.415, 'Time sec': 0}
+	Stats single: {'Name': 'RF 7', 'Cross accuracy': 0.858, 'STD': 0.029, 'Cross accuracy-STD': 0.828, 'Time sec': 13}
+	Stats single: {'Name': 'RF 5', 'Cross accuracy': 0.843, 'STD': 0.027, 'Cross accuracy-STD': 0.816, 'Time sec': 14}
+	Stats single: {'Name': 'RF 4', 'Cross accuracy': 0.843, 'STD': 0.027, 'Cross accuracy-STD': 0.816, 'Time sec': 14}
+	Stats single: {'Name': 'XGB', 'Cross accuracy': 0.849, 'STD': 0.028, 'Cross accuracy-STD': 0.821, 'Time sec': 7}
+	Stats single: {'Name': 'Voting soft', 'Cross accuracy': 0.846, 'STD': 0.032, 'Cross accuracy-STD': 0.815, 'Time sec': 63}
+	Stats single: {'Name': 'Voting hard', 'Cross accuracy': 0.847, 'STD': 0.029, 'Cross accuracy-STD': 0.819, 'Time sec': 51}
+Conclusions: Similar, but prevents overfitting so presumably will give better answers on the website
+
+
