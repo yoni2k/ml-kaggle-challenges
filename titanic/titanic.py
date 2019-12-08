@@ -240,30 +240,29 @@ def manual_fare_bin_categorical(fare):
         return '13.5+'
 
 
-def manual_age_bin(fare):
-    if fare <= 4:
+def manual_age_bin(age):
+    if age <= 4:
         return '-4'  # based on survival rate
-    elif fare <= 11:
+    elif age <= 11:
         return '4-11'  # based on survival rate
-    elif fare <= 24:
+    elif age <= 24:
         return '11-24'  # based on survival rate
-    elif fare <= 26:
+    elif age <= 26:
         return '24-26'  # based on survival rate
-    elif fare <= 27:
+    elif age <= 27:
         return '26-27'  # based on survival rate
-    elif fare <= 31:
+    elif age <= 31:
         return '27-31'  # based on survival rate
-    elif fare <= 32:
+    elif age <= 32:
         return '31-32'  # based on survival rate
-    elif fare <= 40:
+    elif age <= 40:
         return '32-40'  # based on KDE
-    elif fare <= 48:
+    elif age <= 48:
         return '40-48'  # based on KDE
-    elif fare <= 57:
+    elif age <= 57:
         return '48-57'  # based on KDE
     else:
         return '57+'  # based on KDE
-
 
 
 def prepare_features(train, x_test, options):
@@ -353,6 +352,8 @@ def prepare_features(train, x_test, options):
     # Add categorical category of manual bins of fares (see Advanced feature engineering.ipynb notebook)
     # TODO decide if to leave 'Fare bin' categorical, or turn into numerical
     both['Fare bin'] = both['Fare per person'].apply(manual_fare_bin_categorical)
+    both['Fare log'] = both['Fare per person'].replace({0: 0.0001}) # to avoid doing log on 0 which is invalid
+    both['Fare log'] = np.log(both['Fare log'])
     features_to_drop_after_use.append('Fare')
     features_to_drop_after_use.append('Fare per person')
     features_to_add_dummies.append('Fare bin')
@@ -507,21 +508,23 @@ def main(options):
 
     single_classifiers = {
         'Log': {'clas': LogisticRegression(solver='liblinear', random_state=RANDOM_STATE, n_jobs=-1)},
-        'KNN 14': {'clas': KNeighborsClassifier(n_neighbors=14, n_jobs=-1)},
+        #'KNN 14': {'clas': KNeighborsClassifier(n_neighbors=14, n_jobs=-1)},
         'SVM rbf': {'clas': SVC(gamma='auto', kernel='rbf', probability=True, random_state=RANDOM_STATE)},
         'SVM poly': {'clas': SVC(gamma='auto', kernel='poly', probability=True, random_state=RANDOM_STATE)},
         'NB': {'clas': GaussianNB()},  # consistently gives worse results
+        'RF 9': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=8, random_state=RANDOM_STATE, n_jobs=-1),
+                 'importances': True},
         'RF 8': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=8, random_state=RANDOM_STATE, n_jobs=-1),
                  'importances': True},
         'RF 7': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=7, random_state=RANDOM_STATE, n_jobs=-1),
                  'importances': True},
-        'RF 6': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=6, random_state=RANDOM_STATE, n_jobs=-1),
-                 'importances': True},
+        #'RF 6': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=6, random_state=RANDOM_STATE, n_jobs=-1),
+        #         'importances': True},
         'XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', n_estimators=1000, random_state=RANDOM_STATE, n_jobs=-1)}
     }
 
-    classifier_not_for_soft = ['XGB']
-    classifier_not_for_hard = ['NB', 'Log', 'KNN 14']
+    classifier_not_for_soft = ['XGB', 'Grid XGB']
+    classifier_not_for_hard = ['NB', 'Log', 'SVM poly', 'Grid KNN']
     classifiers_for_voting_soft = []
     classifiers_for_voting_hard = []
 
@@ -633,26 +636,47 @@ options = {
         # -- Age - not extemely important, most models Age_-4 is important (15), XGB gives more age importance (6,8)
         #       Update 1: Age_-4 is only very important in 1 model, removing another age 'Age_27-31'
         #       Update 2: Age is not extremely important, only 1 model has 8, rest > 15, remove Age_11-24
+        # 'Age_-4' - important, very little kids indeed survived the most
         'Age_4-11',  # low in all 4 (perhaps because of titles that serve same purpose)
-        'Age_11-24', 'Age_27-31', 'Age_31-32', 'Age_40-48', 'Age_48-57', 'Age_57+',
+        'Age_11-24', # in theory should be important, let the models remove it if it's not
+        #'Age_24-26' - don't believe it's not overfitting to have this specific age
+        #'Age_26-27' - don't believe it's not overfitting to have this specific age
+        'Age_27-31',
+        'Age_31-32',
+        # 'Age_32-40' - don't see anything special about this group, not sure why appeared special
+        'Age_40-48',
+        'Age_48-57',
+        'Age_57+',
         # -- Family size - seems more important than ParchBin and SibSpBin, but less consistent between models:
         #       Update 1: 567 seems important in all by XGB, 1 important in all, 8+ not consistent, Family size_2 low in all
         #       Update 2: important in most models, least important category Family size_3, remove
-        'Family size_2', 'Family size_3', 'Family size_4',
-        'Family size_8+',
-        # -- Fare bin - mostly not very important, a few important:
-        #       - Fare bin_13.5+ - places 2-10
-        'Fare bin_0', 'Fare bin_0.1-4', 'Fare bin_4-5', 'Fare bin_5-7',
+        # 'Family size_1' - important predictor
+        'Family size_2', # models removed (perhaps because of Ticket frequency connection), but I think should be returned and let models remove -
+        'Family size_3', # models removed (perhaps because of Ticket frequency connection), but I think should be returned and let models remove -
+        'Family size_4', # models removed (perhaps because of Ticket frequency connection), but I think should be returned and let models remove -
+        'Family size_8+', # models removed (perhaps because of Ticket frequency connection), but I think should be returned and let models remove -
+        # -- Fare bin - mostly not very important
+        'Fare bin_0',
+        'Fare bin_0.1-4',
+        'Fare bin_4-5',
+        'Fare bin_5-7',
         'Fare bin_7-7.796',
         'Fare bin_7.796-7.896',
         'Fare bin_7.896-7.925',
         'Fare bin_7.925-8.662',
         'Fare bin_8.662-12.5',
         'Fare bin_12.5-13.5',
+        # 'Fare bin_13.5+'  # important, places 2-10
+
+
         # -- Deck - some important, some not. what's left is important, unknown_T and DE
-        'DeckBin_AG', 'DeckBin_B', 'DeckBin_CF',
+        'DeckBin_AG',
+        'DeckBin_B',
+        'DeckBin_CF',
+        # 'DeckBin_DE'  # important, perhaps because of mixed deck and more change for non 1st class to survive
+        # 'DeckBin_unknown_T'  # important, especially low survival
         # -- Title - most important in most models: Mr important in all, XGB considers everything besides Mr low. Leaving all
-        'Title_Master'
+        'Title_Master'  # models removed (only Random Forest) (perhaps because of age connection), but I think should be returned and let models remove -
         # -- Pclass - 3 is most important (1,5,8), 1 second (9,19,22 - perhaps have other proxies), 2 - lowest (12,13,24,38).
         # -- Ticket_Frequency - place 7,10,14, leaving
         # -- Known family/ticket survived % - places 2,4 - one of the most important
