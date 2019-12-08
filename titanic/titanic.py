@@ -366,9 +366,9 @@ def prepare_features(train, x_test, options):
     # 10 --> Age - fill in missing values, bin
     impute_age_regression(both)
     #impute_age_by_title_pclass(both)
-    both['Age'] = both['Age'].apply(manual_age_bin)
-    print(f"Age value_counts:\n{both['Age'].value_counts().sort_index()}")
-    features_to_add_dummies.append('Age')
+    both['Age Bin'] = both['Age'].apply(manual_age_bin)
+    print(f"Age value_counts:\n{both['Age Bin'].value_counts().sort_index()}")
+    features_to_add_dummies.append('Age Bin')
 
     both.drop(features_to_drop_after_use, axis=1, inplace=True)
 
@@ -684,17 +684,17 @@ options = {
         # -- Age - not extemely important, most models Age_-4 is important (15), XGB gives more age importance (6,8)
         #       Update 1: Age_-4 is only very important in 1 model, removing another age 'Age_27-31'
         #       Update 2: Age is not extremely important, only 1 model has 8, rest > 15, remove Age_11-24
-        # 'Age_-4' - important, very little kids indeed survived the most
-        'Age_4-11',  # low in all 4 (perhaps because of titles that serve same purpose)
-        'Age_11-24', # in theory should be important, let the models remove it if it's not
-        #'Age_24-26' - don't believe it's not overfitting to have this specific age
-        #'Age_26-27' - don't believe it's not overfitting to have this specific age
-        'Age_27-31',
-        'Age_31-32',
-        # 'Age_32-40' - don't see anything special about this group, not sure why appeared special
-        'Age_40-48',
-        'Age_48-57',
-        'Age_57+',
+        # 'Age Bin_-4' - important, very little kids indeed survived the most
+        'Age Bin_4-11',  # low in all 4 (perhaps because of titles that serve same purpose)
+        'Age Bin_11-24',  # in theory should be important, let the models remove it if it's not
+        'Age Bin_24-26',  # WAS NEEDED FOR RF - don't believe it's not overfitting to have this specific age
+        'Age Bin_26-27',  # WAS NEEDED FOR RF - don't believe it's not overfitting to have this specific age
+        'Age Bin_27-31',
+        'Age Bin_31-32',
+        'Age Bin_32-40',  # WAS NEEDED FOR RF - don't see anything special about this group, not sure why appeared special
+        'Age Bin_40-48',
+        'Age Bin_48-57',
+        'Age Bin_57+',
         # -- Family size - seems more important than ParchBin and SibSpBin, but less consistent between models:
         #       Update 1: 567 seems important in all by XGB, 1 important in all, 8+ not consistent, Family size_2 low in all
         #       Update 2: important in most models, least important category Family size_3, remove

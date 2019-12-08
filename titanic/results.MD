@@ -1427,3 +1427,49 @@ For Random Forest, leave fare binning, for others remove binning, and add contin
 - RF7 no Grid gives good results
 - Voting hard gives good results - high correlation with XGB, and SVM
 - Voting soft doesn't give great results - high correlation with SVM
+
+### 76. Removing a few categories of age that I assume don't help much for Random Forest (before adding continous age) as benchmark
+	Stats Single: {'Name': 'Log', 'Single accuracy': 0.844, 'Cross accuracy': 0.832, 'STD': 0.027, 'Cross accuracy-STD*2': 0.777, 'Cross accuracy-STD*3': 0.75, 'Overfitting danger': 0.01, 'Time sec': 0}
+	Stats Single: {'Name': 'SVM rbf', 'Single accuracy': 0.854, 'Cross accuracy': 0.834, 'STD': 0.021, 'Cross accuracy-STD*2': 0.793, 'Cross accuracy-STD*3': 0.772, 'Overfitting danger': 0.017, 'Time sec': 0}
+	Stats Single: {'Name': 'SVM poly', 'Single accuracy': 0.861, 'Cross accuracy': 0.816, 'STD': 0.032, 'Cross accuracy-STD*2': 0.751, 'Cross accuracy-STD*3': 0.719, 'Overfitting danger': 0.039, 'Time sec': 0}
+	Stats Single: {'Name': 'NB', 'Single accuracy': 0.786, 'Cross accuracy': 0.784, 'STD': 0.054, 'Cross accuracy-STD*2': 0.675, 'Cross accuracy-STD*3': 0.621, 'Overfitting danger': 0.002, 'Time sec': 0}
+	Stats Single: {'Name': 'RF 9', 'Single accuracy': 0.88, 'Cross accuracy': 0.834, 'STD': 0.024, 'Cross accuracy-STD*2': 0.786, 'Cross accuracy-STD*3': 0.762, 'Overfitting danger': 0.04, 'Time sec': 18}
+	Stats Single: {'Name': 'RF 8', 'Single accuracy': 0.878, 'Cross accuracy': 0.84, 'STD': 0.021, 'Cross accuracy-STD*2': 0.798, 'Cross accuracy-STD*3': 0.778, 'Overfitting danger': 0.033, 'Time sec': 8}
+	Stats Single: {'Name': 'RF 7', 'Single accuracy': 0.873, 'Cross accuracy': 0.838, 'STD': 0.018, 'Cross accuracy-STD*2': 0.802, 'Cross accuracy-STD*3': 0.783, 'Overfitting danger': 0.03, 'Time sec': 9}
+	Stats Single: {'Name': 'XGB', 'Single accuracy': 0.927, 'Cross accuracy': 0.824, 'STD': 0.021, 'Cross accuracy-STD*2': 0.781, 'Cross accuracy-STD*3': 0.76, 'Overfitting danger': 0.096, 'Time sec': 3}
+	Stats Grid: {'Name': 'Grid KNN', 'Single accuracy': 0.845, 'Cross accuracy': 0.832, 'STD': 0.019, 'Cross accuracy-STD*2': 0.795, 'Cross accuracy-STD*3': 0.776, 'Overfitting danger': 0.011, 'Time sec': 12}
+	Stats Grid: {'Name': 'Grid SVM', 'Single accuracy': 0.854, 'Cross accuracy': 0.838, 'STD': 0.021, 'Cross accuracy-STD*2': 0.797, 'Cross accuracy-STD*3': 0.776, 'Overfitting danger': 0.013, 'Time sec': 11}
+	Stats Grid: {'Name': 'Grid RF', 'Single accuracy': 0.855, 'Cross accuracy': 0.842, 'STD': 0.017, 'Cross accuracy-STD*2': 0.808, 'Cross accuracy-STD*3': 0.791, 'Overfitting danger': 0.011, 'Time sec': 33}
+	Stats Grid: {'Name': 'Grid XGB', 'Single accuracy': 0.903, 'Cross accuracy': 0.845, 'STD': 0.019, 'Cross accuracy-STD*2': 0.808, 'Cross accuracy-STD*3': 0.79, 'Overfitting danger': 0.053, 'Time sec': 13}
+	Stats Voting: {'Name': 'Voting soft with grid', 'Single accuracy': 0.848, 'Cross accuracy': 0.828, 'STD': 0.025, 'Cross accuracy-STD*2': 0.779, 'Cross accuracy-STD*3': 0.754, 'Overfitting danger': 0.017, 'Time sec': 1}
+	Stats Voting: {'Name': 'Voting hard with grid', 'Single accuracy': 0.884, 'Cross accuracy': 0.838, 'STD': 0.011, 'Cross accuracy-STD*2': 0.816, 'Cross accuracy-STD*3': 0.805, 'Overfitting danger': 0.041, 'Time sec': 5}
+	Stats Emsemble: {'Name': 'Ensemble RF', 'Single accuracy': 0.945, 'Cross accuracy': 0.9, 'STD': 0.011, 'Cross accuracy-STD*2': 0.877, 'Cross accuracy-STD*3': 0.866, 'Overfitting danger': 0.042, 'Time sec': 10}
+Conclusion:before readding full continous edge - benchmark:
+- SVM got a big hit (but that's probably good because it was overfitting on these age features)
+- XGB got a big hit (was probably also overfitting on these features)
+- RFs actually improved - that's a good sign, since it strengthens the fact that these age features were not really helping
+
+### 77. Making age continous (in addition to <4) 
+	- SVM got drastically worse (accuracy and STD)
+	- RF7 got slightly better, RF8 & 9 got much better. RF8 is the best. Makes sense sense need larger depth
+	- XGB got much better (but probably overfitting)
+	- KNN got much better 
+	- Grid RF got better (smaller STD)
+	
+	Stats Single: {'Name': 'Log', 'Single accuracy': 0.841, 'Cross accuracy': 0.84, 'STD': 0.025, 'Cross accuracy-STD*2': 0.79, 'Cross accuracy-STD*3': 0.765, 'Overfitting danger': 0.001, 'Time sec': 0}
+	Stats Single: {'Name': 'SVM rbf', 'Single accuracy': 0.857, 'Cross accuracy': 0.836, 'STD': 0.019, 'Cross accuracy-STD*2': 0.798, 'Cross accuracy-STD*3': 0.78, 'Overfitting danger': 0.018, 'Time sec': 0}
+	Stats Single: {'Name': 'SVM poly', 'Single accuracy': 0.872, 'Cross accuracy': 0.83, 'STD': 0.025, 'Cross accuracy-STD*2': 0.78, 'Cross accuracy-STD*3': 0.755, 'Overfitting danger': 0.037, 'Time sec': 0}
+	Stats Single: {'Name': 'NB', 'Single accuracy': 0.793, 'Cross accuracy': 0.785, 'STD': 0.055, 'Cross accuracy-STD*2': 0.675, 'Cross accuracy-STD*3': 0.62, 'Overfitting danger': 0.007, 'Time sec': 0}
+	Stats Single: {'Name': 'RF 9', 'Single accuracy': 0.924, 'Cross accuracy': 0.844, 'STD': 0.017, 'Cross accuracy-STD*2': 0.811, 'Cross accuracy-STD*3': 0.794, 'Overfitting danger': 0.074, 'Time sec': 17}
+	Stats Single: {'Name': 'RF 8', 'Single accuracy': 0.914, 'Cross accuracy': 0.85, 'STD': 0.015, 'Cross accuracy-STD*2': 0.82, 'Cross accuracy-STD*3': 0.805, 'Overfitting danger': 0.058, 'Time sec': 7}
+	Stats Single: {'Name': 'RF 7', 'Single accuracy': 0.897, 'Cross accuracy': 0.851, 'STD': 0.016, 'Cross accuracy-STD*2': 0.818, 'Cross accuracy-STD*3': 0.802, 'Overfitting danger': 0.041, 'Time sec': 7}
+	Stats Single: {'Name': 'XGB', 'Single accuracy': 0.962, 'Cross accuracy': 0.85, 'STD': 0.008, 'Cross accuracy-STD*2': 0.833, 'Cross accuracy-STD*3': 0.825, 'Overfitting danger': 0.108, 'Time sec': 2}
+	Stats Grid: {'Name': 'Grid KNN', 'Single accuracy': 0.863, 'Cross accuracy': 0.841, 'STD': 0.018, 'Cross accuracy-STD*2': 0.806, 'Cross accuracy-STD*3': 0.788, 'Overfitting danger': 0.019, 'Time sec': 10}
+	Stats Grid: {'Name': 'Grid SVM', 'Single accuracy': 0.868, 'Cross accuracy': 0.842, 'STD': 0.017, 'Cross accuracy-STD*2': 0.807, 'Cross accuracy-STD*3': 0.79, 'Overfitting danger': 0.022, 'Time sec': 11}
+	Stats Grid: {'Name': 'Grid RF', 'Single accuracy': 0.897, 'Cross accuracy': 0.851, 'STD': 0.016, 'Cross accuracy-STD*2': 0.818, 'Cross accuracy-STD*3': 0.802, 'Overfitting danger': 0.041, 'Time sec': 30}
+	Stats Grid: {'Name': 'Grid XGB', 'Single accuracy': 0.93, 'Cross accuracy': 0.86, 'STD': 0.018, 'Cross accuracy-STD*2': 0.824, 'Cross accuracy-STD*3': 0.806, 'Overfitting danger': 0.066, 'Time sec': 13}
+	Stats Voting: {'Name': 'Voting soft with grid', 'Single accuracy': 0.857, 'Cross accuracy': 0.837, 'STD': 0.02, 'Cross accuracy-STD*2': 0.798, 'Cross accuracy-STD*3': 0.778, 'Overfitting danger': 0.017, 'Time sec': 1}
+	Stats Voting: {'Name': 'Voting hard with grid', 'Single accuracy': 0.899, 'Cross accuracy': 0.859, 'STD': 0.019, 'Cross accuracy-STD*2': 0.822, 'Cross accuracy-STD*3': 0.803, 'Overfitting danger': 0.036, 'Time sec': 5}
+	Stats Emsemble: {'Name': 'Ensemble RF', 'Single accuracy': 0.989, 'Cross accuracy': 0.969, 'STD': 0.013, 'Cross accuracy-STD*2': 0.942, 'Cross accuracy-STD*3': 0.928, 'Overfitting danger': 0.02, 'Time sec': 8}
+
+
