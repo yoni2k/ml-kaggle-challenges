@@ -414,12 +414,21 @@ def cross_valid(classifier, x_train, y_train):
     return accuracies.mean(), accuracies.std()
 
 
-def fit_different_classifiers(name_str, type_class, classifier, x_train, y_train, x_test, results, preds, start_time):
+def fit_different_classifiers(name_str, type_class, classifier, x_train, y_train, x_test, results, preds,
+                              train_probas, test_probas, start_time):
     reg_score, reg_std = cross_valid(classifier, x_train, y_train)
 
     classifier.fit(x_train, y_train)
     preds[name_str] = classifier.predict(x_test)
     score = classifier.score(x_train, y_train)
+
+    try:
+        train_probas[name_str] = classifier.predict_proba(x_train)[:, 0]
+        test_probas[name_str] = classifier.predict_proba(x_test)[:, 0]
+    except AttributeError:
+        # For Hard voting probabilities where predict_proba is not supported
+        train_probas[name_str] = np.mean(x_train, axis=1)
+        test_probas[name_str] = np.mean(x_test, axis=1)
 
     results.append({'Name': name_str,
                     'Single accuracy': round(score, 3),
@@ -432,35 +441,50 @@ def fit_different_classifiers(name_str, type_class, classifier, x_train, y_train
     print(f'Stats {type_class}: {results[-1]}')
 
 
-def fit_grid_classifier(name_str, x_train, y_train, x_test, single_classifier, grid_params, results, preds):
+def fit_grid_classifier(name_str, x_train, y_train, x_test, single_classifier, grid_params, results, preds,
+                        train_probas, test_probas):
     start_time = time.time()
 
-    grid = GridSearchCV(single_classifier, grid_params, verbose=1, cv=5, n_jobs=-1, random_state=10)
+    grid = GridSearchCV(single_classifier, grid_params, verbose=1, cv=5, n_jobs=-1)
     grid.fit(x_train, y_train)
     classifier = grid.best_estimator_
     print(f'{name_str} best classifier:\n{classifier}')
 
-    fit_different_classifiers(name_str, 'Grid', classifier, x_train, y_train, x_test, results, preds, start_time)
+    fit_different_classifiers(name_str, 'Grid', classifier, x_train, y_train, x_test, results, preds,
+                              train_probas, test_probas, start_time)
 
     return classifier
 
 
-def fit_single_classifier(name_str, x_train, y_train, x_test, classifier, results, preds):
+def fit_single_classifier(name_str, x_train, y_train, x_test, classifier, results, preds, train_probas, test_probas):
     start_time = time.time()
 
-    fit_different_classifiers(name_str, 'Single', classifier, x_train, y_train, x_test, results, preds, start_time)
+    fit_different_classifiers(name_str, 'Single', classifier, x_train, y_train, x_test, results, preds,
+                              train_probas, test_probas, start_time)
 
     return classifier
 
 
-def fit_predict_voting(classifiers, name_str, voting_type, x_train, y_train, x_test, results, preds):
+def fit_predict_voting(classifiers, name_str, voting_type, x_train, y_train, x_test, results, preds,
+                       train_probas, test_probas):
     start_time = time.time()
 
     classifier = VotingClassifier(estimators=classifiers, voting=voting_type, n_jobs=-1)
 
-    fit_different_classifiers(name_str, 'Voting', classifier, x_train, y_train, x_test, results, preds, start_time)
+    fit_different_classifiers(name_str, 'Voting', classifier, x_train, y_train, x_test, results, preds,
+                              train_probas, test_probas, start_time)
 
     return classifier
+
+
+def fit_ensemble(name_str, train_probas, test_probas, y_train, x_test_scaled, results, preds):
+    start_time = time.time()
+
+    classifier = RandomForestClassifier(n_estimators=1000, random_state=RANDOM_STATE, n_jobs=-1)
+
+    fit_different_classifiers(name_str, 'Emsemble', classifier, train_probas, y_train, test_probas, results, preds,
+                              train_probas, test_probas, start_time)
+
 
 
 def main(options):
@@ -478,6 +502,8 @@ def main(options):
 
     results = []
     preds = pd.DataFrame()
+    train_probas = pd.DataFrame()
+    test_probas = pd.DataFrame()
 
     single_classifiers = {
         'Log': {'clas': LogisticRegression(solver='liblinear', random_state=RANDOM_STATE, n_jobs=-1)},
@@ -494,13 +520,14 @@ def main(options):
         'XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', n_estimators=1000, random_state=RANDOM_STATE, n_jobs=-1)}
     }
 
-    classifier_not_for_soft = []
+    classifier_not_for_soft = ['XGB']
     classifier_not_for_hard = ['NB', 'Log', 'KNN 14']
     classifiers_for_voting_soft = []
     classifiers_for_voting_hard = []
 
     for cl in single_classifiers:
-        classifier = fit_single_classifier(cl, x_train_scaled, y_train, x_test_scaled, single_classifiers[cl]['clas'], results, preds)
+        classifier = fit_single_classifier(cl, x_train_scaled, y_train, x_test_scaled, single_classifiers[cl]['clas'],
+                                           results, preds, train_probas, test_probas)
         if cl not in classifier_not_for_soft:
             classifiers_for_voting_soft.append((cl, classifier))
         if cl not in classifier_not_for_hard:
@@ -557,7 +584,7 @@ def main(options):
     for cl in grid_classifiers:
         classifier = fit_grid_classifier(cl, x_train_scaled, y_train, x_test_scaled,
                                          grid_classifiers[cl]['clas'], grid_classifiers[cl]['grid_params'],
-                                         results, preds)
+                                         results, preds, train_probas, test_probas)
         if cl not in classifier_not_for_soft:
             classifiers_for_voting_soft.append((cl, classifier))
         if cl not in classifier_not_for_hard:
@@ -565,10 +592,12 @@ def main(options):
 
     fit_predict_voting(classifiers_for_voting_soft, 'Voting soft with grid', 'soft',
                                x_train_scaled, y_train, x_test_scaled,
-                               results, preds)
+                               results, preds, train_probas, test_probas)
     fit_predict_voting(classifiers_for_voting_hard, 'Voting hard with grid', 'hard',
                                x_train_scaled, y_train, x_test_scaled,
-                               results, preds)
+                               results, preds, train_probas, test_probas)
+
+    fit_ensemble('Ensemble RF', train_probas, test_probas, y_train, x_test_scaled, results, preds)
 
     print(f'YK: correlations between predictions:\n{preds.corr()}')
     preds.corr().to_csv('output/classifiers_correlations.csv')
@@ -581,6 +610,8 @@ def main(options):
 
     output_preds(preds['Voting soft with grid'], x_test, 'voting_soft')
     output_preds(preds['Voting hard with grid'], x_test, 'voting_hard')
+
+    output_preds(preds['Ensemble RF'], x_test, 'ensemble_rf')
 
     pd.DataFrame(results).to_csv('output/results.csv')
 
