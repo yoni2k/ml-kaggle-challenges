@@ -507,20 +507,26 @@ def main(options):
     test_probas = pd.DataFrame()
 
     single_classifiers = {
-        'Log': {'clas': LogisticRegression(solver='liblinear', random_state=RANDOM_STATE, n_jobs=-1)},
-        #'KNN 14': {'clas': KNeighborsClassifier(n_neighbors=14, n_jobs=-1)},
-        'SVM rbf': {'clas': SVC(gamma='auto', kernel='rbf', probability=True, random_state=RANDOM_STATE)},
-        'SVM poly': {'clas': SVC(gamma='auto', kernel='poly', probability=True, random_state=RANDOM_STATE)},
-        'NB': {'clas': GaussianNB()},  # consistently gives worse results
-        'RF 9': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=8, random_state=RANDOM_STATE, n_jobs=-1),
-                 'importances': True},
+        'Log': {'clas': LogisticRegression(solver='liblinear', random_state=RANDOM_STATE, n_jobs=-1),
+                'drop': options['features_to_drop_continous']},
+        #'KNN 14': {'clas': KNeighborsClassifier(n_neighbors=14, n_jobs=-1),
+        #   'drop': options['features_to_drop_continous']},
+        'SVM rbf': {'clas': SVC(gamma='auto', kernel='rbf', probability=True, random_state=RANDOM_STATE),
+                    'drop': options['features_to_drop_continous']},
+        'SVM poly': {'clas': SVC(gamma='auto', kernel='poly', probability=True, random_state=RANDOM_STATE),
+                     'drop': options['features_to_drop_continous']},
+        'NB': {'clas': GaussianNB(), 'drop': options['features_to_drop_continous']},  # consistently gives worse results
+        'RF 9': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=9, random_state=RANDOM_STATE, n_jobs=-1),
+                 'drop': options['features_to_drop_forest']},
         'RF 8': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=8, random_state=RANDOM_STATE, n_jobs=-1),
-                 'importances': True},
+                 'drop': options['features_to_drop_forest']},
         'RF 7': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=7, random_state=RANDOM_STATE, n_jobs=-1),
-                 'importances': True},
+                 'drop': options['features_to_drop_forest']},
         #'RF 6': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=6, random_state=RANDOM_STATE, n_jobs=-1),
-        #         'importances': True},
-        'XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', n_estimators=1000, random_state=RANDOM_STATE, n_jobs=-1)}
+        #        'drop': options['features_to_drop_forest']},
+        'XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', n_estimators=1000,
+                                          random_state=RANDOM_STATE, n_jobs=-1),
+                'drop': options['features_to_drop_continous']}
     }
 
     classifier_not_for_soft = ['XGB', 'Grid XGB']
@@ -529,7 +535,11 @@ def main(options):
     classifiers_for_voting_hard = []
 
     for cl in single_classifiers:
-        classifier = fit_single_classifier(cl, x_train_scaled, y_train, x_test_scaled, single_classifiers[cl]['clas'],
+        classifier = fit_single_classifier(cl,
+                                           x_train_scaled.drop(single_classifiers[cl]['drop'], axis=1),
+                                           y_train,
+                                           x_test_scaled.drop(single_classifiers[cl]['drop'], axis=1),
+                                           single_classifiers[cl]['clas'],
                                            results, preds, train_probas, test_probas)
         if cl not in classifier_not_for_soft:
             classifiers_for_voting_soft.append((cl, classifier))
@@ -559,17 +569,20 @@ def main(options):
         #'Grid Log': {'clas': LogisticRegression(solver='liblinear', random_state=RANDOM_STATE, n_jobs=-1),
         #             'grid_params': [{'solver': ['liblinear', 'lbfgs', 'newton-cg', 'sag', 'saga']}]},
         'Grid KNN': {'clas': KNeighborsClassifier(n_neighbors=14, n_jobs=-1),
-                     'grid_params': [{'n_neighbors': range(3, 25)}]},
+                     'grid_params': [{'n_neighbors': range(3, 25)}],
+                     'drop': options['features_to_drop_continous']},
         'Grid SVM': {'clas': SVC(gamma='auto', kernel='rbf', probability=True, random_state=RANDOM_STATE),
                      'grid_params':
                          [{
                             'kernel': ['rbf', 'poly', 'sigmoid'],
                             'C': [0.3, 0.5, 1.0, 1.5, 2.0],
                             'gamma': [0.3, 0.2, 0.1, 0.05, 0.01, 'auto_deprecated', 'scale']
-                         }]
+                         }],
+                     'drop': options['features_to_drop_continous']
                      },
         'Grid RF': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=7, random_state=RANDOM_STATE,n_jobs=-1),
-                    'grid_params': [{'max_depth': range(3, 10)}]},
+                    'grid_params': [{'max_depth': range(3, 10)}],
+                    'drop': options['features_to_drop_forest']},
         'Grid XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', n_estimators=1000, random_state=RANDOM_STATE, n_jobs=-1),
                      'grid_params':
                          [{
@@ -580,12 +593,16 @@ def main(options):
                              # 'subsample': [i / 10.0 for i in range(6, 11)], # default 1, not sure needed
                              # 'colsample_bytree': [i / 10.0 for i in range(6, 11)] # default 1, not sure needed
                              # 'gamma': [i / 10.0 for i in range(3)]  # default 0
-                         }]
+                         }],
+                     'drop': options['features_to_drop_continous']
                      }
     }
 
     for cl in grid_classifiers:
-        classifier = fit_grid_classifier(cl, x_train_scaled, y_train, x_test_scaled,
+        classifier = fit_grid_classifier(cl,
+                                         x_train_scaled.drop(grid_classifiers[cl]['drop'], axis=1),
+                                         y_train,
+                                         x_test_scaled.drop(grid_classifiers[cl]['drop'], axis=1),
                                          grid_classifiers[cl]['clas'], grid_classifiers[cl]['grid_params'],
                                          results, preds, train_probas, test_probas)
         if cl not in classifier_not_for_soft:
@@ -632,6 +649,8 @@ options = {
         'Embarked'
 
     ],
+    'features_to_drop_continous': ['Fare bin_13.5+'],
+    'features_to_drop_forest': ['Fare log'],
     'minor_columns_to_drop': [
         # -- Age - not extemely important, most models Age_-4 is important (15), XGB gives more age importance (6,8)
         #       Update 1: Age_-4 is only very important in 1 model, removing another age 'Age_27-31'
