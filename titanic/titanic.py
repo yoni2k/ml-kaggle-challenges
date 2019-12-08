@@ -639,13 +639,20 @@ options = {
         #       Update 1: 567 seems important in all by XGB, 1 important in all, 8+ not consistent, Family size_2 low in all
         #       Update 2: important in most models, least important category Family size_3, remove
         'Family size_2', 'Family size_3', 'Family size_4',
+        'Family size_8+',
         # -- Fare bin - mostly not very important, a few important:
         #       - Fare bin_13.5+ - places 2-10
-        'Fare bin_0', 'Fare bin_0.1-4', 'Fare bin_4-5', 'Fare bin_5-7', 'Fare bin_7.796-7.896',
-        'Fare bin_7.925-8.662', 'Fare bin_12.5-13.5',
+        'Fare bin_0', 'Fare bin_0.1-4', 'Fare bin_4-5', 'Fare bin_5-7',
+        'Fare bin_7-7.796',
+        'Fare bin_7.796-7.896',
+        'Fare bin_7.896-7.925',
+        'Fare bin_7.925-8.662',
+        'Fare bin_8.662-12.5',
+        'Fare bin_12.5-13.5',
         # -- Deck - some important, some not. what's left is important, unknown_T and DE
-        'DeckBin_AG', 'DeckBin_B', 'DeckBin_CF'
+        'DeckBin_AG', 'DeckBin_B', 'DeckBin_CF',
         # -- Title - most important in most models: Mr important in all, XGB considers everything besides Mr low. Leaving all
+        'Title_Master'
         # -- Pclass - 3 is most important (1,5,8), 1 second (9,19,22 - perhaps have other proxies), 2 - lowest (12,13,24,38).
         # -- Ticket_Frequency - place 7,10,14, leaving
         # -- Known family/ticket survived % - places 2,4 - one of the most important
