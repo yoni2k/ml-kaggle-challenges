@@ -564,11 +564,11 @@ def main(options):
     print(f'YK: correlations between predictions:\n{preds.corr()}')
     preds.corr().to_csv('output/classifiers_correlations.csv')
 
-    output_preds(preds['RF 7'], x_test, 'rf_7')
+    #output_preds(preds['RF 7'], x_test, 'rf_7')
 
-    output_preds(preds['Grid SVM'], x_test, 'svm_grid')
-    output_preds(preds['Grid RF'], x_test, 'rf_grid')
-    output_preds(preds['Grid XGB'], x_test, 'xgb_grid')
+    #output_preds(preds['Grid SVM'], x_test, 'svm_grid')
+    #output_preds(preds['Grid RF'], x_test, 'rf_grid')
+    #output_preds(preds['Grid XGB'], x_test, 'xgb_grid')
 
     output_preds(preds['Voting soft with grid'], x_test, 'voting_soft')
     output_preds(preds['Voting hard with grid'], x_test, 'voting_hard')
