@@ -1576,6 +1576,13 @@ Results:
 	- Hard - Gives best results, pretty high correlation with RF, even though doesn't take it into account
 	- Ensemble - gives even better results, but extremely overfits with XGB
 Conclusion:
+	- Try ensembling with different options of including different classifiers
+Conclusion: 
+	- XGB still overpowers everything. Consider removing. Indeed gives .74 on the site. Remove
+	- Website gives very low for XGB, pretty low for SVM, and ensembling.
+Next step:
+	- Return the best so far: hard voting with a lot of classifiers.  Do ensembling with RF that's the best + soft/hard.
+	
 
 
 
