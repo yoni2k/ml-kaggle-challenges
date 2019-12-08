@@ -481,7 +481,7 @@ def main(options):
 
     single_classifiers = {
         'Log': {'clas': LogisticRegression(solver='liblinear', n_jobs=-1, random_state=RANDOM_STATE)},
-         'KNN 14': {'clas': KNeighborsClassifier(n_jobs=-1, n_neighbors=14)},
+        'KNN 14': {'clas': KNeighborsClassifier(n_jobs=-1, n_neighbors=14)},
         'SVM rbf': {'clas': SVC(gamma='auto', kernel='rbf', probability=True, random_state=RANDOM_STATE)},
         'SVM poly': {'clas': SVC(gamma='auto', kernel='poly', probability=True, random_state=RANDOM_STATE)},
         'NB': {'clas': GaussianNB()},  # consistently gives worse results
@@ -494,11 +494,17 @@ def main(options):
         'XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', random_state=RANDOM_STATE, n_jobs=-1, n_estimators=1000)}
     }
 
-    classifiers_for_voting = []
+    classifier_not_for_soft = ['XGB']
+    classifier_not_for_hard = ['NB']
+    classifiers_for_voting_soft = []
+    classifiers_for_voting_hard = []
 
     for cl in single_classifiers:
         classifier = fit_single_classifier(cl, x_train_scaled, y_train, x_test_scaled, single_classifiers[cl]['clas'], results, preds)
-        classifiers_for_voting.append((cl, classifier))
+        if cl not in classifier_not_for_soft:
+            classifiers_for_voting_soft.append((cl, classifier))
+        if cl not in classifier_not_for_hard:
+            classifiers_for_voting_hard.append((cl, classifier))
         if cl == 'Log':
             importances = pd.DataFrame({'Importance': classifier.coef_[0]}, index=x_train.columns). \
                 reset_index().sort_values(by='Importance', ascending=False)
@@ -552,12 +558,15 @@ def main(options):
         classifier = fit_grid_classifier(cl, x_train_scaled, y_train, x_test_scaled,
                                          grid_classifiers[cl]['clas'], grid_classifiers[cl]['grid_params'],
                                          results, preds)
-        classifiers_for_voting.append((cl, classifier))
+        if cl not in classifier_not_for_soft:
+            classifiers_for_voting_soft.append((cl, classifier))
+        if cl not in classifier_not_for_hard:
+            classifiers_for_voting_hard.append((cl, classifier))
 
-    fit_predict_voting(classifiers_for_voting, 'Voting soft with grid', 'soft',
+    fit_predict_voting(classifiers_for_voting_soft, 'Voting soft with grid', 'soft',
                                x_train_scaled, y_train, x_test_scaled,
                                results, preds)
-    fit_predict_voting(classifiers_for_voting, 'Voting hard with grid', 'hard',
+    fit_predict_voting(classifiers_for_voting_hard, 'Voting hard with grid', 'hard',
                                x_train_scaled, y_train, x_test_scaled,
                                results, preds)
 

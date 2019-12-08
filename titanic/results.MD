@@ -1230,7 +1230,7 @@ Keep:
 	- XGB - even though Grid XGB does better, leave it since they are not extremely correlated, and Grid might be overfitting
 Output best: RF 7, Grid SVM, Grid RF, Grid XGB, Voting soft with grid, Voting hard with grid
 
-### 68 Submit conclusions of all the work online
+### 68 Submit conclusions of all the work online, add important metrics locally
 	Also look at results.csv
 	Soft & hard - 78.9 - seems lower than RFs because take all the overfitting algorithms
 	RF Grid - 80.3 - slightly higher, perhaps because taking higher number of maximum depth (9?)
@@ -1265,4 +1265,8 @@ Output best: RF 7, Grid SVM, Grid RF, Grid XGB, Voting soft with grid, Voting ha
 
 	Next steps: Make sure soft voting doesn't get those with high danger of overfitting, make sure that hard voting doesn't get those with high danger of underfitting
 
- 
+ ### 69 Remove from taking into consideration for soft voting classifiers with high chance of overfitting (currently only XGB) and from taking into consideration for hard voting classifier with very low scores (currently only NB)
+	Name			Single accuracy		Cross accuracy		STD		Cross accuracy-STD*2	Cross accuracy-STD*3	Overfitting danger	Time sec
+Voting soft with grid	0.891				0.85			0.019			0.812					0.794				0.037			28
+Voting hard with grid	0.892				0.855			0.022			0.811					0.789				0.033			30
+Conclusions: Didn't seem to help, perhaps removing only 1 doesn't help since doesn't have that big of an effect (was voted down anyways).
