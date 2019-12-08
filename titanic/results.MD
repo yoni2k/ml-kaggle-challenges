@@ -1270,3 +1270,13 @@ Output best: RF 7, Grid SVM, Grid RF, Grid XGB, Voting soft with grid, Voting ha
 Voting soft with grid	0.891				0.85			0.019			0.812					0.794				0.037			28
 Voting hard with grid	0.892				0.855			0.022			0.811					0.789				0.033			30
 Conclusions: Didn't seem to help, perhaps removing only 1 doesn't help since doesn't have that big of an effect (was voted down anyways).
+
+### 70. Removing more modes from consideration of Soft and Hard Voting (with danger of overfitting for 1st, and worse performing models for 2nd).
+	Name				Single accuracy		Cross accuracy		STD		Cross accuracy-STD*2	Cross accuracy-STD*3	Overfitting danger	Time sec
+	Voting soft with grid	0.888				0.852			0.023			0.805					0.782				0.032			23
+	Voting hard with grid	0.893				0.856			0.019			0.819					0.8					0.033			29
+Conclusion: seems to help with hard voting, but not with soft voting.  Reverting soft changes, leaving hard.
+	Name				Single accuracy		Cross accuracy		STD		Cross accuracy-STD*2	Cross accuracy-STD*3	Overfitting danger	Time sec
+	Voting soft with grid	0.892				0.849			0.024			0.8						0.776				0.039			25
+	Voting hard with grid	0.895				0.859			0.018			0.822					0.804				0.032			25
+Conclusion: getting great results with hard voting, worse with soft.  Leaving like this for now.

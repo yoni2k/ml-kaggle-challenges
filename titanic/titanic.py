@@ -435,7 +435,7 @@ def fit_different_classifiers(name_str, type_class, classifier, x_train, y_train
 def fit_grid_classifier(name_str, x_train, y_train, x_test, single_classifier, grid_params, results, preds):
     start_time = time.time()
 
-    grid = GridSearchCV(single_classifier, grid_params, verbose=1, cv=5, n_jobs=-1)
+    grid = GridSearchCV(single_classifier, grid_params, verbose=1, cv=5, n_jobs=-1, random_state=10)
     grid.fit(x_train, y_train)
     classifier = grid.best_estimator_
     print(f'{name_str} best classifier:\n{classifier}')
@@ -480,22 +480,22 @@ def main(options):
     preds = pd.DataFrame()
 
     single_classifiers = {
-        'Log': {'clas': LogisticRegression(solver='liblinear', n_jobs=-1, random_state=RANDOM_STATE)},
-        'KNN 14': {'clas': KNeighborsClassifier(n_jobs=-1, n_neighbors=14)},
+        'Log': {'clas': LogisticRegression(solver='liblinear', random_state=RANDOM_STATE, n_jobs=-1)},
+        'KNN 14': {'clas': KNeighborsClassifier(n_neighbors=14, n_jobs=-1)},
         'SVM rbf': {'clas': SVC(gamma='auto', kernel='rbf', probability=True, random_state=RANDOM_STATE)},
         'SVM poly': {'clas': SVC(gamma='auto', kernel='poly', probability=True, random_state=RANDOM_STATE)},
         'NB': {'clas': GaussianNB()},  # consistently gives worse results
-        'RF 8': {'clas': RandomForestClassifier(n_jobs=-1, n_estimators=1000, max_depth=8, random_state=RANDOM_STATE),
+        'RF 8': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=8, random_state=RANDOM_STATE, n_jobs=-1),
                  'importances': True},
-        'RF 7': {'clas': RandomForestClassifier(n_jobs=-1, n_estimators=1000, max_depth=7, random_state=RANDOM_STATE),
+        'RF 7': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=7, random_state=RANDOM_STATE, n_jobs=-1),
                  'importances': True},
-        'RF 6': {'clas': RandomForestClassifier(n_jobs=-1, n_estimators=1000, max_depth=6, random_state=RANDOM_STATE),
+        'RF 6': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=6, random_state=RANDOM_STATE, n_jobs=-1),
                  'importances': True},
-        'XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', random_state=RANDOM_STATE, n_jobs=-1, n_estimators=1000)}
+        'XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', n_estimators=1000, random_state=RANDOM_STATE, n_jobs=-1)}
     }
 
-    classifier_not_for_soft = ['XGB']
-    classifier_not_for_hard = ['NB']
+    classifier_not_for_soft = []
+    classifier_not_for_hard = ['NB', 'Log', 'KNN 14']
     classifiers_for_voting_soft = []
     classifiers_for_voting_hard = []
 
@@ -526,9 +526,9 @@ def main(options):
     #                 'grid_params': [{'solver': ['liblinear', 'lbfgs']}]}}
 
     grid_classifiers = {
-        #'Grid Log': {'clas': LogisticRegression(solver='liblinear', n_jobs=-1, random_state=RANDOM_STATE),
+        #'Grid Log': {'clas': LogisticRegression(solver='liblinear', random_state=RANDOM_STATE, n_jobs=-1),
         #             'grid_params': [{'solver': ['liblinear', 'lbfgs', 'newton-cg', 'sag', 'saga']}]},
-        'Grid KNN': {'clas': KNeighborsClassifier(n_jobs=-1, n_neighbors=14),
+        'Grid KNN': {'clas': KNeighborsClassifier(n_neighbors=14, n_jobs=-1),
                      'grid_params': [{'n_neighbors': range(3, 25)}]},
         'Grid SVM': {'clas': SVC(gamma='auto', kernel='rbf', probability=True, random_state=RANDOM_STATE),
                      'grid_params':
@@ -538,9 +538,9 @@ def main(options):
                             'gamma': [0.3, 0.2, 0.1, 0.05, 0.01, 'auto_deprecated', 'scale']
                          }]
                      },
-        'Grid RF': {'clas': RandomForestClassifier(n_jobs=-1, n_estimators=1000, max_depth=7, random_state=RANDOM_STATE),
+        'Grid RF': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=7, random_state=RANDOM_STATE,n_jobs=-1),
                     'grid_params': [{'max_depth': range(3, 10)}]},
-        'Grid XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', random_state=RANDOM_STATE, n_jobs=-1, n_estimators=1000),
+        'Grid XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', n_estimators=1000, random_state=RANDOM_STATE, n_jobs=-1),
                      'grid_params':
                          [{
                              'max_depth': range(1, 8, 1)  # default 3
@@ -573,11 +573,11 @@ def main(options):
     print(f'YK: correlations between predictions:\n{preds.corr()}')
     preds.corr().to_csv('output/classifiers_correlations.csv')
 
-    #output_preds(preds['RF 7'], x_test, 'rf_7')
+    output_preds(preds['RF 7'], x_test, 'rf_7')
 
-    #output_preds(preds['Grid SVM'], x_test, 'svm_grid')
-    #output_preds(preds['Grid RF'], x_test, 'rf_grid')
-    #output_preds(preds['Grid XGB'], x_test, 'xgb_grid')
+    output_preds(preds['Grid SVM'], x_test, 'svm_grid')
+    output_preds(preds['Grid RF'], x_test, 'rf_grid')
+    output_preds(preds['Grid XGB'], x_test, 'xgb_grid')
 
     output_preds(preds['Voting soft with grid'], x_test, 'voting_soft')
     output_preds(preds['Voting hard with grid'], x_test, 'voting_hard')
