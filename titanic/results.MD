@@ -1544,9 +1544,38 @@ Results:
 Conclusions: for Random Forest remove, for rest - leave
 
 ### 81. Benchmark before working on ensembling
+	Stats Single: {'Name': 'Log', 'Single accuracy': 0.845, 'Cross accuracy': 0.838, 'STD': 0.024, 'Cross accuracy-STD*2': 0.79, 'Cross accuracy-STD*3': 0.766, 'Overfitting danger': 0.006, 'Time sec': 0}
+	Stats Single: {'Name': 'SVM rbf', 'Single accuracy': 0.865, 'Cross accuracy': 0.836, 'STD': 0.019, 'Cross accuracy-STD*2': 0.799, 'Cross accuracy-STD*3': 0.78, 'Overfitting danger': 0.025, 'Time sec': 0}
+	Stats Single: {'Name': 'SVM poly', 'Single accuracy': 0.872, 'Cross accuracy': 0.825, 'STD': 0.016, 'Cross accuracy-STD*2': 0.793, 'Cross accuracy-STD*3': 0.777, 'Overfitting danger': 0.041, 'Time sec': 0}
+	Stats Single: {'Name': 'NB', 'Single accuracy': 0.468, 'Cross accuracy': 0.514, 'STD': 0.073, 'Cross accuracy-STD*2': 0.368, 'Cross accuracy-STD*3': 0.295, 'Overfitting danger': -0.021, 'Time sec': 0}
+	Stats Single: {'Name': 'RF 9', 'Single accuracy': 0.925, 'Cross accuracy': 0.846, 'STD': 0.019, 'Cross accuracy-STD*2': 0.808, 'Cross accuracy-STD*3': 0.789, 'Overfitting danger': 0.073, 'Time sec': 14}
+	Stats Single: {'Name': 'RF 8', 'Single accuracy': 0.906, 'Cross accuracy': 0.846, 'STD': 0.017, 'Cross accuracy-STD*2': 0.812, 'Cross accuracy-STD*3': 0.795, 'Overfitting danger': 0.054, 'Time sec': 7}
+	Stats Single: {'Name': 'RF 7', 'Single accuracy': 0.899, 'Cross accuracy': 0.846, 'STD': 0.014, 'Cross accuracy-STD*2': 0.818, 'Cross accuracy-STD*3': 0.804, 'Overfitting danger': 0.047, 'Time sec': 7}
+	Stats Single: {'Name': 'XGB', 'Single accuracy': 0.966, 'Cross accuracy': 0.847, 'STD': 0.014, 'Cross accuracy-STD*2': 0.82, 'Cross accuracy-STD*3': 0.807, 'Overfitting danger': 0.115, 'Time sec': 2}
+	Stats Grid: {'Name': 'Grid KNN', 'Single accuracy': 0.874, 'Cross accuracy': 0.841, 'STD': 0.027, 'Cross accuracy-STD*2': 0.787, 'Cross accuracy-STD*3': 0.759, 'Overfitting danger': 0.029, 'Time sec': 9}
+	Stats Grid: {'Name': 'Grid SVM', 'Single accuracy': 0.874, 'Cross accuracy': 0.844, 'STD': 0.017, 'Cross accuracy-STD*2': 0.809, 'Cross accuracy-STD*3': 0.792, 'Overfitting danger': 0.026, 'Time sec': 11}
+	Stats Grid: {'Name': 'Grid RF', 'Single accuracy': 0.899, 'Cross accuracy': 0.846, 'STD': 0.014, 'Cross accuracy-STD*2': 0.818, 'Cross accuracy-STD*3': 0.804, 'Overfitting danger': 0.047, 'Time sec': 27}
+	Stats Grid: {'Name': 'Grid XGB', 'Single accuracy': 0.932, 'Cross accuracy': 0.852, 'STD': 0.018, 'Cross accuracy-STD*2': 0.817, 'Cross accuracy-STD*3': 0.799, 'Overfitting danger': 0.074, 'Time sec': 16}
+	Stats Voting: {'Name': 'Voting soft with grid', 'Single accuracy': 0.863, 'Cross accuracy': 0.843, 'STD': 0.02, 'Cross accuracy-STD*2': 0.803, 'Cross accuracy-STD*3': 0.784, 'Overfitting danger': 0.017, 'Time sec': 1}
+	Stats Voting: {'Name': 'Voting hard with grid', 'Single accuracy': 0.906, 'Cross accuracy': 0.859, 'STD': 0.022, 'Cross accuracy-STD*2': 0.815, 'Cross accuracy-STD*3': 0.794, 'Overfitting danger': 0.043, 'Time sec': 6}
+	Stats Emsemble: {'Name': 'Ensemble RF', 'Single accuracy': 0.989, 'Cross accuracy': 0.966, 'STD': 0.016, 'Cross accuracy-STD*2': 0.935, 'Cross accuracy-STD*3': 0.919, 'Overfitting danger': 0.022, 'Time sec': 8}
 
 First steps:
-	- Remove low cross accuracy / high STD classifiers: NB, Log, Grid KNN 
+	- Remove low cross accuracy / high STD classifiers: NB, Log, Grid KNN
+	- Remove medium level classifiers (especially that have other high correlation): 
+		- SVM rbf, SVM poly (have SVM Grid staying)
+		- RF7,8,9 - 7 is best and taken by Grid RF
+		- Grid XGB - slightly worse performance than regular Grid
+		
+### 82. Make soft voting take XGB even though it's overfitting, since otherwise no point of doing soft voting
+Results:
+	- XGB - overfits greatly, need to take into consideration for voting, but not as final one in ensembling, otherwise overrides all others
+	- Grid SVM - not great results, have just for having something decent and different
+	- Grid RF - gives best results out of 3 individual ones
+	- Soft - Gives pretty good results, 3rd place.  Also high correlation with RF, even though doesn't take it into account
+	- Hard - Gives best results, pretty high correlation with RF, even though doesn't take it into account
+	- Ensemble - gives even better results, but extremely overfits with XGB
+Conclusion:
 
 
 

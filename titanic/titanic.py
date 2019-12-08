@@ -537,7 +537,7 @@ def main(options):
                 'Continuous': True}
     }
 
-    classifier_not_for_soft = ['XGB', 'Grid XGB']
+    classifier_not_for_soft = []  # was 'XGB', 'Grid XGB'
     classifier_not_for_hard = ['NB', 'Log', 'SVM poly', 'Grid KNN']
     classifiers_for_voting_soft = []
     classifiers_for_voting_hard = []
@@ -645,21 +645,37 @@ def main(options):
                                x_train_scaled_cont, y_train, x_test_scaled_cont,
                                results, preds, train_probas, test_probas)
 
-    fit_ensemble('Ensemble RF', train_probas, test_probas, y_train, results, preds)
+    fit_ensemble('Ensemble RF - all', train_probas, test_probas, y_train, results, preds)
+    fit_ensemble('Ensemble RF - soft RF',
+                 train_probas.drop(['XGB', 'Grid SVM', 'Voting hard with grid'], axis=1),
+                 test_probas.drop(['XGB', 'Grid SVM', 'Voting hard with grid'], axis=1),
+                 y_train, results, preds)
+    fit_ensemble('Ensemble RF - hard RF',
+                 train_probas.drop(['XGB', 'Grid SVM', 'Voting soft with grid'], axis=1),
+                 test_probas.drop(['XGB', 'Grid SVM', 'Voting soft with grid'], axis=1),
+                 y_train, results, preds)
+    fit_ensemble('Ensemble RF - soft hard RF',
+                 train_probas.drop(['XGB', 'Grid SVM'], axis=1),
+                 test_probas.drop(['XGB', 'Grid SVM'], axis=1),
+                 y_train, results, preds)
 
     print(f'YK: correlations between predictions:\n{preds.corr()}')
     preds.corr().to_csv('output/classifiers_correlations.csv')
 
-    output_preds(preds['RF 7'], x_test, 'rf_7')
+#    output_preds(preds['RF 7'], x_test, 'rf_7')
+    output_preds(preds['XGB'], x_test, 'xgb')
 
     output_preds(preds['Grid SVM'], x_test, 'svm_grid')
     output_preds(preds['Grid RF'], x_test, 'rf_grid')
-    output_preds(preds['Grid XGB'], x_test, 'xgb_grid')
+#    output_preds(preds['Grid XGB'], x_test, 'xgb_grid')
 
     output_preds(preds['Voting soft with grid'], x_test, 'voting_soft')
     output_preds(preds['Voting hard with grid'], x_test, 'voting_hard')
 
-    output_preds(preds['Ensemble RF'], x_test, 'ensemble_rf')
+    output_preds(preds['Ensemble RF - all'], x_test, 'ensemble_all')
+    output_preds(preds['Ensemble RF - soft RF'], x_test, 'ensemble_soft')
+    output_preds(preds['Ensemble RF - hard RF'], x_test, 'ensemble_hard')
+    output_preds(preds['Ensemble RF - soft hard RF'], x_test, 'ensemble_soft_hard')
 
     pd.DataFrame(results).to_csv('output/results.csv')
 
