@@ -1472,4 +1472,81 @@ Conclusion:before readding full continous edge - benchmark:
 	Stats Voting: {'Name': 'Voting hard with grid', 'Single accuracy': 0.899, 'Cross accuracy': 0.859, 'STD': 0.019, 'Cross accuracy-STD*2': 0.822, 'Cross accuracy-STD*3': 0.803, 'Overfitting danger': 0.036, 'Time sec': 5}
 	Stats Emsemble: {'Name': 'Ensemble RF', 'Single accuracy': 0.989, 'Cross accuracy': 0.969, 'STD': 0.013, 'Cross accuracy-STD*2': 0.942, 'Cross accuracy-STD*3': 0.928, 'Overfitting danger': 0.02, 'Time sec': 8}
 
+### 78. Readding family size, and putting 2 and 3 together as was before
+Results:
+	- SVM improved
+	- RF didn't change much 
+	- XGB changed for the worse a little 
+	- Best classifiers: RF7 and XGB
+	
+	Stats Single: {'Name': 'Log', 'Single accuracy': 0.841, 'Cross accuracy': 0.835, 'STD': 0.024, 'Cross accuracy-STD*2': 0.788, 'Cross accuracy-STD*3': 0.764, 'Overfitting danger': 0.005, 'Time sec': 0}
+	Stats Single: {'Name': 'SVM rbf', 'Single accuracy': 0.859, 'Cross accuracy': 0.84, 'STD': 0.018, 'Cross accuracy-STD*2': 0.803, 'Cross accuracy-STD*3': 0.785, 'Overfitting danger': 0.016, 'Time sec': 0}
+	Stats Single: {'Name': 'SVM poly', 'Single accuracy': 0.873, 'Cross accuracy': 0.833, 'STD': 0.016, 'Cross accuracy-STD*2': 0.801, 'Cross accuracy-STD*3': 0.785, 'Overfitting danger': 0.035, 'Time sec': 0}
+	Stats Single: {'Name': 'NB', 'Single accuracy': 0.429, 'Cross accuracy': 0.424, 'STD': 0.017, 'Cross accuracy-STD*2': 0.391, 'Cross accuracy-STD*3': 0.374, 'Overfitting danger': 0.002, 'Time sec': 0}
+	Stats Single: {'Name': 'RF 9', 'Single accuracy': 0.926, 'Cross accuracy': 0.849, 'STD': 0.017, 'Cross accuracy-STD*2': 0.814, 'Cross accuracy-STD*3': 0.797, 'Overfitting danger': 0.072, 'Time sec': 13}
+	Stats Single: {'Name': 'RF 8', 'Single accuracy': 0.909, 'Cross accuracy': 0.849, 'STD': 0.016, 'Cross accuracy-STD*2': 0.817, 'Cross accuracy-STD*3': 0.801, 'Overfitting danger': 0.055, 'Time sec': 9}
+	Stats Single: {'Name': 'RF 7', 'Single accuracy': 0.895, 'Cross accuracy': 0.848, 'STD': 0.014, 'Cross accuracy-STD*2': 0.82, 'Cross accuracy-STD*3': 0.806, 'Overfitting danger': 0.041, 'Time sec': 7}
+	Stats Single: {'Name': 'XGB', 'Single accuracy': 0.964, 'Cross accuracy': 0.846, 'STD': 0.01, 'Cross accuracy-STD*2': 0.827, 'Cross accuracy-STD*3': 0.817, 'Overfitting danger': 0.114, 'Time sec': 2}
+	Stats Grid: {'Name': 'Grid KNN', 'Single accuracy': 0.862, 'Cross accuracy': 0.841, 'STD': 0.019, 'Cross accuracy-STD*2': 0.803, 'Cross accuracy-STD*3': 0.784, 'Overfitting danger': 0.018, 'Time sec': 10}
+	Stats Grid: {'Name': 'Grid SVM', 'Single accuracy': 0.871, 'Cross accuracy': 0.844, 'STD': 0.017, 'Cross accuracy-STD*2': 0.811, 'Cross accuracy-STD*3': 0.794, 'Overfitting danger': 0.023, 'Time sec': 11}
+	Stats Grid: {'Name': 'Grid RF', 'Single accuracy': 0.895, 'Cross accuracy': 0.848, 'STD': 0.014, 'Cross accuracy-STD*2': 0.82, 'Cross accuracy-STD*3': 0.806, 'Overfitting danger': 0.041, 'Time sec': 25}
+	Stats Grid: {'Name': 'Grid XGB', 'Single accuracy': 0.928, 'Cross accuracy': 0.857, 'STD': 0.022, 'Cross accuracy-STD*2': 0.814, 'Cross accuracy-STD*3': 0.792, 'Overfitting danger': 0.066, 'Time sec': 12}
+	Stats Voting: {'Name': 'Voting soft with grid', 'Single accuracy': 0.863, 'Cross accuracy': 0.846, 'STD': 0.019, 'Cross accuracy-STD*2': 0.808, 'Cross accuracy-STD*3': 0.789, 'Overfitting danger': 0.014, 'Time sec': 1}
+	Stats Voting: {'Name': 'Voting hard with grid', 'Single accuracy': 0.9, 'Cross accuracy': 0.863, 'STD': 0.019, 'Cross accuracy-STD*2': 0.826, 'Cross accuracy-STD*3': 0.808, 'Overfitting danger': 0.033, 'Time sec': 8}
+	Stats Emsemble: {'Name': 'Ensemble RF', 'Single accuracy': 0.989, 'Cross accuracy': 0.966, 'STD': 0.015, 'Cross accuracy-STD*2': 0.937, 'Cross accuracy-STD*3': 0.923, 'Overfitting danger': 0.022, 'Time sec': 8}
+Conclusion: keep the change
+
+### 79. Readding Decks
+Results:
+	- Log, RFs improved, especially RF 8
+	- XGB got worse, but grid XGB got much better
+	- Best classifiers: RF7/8, Grid XGB
+	
+	Stats Single: {'Name': 'Log', 'Single accuracy': 0.846, 'Cross accuracy': 0.838, 'STD': 0.026, 'Cross accuracy-STD*2': 0.787, 'Cross accuracy-STD*3': 0.761, 'Overfitting danger': 0.007, 'Time sec': 0}
+	Stats Single: {'Name': 'SVM rbf', 'Single accuracy': 0.863, 'Cross accuracy': 0.834, 'STD': 0.02, 'Cross accuracy-STD*2': 0.795, 'Cross accuracy-STD*3': 0.775, 'Overfitting danger': 0.025, 'Time sec': 0}
+	Stats Single: {'Name': 'SVM poly', 'Single accuracy': 0.873, 'Cross accuracy': 0.826, 'STD': 0.021, 'Cross accuracy-STD*2': 0.785, 'Cross accuracy-STD*3': 0.764, 'Overfitting danger': 0.041, 'Time sec': 0}
+	Stats Single: {'Name': 'NB', 'Single accuracy': 0.451, 'Cross accuracy': 0.476, 'STD': 0.067, 'Cross accuracy-STD*2': 0.343, 'Cross accuracy-STD*3': 0.276, 'Overfitting danger': -0.011, 'Time sec': 0}
+	Stats Single: {'Name': 'RF 9', 'Single accuracy': 0.924, 'Cross accuracy': 0.845, 'STD': 0.017, 'Cross accuracy-STD*2': 0.81, 'Cross accuracy-STD*3': 0.793, 'Overfitting danger': 0.073, 'Time sec': 14}
+	Stats Single: {'Name': 'RF 8', 'Single accuracy': 0.906, 'Cross accuracy': 0.846, 'STD': 0.014, 'Cross accuracy-STD*2': 0.818, 'Cross accuracy-STD*3': 0.804, 'Overfitting danger': 0.054, 'Time sec': 6}
+	Stats Single: {'Name': 'RF 7', 'Single accuracy': 0.899, 'Cross accuracy': 0.845, 'STD': 0.013, 'Cross accuracy-STD*2': 0.82, 'Cross accuracy-STD*3': 0.807, 'Overfitting danger': 0.048, 'Time sec': 6}
+	Stats Single: {'Name': 'XGB', 'Single accuracy': 0.964, 'Cross accuracy': 0.838, 'STD': 0.016, 'Cross accuracy-STD*2': 0.806, 'Cross accuracy-STD*3': 0.79, 'Overfitting danger': 0.121, 'Time sec': 2}
+	Stats Grid: {'Name': 'Grid KNN', 'Single accuracy': 0.864, 'Cross accuracy': 0.841, 'STD': 0.03, 'Cross accuracy-STD*2': 0.781, 'Cross accuracy-STD*3': 0.751, 'Overfitting danger': 0.02, 'Time sec': 9}
+	Stats Grid: {'Name': 'Grid SVM', 'Single accuracy': 0.874, 'Cross accuracy': 0.844, 'STD': 0.019, 'Cross accuracy-STD*2': 0.805, 'Cross accuracy-STD*3': 0.786, 'Overfitting danger': 0.026, 'Time sec': 10}
+	Stats Grid: {'Name': 'Grid RF', 'Single accuracy': 0.906, 'Cross accuracy': 0.846, 'STD': 0.014, 'Cross accuracy-STD*2': 0.818, 'Cross accuracy-STD*3': 0.804, 'Overfitting danger': 0.054, 'Time sec': 24}
+	Stats Grid: {'Name': 'Grid XGB', 'Single accuracy': 0.928, 'Cross accuracy': 0.857, 'STD': 0.018, 'Cross accuracy-STD*2': 0.821, 'Cross accuracy-STD*3': 0.803, 'Overfitting danger': 0.066, 'Time sec': 14}
+	Stats Voting: {'Name': 'Voting soft with grid', 'Single accuracy': 0.86, 'Cross accuracy': 0.842, 'STD': 0.023, 'Cross accuracy-STD*2': 0.797, 'Cross accuracy-STD*3': 0.774, 'Overfitting danger': 0.015, 'Time sec': 1}
+	Stats Voting: {'Name': 'Voting hard with grid', 'Single accuracy': 0.907, 'Cross accuracy': 0.857, 'STD': 0.022, 'Cross accuracy-STD*2': 0.813, 'Cross accuracy-STD*3': 0.79, 'Overfitting danger': 0.045, 'Time sec': 6}
+	Stats Emsemble: {'Name': 'Ensemble RF', 'Single accuracy': 0.989, 'Cross accuracy': 0.963, 'STD': 0.017, 'Cross accuracy-STD*2': 0.929, 'Cross accuracy-STD*3': 0.913, 'Overfitting danger': 0.025, 'Time sec': 12}
+Conclusion: keep, doesn't seem to hurt a lot. Next step: read Master even though was not needed for Random Forest
+
+### 80. Readding Master that was not needed by Random Forest
+Results:
+	- SVMs improved
+	- RFs got worse (consider removing)
+	- XGB improved slightly
+	
+	Stats Single: {'Name': 'Log', 'Single accuracy': 0.846, 'Cross accuracy': 0.838, 'STD': 0.026, 'Cross accuracy-STD*2': 0.787, 'Cross accuracy-STD*3': 0.761, 'Overfitting danger': 0.007, 'Time sec': 0}
+	Stats Single: {'Name': 'SVM rbf', 'Single accuracy': 0.863, 'Cross accuracy': 0.834, 'STD': 0.02, 'Cross accuracy-STD*2': 0.795, 'Cross accuracy-STD*3': 0.775, 'Overfitting danger': 0.025, 'Time sec': 0}
+	Stats Single: {'Name': 'SVM poly', 'Single accuracy': 0.873, 'Cross accuracy': 0.826, 'STD': 0.021, 'Cross accuracy-STD*2': 0.785, 'Cross accuracy-STD*3': 0.764, 'Overfitting danger': 0.041, 'Time sec': 0}
+	Stats Single: {'Name': 'NB', 'Single accuracy': 0.451, 'Cross accuracy': 0.476, 'STD': 0.067, 'Cross accuracy-STD*2': 0.343, 'Cross accuracy-STD*3': 0.276, 'Overfitting danger': -0.011, 'Time sec': 0}
+	Stats Single: {'Name': 'RF 9', 'Single accuracy': 0.924, 'Cross accuracy': 0.845, 'STD': 0.017, 'Cross accuracy-STD*2': 0.81, 'Cross accuracy-STD*3': 0.793, 'Overfitting danger': 0.073, 'Time sec': 14}
+	Stats Single: {'Name': 'RF 8', 'Single accuracy': 0.906, 'Cross accuracy': 0.846, 'STD': 0.014, 'Cross accuracy-STD*2': 0.818, 'Cross accuracy-STD*3': 0.804, 'Overfitting danger': 0.054, 'Time sec': 6}
+	Stats Single: {'Name': 'RF 7', 'Single accuracy': 0.899, 'Cross accuracy': 0.845, 'STD': 0.013, 'Cross accuracy-STD*2': 0.82, 'Cross accuracy-STD*3': 0.807, 'Overfitting danger': 0.048, 'Time sec': 6}
+	Stats Single: {'Name': 'XGB', 'Single accuracy': 0.964, 'Cross accuracy': 0.838, 'STD': 0.016, 'Cross accuracy-STD*2': 0.806, 'Cross accuracy-STD*3': 0.79, 'Overfitting danger': 0.121, 'Time sec': 2}
+	Stats Grid: {'Name': 'Grid KNN', 'Single accuracy': 0.864, 'Cross accuracy': 0.841, 'STD': 0.03, 'Cross accuracy-STD*2': 0.781, 'Cross accuracy-STD*3': 0.751, 'Overfitting danger': 0.02, 'Time sec': 9}
+	Stats Grid: {'Name': 'Grid SVM', 'Single accuracy': 0.874, 'Cross accuracy': 0.844, 'STD': 0.019, 'Cross accuracy-STD*2': 0.805, 'Cross accuracy-STD*3': 0.786, 'Overfitting danger': 0.026, 'Time sec': 10}
+	Stats Grid: {'Name': 'Grid RF', 'Single accuracy': 0.906, 'Cross accuracy': 0.846, 'STD': 0.014, 'Cross accuracy-STD*2': 0.818, 'Cross accuracy-STD*3': 0.804, 'Overfitting danger': 0.054, 'Time sec': 24}
+	Stats Grid: {'Name': 'Grid XGB', 'Single accuracy': 0.928, 'Cross accuracy': 0.857, 'STD': 0.018, 'Cross accuracy-STD*2': 0.821, 'Cross accuracy-STD*3': 0.803, 'Overfitting danger': 0.066, 'Time sec': 14}
+	Stats Voting: {'Name': 'Voting soft with grid', 'Single accuracy': 0.86, 'Cross accuracy': 0.842, 'STD': 0.023, 'Cross accuracy-STD*2': 0.797, 'Cross accuracy-STD*3': 0.774, 'Overfitting danger': 0.015, 'Time sec': 1}
+	Stats Voting: {'Name': 'Voting hard with grid', 'Single accuracy': 0.907, 'Cross accuracy': 0.857, 'STD': 0.022, 'Cross accuracy-STD*2': 0.813, 'Cross accuracy-STD*3': 0.79, 'Overfitting danger': 0.045, 'Time sec': 6}
+	Stats Emsemble: {'Name': 'Ensemble RF', 'Single accuracy': 0.989, 'Cross accuracy': 0.963, 'STD': 0.017, 'Cross accuracy-STD*2': 0.929, 'Cross accuracy-STD*3': 0.913, 'Overfitting danger': 0.025, 'Time sec': 12}
+
+Conclusions: for Random Forest remove, for rest - leave
+
+### 81. Benchmark before working on ensembling
+
+First steps:
+	- Remove low cross accuracy / high STD classifiers: NB, Log, Grid KNN 
+
+
 

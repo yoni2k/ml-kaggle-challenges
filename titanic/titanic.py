@@ -515,21 +515,21 @@ def main(options):
     test_probas = pd.DataFrame()
 
     single_classifiers = {
-        'Log': {'clas': LogisticRegression(solver='liblinear', random_state=RANDOM_STATE, n_jobs=-1),
-                'Continuous': True},
+        #'Log': {'clas': LogisticRegression(solver='liblinear', random_state=RANDOM_STATE, n_jobs=-1),
+        #        'Continuous': True},
         #'KNN 14': {'clas': KNeighborsClassifier(n_neighbors=14, n_jobs=-1),
         #   'Continuous': True},
-        'SVM rbf': {'clas': SVC(gamma='auto', kernel='rbf', probability=True, random_state=RANDOM_STATE),
-                    'Continuous': True},
-        'SVM poly': {'clas': SVC(gamma='auto', kernel='poly', probability=True, random_state=RANDOM_STATE),
-                     'Continuous': True},
-        'NB': {'clas': GaussianNB(), 'Continuous': True},  # consistently gives worse results
-        'RF 9': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=9, random_state=RANDOM_STATE, n_jobs=-1),
-                 'Continuous': False},
-        'RF 8': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=8, random_state=RANDOM_STATE, n_jobs=-1),
-                 'Continuous': False},
-        'RF 7': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=7, random_state=RANDOM_STATE, n_jobs=-1),
-                 'Continuous': False},
+        #'SVM rbf': {'clas': SVC(gamma='auto', kernel='rbf', probability=True, random_state=RANDOM_STATE),
+        #            'Continuous': True},
+        #'SVM poly': {'clas': SVC(gamma='auto', kernel='poly', probability=True, random_state=RANDOM_STATE),
+        #             'Continuous': True},
+        # 'NB': {'clas': GaussianNB(), 'Continuous': True},  # consistently gives worse results
+        #'RF 9': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=9, random_state=RANDOM_STATE, n_jobs=-1),
+        #         'Continuous': False},
+        #'RF 8': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=8, random_state=RANDOM_STATE, n_jobs=-1),
+        #         'Continuous': False},
+        #'RF 7': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=7, random_state=RANDOM_STATE, n_jobs=-1),
+        #         'Continuous': False},
         #'RF 6': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=6, random_state=RANDOM_STATE, n_jobs=-1),
         #        'Continuous': False},
         'XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', n_estimators=1000,
@@ -586,9 +586,9 @@ def main(options):
     grid_classifiers = {
         #'Grid Log': {'clas': LogisticRegression(solver='liblinear', random_state=RANDOM_STATE, n_jobs=-1),
         #             'grid_params': [{'solver': ['liblinear', 'lbfgs', 'newton-cg', 'sag', 'saga']}]},
-        'Grid KNN': {'clas': KNeighborsClassifier(n_neighbors=14, n_jobs=-1),
-                     'grid_params': [{'n_neighbors': range(3, 25)}],
-                     'Continuous': True},
+        #'Grid KNN': {'clas': KNeighborsClassifier(n_neighbors=14, n_jobs=-1),
+        #             'grid_params': [{'n_neighbors': range(3, 25)}],
+        #             'Continuous': True},
         'Grid SVM': {'clas': SVC(gamma='auto', kernel='rbf', probability=True, random_state=RANDOM_STATE),
                      'grid_params':
                          [{
@@ -601,19 +601,19 @@ def main(options):
         'Grid RF': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=7, random_state=RANDOM_STATE,n_jobs=-1),
                     'grid_params': [{'max_depth': range(3, 10)}],
                     'Continuous': False},
-        'Grid XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', n_estimators=1000, random_state=RANDOM_STATE, n_jobs=-1),
-                     'grid_params':
-                         [{
-                             'max_depth': range(1, 8, 1)  # default 3
-                             # 'n_estimators': range(60, 260, 40), # default 100
-                             # 'learning_rate': [0.3, 0.2, 0.1, 0.01],  # , 0.001, 0.0001
-                             # 'min_child_weight': [0.5, 1, 2],  # default 1
-                             # 'subsample': [i / 10.0 for i in range(6, 11)], # default 1, not sure needed
-                             # 'colsample_bytree': [i / 10.0 for i in range(6, 11)] # default 1, not sure needed
-                             # 'gamma': [i / 10.0 for i in range(3)]  # default 0
-                         }],
-                     'Continuous': True
-                     }
+        #'Grid XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', n_estimators=1000, random_state=RANDOM_STATE, n_jobs=-1),
+        #            'grid_params':
+        #                 [{
+        #                     'max_depth': range(1, 8, 1)  # default 3
+        #                     # 'n_estimators': range(60, 260, 40), # default 100
+        #                     # 'learning_rate': [0.3, 0.2, 0.1, 0.01],  # , 0.001, 0.0001
+        #                     # 'min_child_weight': [0.5, 1, 2],  # default 1
+        #                     # 'subsample': [i / 10.0 for i in range(6, 11)], # default 1, not sure needed
+        #                     # 'colsample_bytree': [i / 10.0 for i in range(6, 11)] # default 1, not sure needed
+        #                     # 'gamma': [i / 10.0 for i in range(3)]  # default 0
+        #                 }],
+        #             'Continuous': True
+         #            }
     }
 
     for cl in grid_classifiers:
@@ -678,7 +678,7 @@ options = {
 
     ],
     'features_to_drop_continous': [],  # 'Fare bin_13.5+' currently not dropping since get worse results if dropping
-    'features_to_drop_forest': ['Fare log'],
+    'features_to_drop_forest': ['Fare log', 'Title_Master'],
     'minor_columns_to_drop': [
         # -- Age - not extemely important, most models Age_-4 is important (15), XGB gives more age importance (6,8)
         #       Update 1: Age_-4 is only very important in 1 model, removing another age 'Age_27-31'
