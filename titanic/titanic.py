@@ -410,47 +410,45 @@ def output_preds(preds, x_test, name_suffix):
 
 
 def cross_valid(classifier, x_train, y_train):
-    accuracies = cross_val_score(estimator=classifier, X=x_train, y=y_train, cv=10)
+    accuracies = cross_val_score(estimator=classifier, X=x_train, y=y_train, cv=5)
     return accuracies.mean(), accuracies.std()
+
+
+def fit_different_classifiers(name_str, type_class, classifier, x_train, y_train, x_test, results, preds, start_time):
+    reg_score, reg_std = cross_valid(classifier, x_train, y_train)
+
+    classifier.fit(x_train, y_train)
+    preds[name_str] = classifier.predict(x_test)
+    score = classifier.score(x_train, y_train)
+
+    results.append({'Name': name_str,
+                    'Single accuracy': round(score, 3),
+                    'Cross accuracy': round(reg_score, 3),
+                    'STD': round(reg_std, 3),
+                    'Cross accuracy-STD*2': round(reg_score - reg_std * 2, 3),
+                    'Cross accuracy-STD*3': round(reg_score - reg_std * 3, 3),
+                    'Overfitting danger': round((score - reg_score) * score, 3),
+                    'Time sec': round(time.time() - start_time)})
+    print(f'Stats {type_class}: {results[-1]}')
 
 
 def fit_grid_classifier(name_str, x_train, y_train, x_test, single_classifier, grid_params, results, preds):
     start_time = time.time()
 
-    grid = GridSearchCV(single_classifier, grid_params, verbose=1, cv=10, n_jobs=-1)
+    grid = GridSearchCV(single_classifier, grid_params, verbose=1, cv=5, n_jobs=-1)
     grid.fit(x_train, y_train)
-    best_estimator = grid.best_estimator_
+    classifier = grid.best_estimator_
+    print(f'{name_str} best classifier:\n{classifier}')
 
-    reg_score, reg_std = cross_valid(best_estimator, x_train, y_train)
+    fit_different_classifiers(name_str, 'Grid', classifier, x_train, y_train, x_test, results, preds, start_time)
 
-    print(f'{name_str} best classifier:\n{best_estimator}')
-
-    results.append({'Name': name_str,
-                    'Cross accuracy': round(reg_score, 3),
-                    'STD': round(reg_std, 3),
-                    'Cross accuracy-STD': round(reg_score - reg_std, 3),
-                    'Time sec': round(time.time() - start_time)})
-    print(f'Stats grid: {results[-1]}')
-
-    best_estimator.fit(x_train, y_train)
-    preds[name_str] = best_estimator.predict(x_test)
-    return best_estimator
+    return classifier
 
 
 def fit_single_classifier(name_str, x_train, y_train, x_test, classifier, results, preds):
     start_time = time.time()
 
-    reg_score, reg_std = cross_valid(classifier, x_train, y_train)
-
-    results.append({'Name': name_str,
-                    'Cross accuracy': round(reg_score, 3),
-                    'STD': round(reg_std, 3),
-                    'Cross accuracy-STD': round(reg_score - reg_std, 3),
-                    'Time sec': round(time.time() - start_time)})
-    print(f'Stats single: {results[-1]}')
-
-    classifier.fit(x_train, y_train)
-    preds[name_str] = classifier.predict(x_test)
+    fit_different_classifiers(name_str, 'Single', classifier, x_train, y_train, x_test, results, preds, start_time)
 
     return classifier
 
@@ -458,20 +456,11 @@ def fit_single_classifier(name_str, x_train, y_train, x_test, classifier, result
 def fit_predict_voting(classifiers, name_str, voting_type, x_train, y_train, x_test, results, preds):
     start_time = time.time()
 
-    voting_classifier = VotingClassifier(estimators=classifiers, voting=voting_type, n_jobs=-1)
+    classifier = VotingClassifier(estimators=classifiers, voting=voting_type, n_jobs=-1)
 
-    reg_score, reg_std = cross_valid(voting_classifier, x_train, y_train)
+    fit_different_classifiers(name_str, 'Voting', classifier, x_train, y_train, x_test, results, preds, start_time)
 
-    results.append({'Name': name_str,
-                    'Cross accuracy': round(reg_score, 3),
-                    'STD': round(reg_std, 3),
-                    'Cross accuracy-STD': round(reg_score - reg_std, 3),
-                    'Time sec': round(time.time() - start_time)})
-    print(f'Stats voting: {results[-1]}')
-
-    voting_classifier.fit(x_train, y_train)
-    preds[name_str] = voting_classifier.predict(x_test)
-    return voting_classifier
+    return classifier
 
 
 def main(options):
@@ -492,16 +481,16 @@ def main(options):
 
     single_classifiers = {
         'Log': {'clas': LogisticRegression(solver='liblinear', n_jobs=-1, random_state=RANDOM_STATE)},
-        # 'KNN 14': {'clas': KNeighborsClassifier(n_jobs=-1, n_neighbors=14)},
-        # 'SVM rbf': {'clas': SVC(gamma='auto', kernel='rbf', probability=True, random_state=RANDOM_STATE)},
+         'KNN 14': {'clas': KNeighborsClassifier(n_jobs=-1, n_neighbors=14)},
+        'SVM rbf': {'clas': SVC(gamma='auto', kernel='rbf', probability=True, random_state=RANDOM_STATE)},
         'SVM poly': {'clas': SVC(gamma='auto', kernel='poly', probability=True, random_state=RANDOM_STATE)},
-        # 'NB': {'clas': GaussianNB()},  # consistently gives worse results
+        'NB': {'clas': GaussianNB()},  # consistently gives worse results
+        'RF 8': {'clas': RandomForestClassifier(n_jobs=-1, n_estimators=1000, max_depth=8, random_state=RANDOM_STATE),
+                 'importances': True},
         'RF 7': {'clas': RandomForestClassifier(n_jobs=-1, n_estimators=1000, max_depth=7, random_state=RANDOM_STATE),
                  'importances': True},
-        #'RF 5': {'clas': RandomForestClassifier(n_jobs=-1, n_estimators=1000, max_depth=5, random_state=RANDOM_STATE),
-        #         'importances': True},
-        #'RF 4': {'clas': RandomForestClassifier(n_jobs=-1, n_estimators=1000, max_depth=4, random_state=RANDOM_STATE),
-        #         'importances': True},
+        'RF 6': {'clas': RandomForestClassifier(n_jobs=-1, n_estimators=1000, max_depth=6, random_state=RANDOM_STATE),
+                 'importances': True},
         'XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', random_state=RANDOM_STATE, n_jobs=-1, n_estimators=1000)}
     }
 

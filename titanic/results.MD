@@ -1231,6 +1231,38 @@ Keep:
 Output best: RF 7, Grid SVM, Grid RF, Grid XGB, Voting soft with grid, Voting hard with grid
 
 ### 68 Submit conclusions of all the work online
-TBD - fill in the results
+	Also look at results.csv
+	Soft & hard - 78.9 - seems lower than RFs because take all the overfitting algorithms
+	RF Grid - 80.3 - slightly higher, perhaps because taking higher number of maximum depth (9?)
+	RF 7 - 79.9 - highest result of a single classifier
+	XGB Grid - 74.6 - seems overfits a lot? Perhaps choosing specific bins of age and fare was good for Random Forest, but not for XGB/SVM 
+	SVM Grid - 76.1 - seems also overfits? Perhaps choosing specific bins of age and fare was good for Random Forest, but not for XGB/SVM
+
+	Stats Single: {'Name': 'Log', 'Single accuracy': 0.848, 'Cross accuracy': 0.832, 'STD': 0.027, 'Cross accuracy-STD*2': 0.777, 'Cross accuracy-STD*3': 0.75, 'Overfitting danger': 0.014, 'Time sec': 0}
+	Stats Single: {'Name': 'KNN 14', 'Single accuracy': 0.837, 'Cross accuracy': 0.821, 'STD': 0.03, 'Cross accuracy-STD*2': 0.76, 'Cross accuracy-STD*3': 0.729, 'Overfitting danger': 0.014, 'Time sec': 12}
+	Stats Single: {'Name': 'SVM rbf', 'Single accuracy': 0.884, 'Cross accuracy': 0.842, 'STD': 0.02, 'Cross accuracy-STD*2': 0.801, 'Cross accuracy-STD*3': 0.781, 'Overfitting danger': 0.038, 'Time sec': 0}
+	Stats Single: {'Name': 'SVM poly', 'Single accuracy': 0.886, 'Cross accuracy': 0.849, 'STD': 0.021, 'Cross accuracy-STD*2': 0.806, 'Cross accuracy-STD*3': 0.784, 'Overfitting danger': 0.033, 'Time sec': 0}
+	Stats Single: {'Name': 'NB', 'Single accuracy': 0.438, 'Cross accuracy': 0.433, 'STD': 0.021, 'Cross accuracy-STD*2': 0.39, 'Cross accuracy-STD*3': 0.369, 'Overfitting danger': 0.002, 'Time sec': 0}
+	Stats Single: {'Name': 'RF 8', 'Single accuracy': 0.895, 'Cross accuracy': 0.853, 'STD': 0.023, 'Cross accuracy-STD*2': 0.806, 'Cross accuracy-STD*3': 0.783, 'Overfitting danger': 0.037, 'Time sec': 9}
+	Stats Single: {'Name': 'RF 7', 'Single accuracy': 0.887, 'Cross accuracy': 0.856, 'STD': 0.019, 'Cross accuracy-STD*2': 0.819, 'Cross accuracy-STD*3': 0.8, 'Overfitting danger': 0.027, 'Time sec': 8}
+	Stats Single: {'Name': 'RF 6', 'Single accuracy': 0.878, 'Cross accuracy': 0.846, 'STD': 0.019, 'Cross accuracy-STD*2': 0.809, 'Cross accuracy-STD*3': 0.791, 'Overfitting danger': 0.028, 'Time sec': 7}
+	Stats Single: {'Name': 'XGB', 'Single accuracy': 0.907, 'Cross accuracy': 0.849, 'STD': 0.017, 'Cross accuracy-STD*2': 0.815, 'Cross accuracy-STD*3': 0.799, 'Overfitting danger': 0.053, 'Time sec': 4}
+	Stats Grid: {'Name': 'Grid KNN', 'Single accuracy': 0.837, 'Cross accuracy': 0.829, 'STD': 0.023, 'Cross accuracy-STD*2': 0.784, 'Cross accuracy-STD*3': 0.762, 'Overfitting danger': 0.007, 'Time sec': 12}
+	Stats Grid: {'Name': 'Grid SVM', 'Single accuracy': 0.891, 'Cross accuracy': 0.853, 'STD': 0.022, 'Cross accuracy-STD*2': 0.81, 'Cross accuracy-STD*3': 0.788, 'Overfitting danger': 0.034, 'Time sec': 13}
+	Stats Grid: {'Name': 'Grid RF', 'Single accuracy': 0.887, 'Cross accuracy': 0.856, 'STD': 0.019, 'Cross accuracy-STD*2': 0.819, 'Cross accuracy-STD*3': 0.8, 'Overfitting danger': 0.027, 'Time sec': 33}
+	Stats Grid: {'Name': 'Grid XGB', 'Single accuracy': 0.886, 'Cross accuracy': 0.85, 'STD': 0.021, 'Cross accuracy-STD*2': 0.807, 'Cross accuracy-STD*3': 0.786, 'Overfitting danger': 0.032, 'Time sec': 15}
+	Stats Voting: {'Name': 'Voting soft with grid', 'Single accuracy': 0.891, 'Cross accuracy': 0.852, 'STD': 0.019, 'Cross accuracy-STD*2': 0.813, 'Cross accuracy-STD*3': 0.794, 'Overfitting danger': 0.035, 'Time sec': 33}
+	Stats Voting: {'Name': 'Voting hard with grid', 'Single accuracy': 0.889, 'Cross accuracy': 0.854, 'STD': 0.021, 'Cross accuracy-STD*2': 0.812, 'Cross accuracy-STD*3': 0.79, 'Overfitting danger': 0.031, 'Time sec': 34}
+
+
+	Made some results adjustments that will help doing forward:
+	- To avoid overfitting, changed scross validation from cv=10 to cv=5, will punish more overfitting algorithms
+	- Added overfitting danger estimator = (score of full training - score of cross validation) \* score of full training. 
+		Explanation: the bigger the difference of full score that voting algorithms later rely on to cross validation score, the more of a danger of overfitting
+		The bigger the score is, the higher danger of soft voting taking the results of this algorithm specifically.
+	- Returned different classifiers that were previously removed: KNN 14, SVM rbf without Grid, SVM poly without Grid, NB
+	- Added different Random Forest depths to see how they behave with cross validation and new metrics: 8 and 6 (since 7 is currently the best)
+
+	Next steps: Make sure soft voting doesn't get those with high danger of overfitting, make sure that hard voting doesn't get those with high danger of underfitting
+
  
-	
