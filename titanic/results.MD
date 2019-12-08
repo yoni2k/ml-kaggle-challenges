@@ -1382,6 +1382,48 @@ Conclusions:
 	Soft voting got worse (because removed RF6 and added RF9 ? Not clear why)
 	Hard voting got better in every way (because removed Logistic)
 	Ensemble got slightly worse
-			
-
+	Remove special features that help RandomForests and other classificiations that prefer continuous features
 Remove non-grid KNN since number of members changes every time we change features anyways
+
+### 75. Split handling of Random Forest and another algorithms - currently only for 'Fare'
+For Random Forest, leave fare binning, for others remove binning, and add continuous fare
+	- Got better continuous: Log, SVM poly, NB
+	- Got worse continuous: SVM rbf, Grid KNN 
+	- Got better non-continuous (binned): RF7, Grid RF 
+	- Didn't make a difference for: XGB, Grid XGB
+
+	Stats Single: {'Name': 'Log', 'Single accuracy': 0.845, 'Cross accuracy': 0.831, 'STD': 0.022, 'Cross accuracy-STD*2': 0.786, 'Cross accuracy-STD*3': 0.763, 'Overfitting danger': 0.012, 'Time sec': 0}
+	Stats Single: {'Name': 'SVM rbf', 'Single accuracy': 0.865, 'Cross accuracy': 0.84, 'STD': 0.016, 'Cross accuracy-STD*2': 0.808, 'Cross accuracy-STD*3': 0.793, 'Overfitting danger': 0.022, 'Time sec': 0}
+	Stats Single: {'Name': 'SVM poly', 'Single accuracy': 0.88, 'Cross accuracy': 0.826, 'STD': 0.02, 'Cross accuracy-STD*2': 0.787, 'Cross accuracy-STD*3': 0.767, 'Overfitting danger': 0.047, 'Time sec': 0}
+	Stats Single: {'Name': 'NB', 'Single accuracy': 0.805, 'Cross accuracy': 0.785, 'STD': 0.052, 'Cross accuracy-STD*2': 0.68, 'Cross accuracy-STD*3': 0.628, 'Overfitting danger': 0.016, 'Time sec': 0}
+	Stats Single: {'Name': 'RF 9', 'Single accuracy': 0.895, 'Cross accuracy': 0.849, 'STD': 0.018, 'Cross accuracy-STD*2': 0.813, 'Cross accuracy-STD*3': 0.796, 'Overfitting danger': 0.041, 'Time sec': 17}
+	Stats Single: {'Name': 'RF 8', 'Single accuracy': 0.89, 'Cross accuracy': 0.85, 'STD': 0.018, 'Cross accuracy-STD*2': 0.814, 'Cross accuracy-STD*3': 0.797, 'Overfitting danger': 0.036, 'Time sec': 7}
+	Stats Single: {'Name': 'RF 7', 'Single accuracy': 0.888, 'Cross accuracy': 0.851, 'STD': 0.015, 'Cross accuracy-STD*2': 0.82, 'Cross accuracy-STD*3': 0.805, 'Overfitting danger': 0.033, 'Time sec': 7}
+	Stats Single: {'Name': 'XGB', 'Single accuracy': 0.935, 'Cross accuracy': 0.849, 'STD': 0.012, 'Cross accuracy-STD*2': 0.824, 'Cross accuracy-STD*3': 0.812, 'Overfitting danger': 0.081, 'Time sec': 2}
+	Stats Grid: {'Name': 'Grid KNN', 'Single accuracy': 0.844, 'Cross accuracy': 0.833, 'STD': 0.023, 'Cross accuracy-STD*2': 0.787, 'Cross accuracy-STD*3': 0.765, 'Overfitting danger': 0.009, 'Time sec': 9}
+	Stats Grid: {'Name': 'Grid SVM', 'Single accuracy': 0.884, 'Cross accuracy': 0.844, 'STD': 0.022, 'Cross accuracy-STD*2': 0.801, 'Cross accuracy-STD*3': 0.779, 'Overfitting danger': 0.036, 'Time sec': 8}
+	Stats Grid: {'Name': 'Grid RF', 'Single accuracy': 0.877, 'Cross accuracy': 0.851, 'STD': 0.017, 'Cross accuracy-STD*2': 0.816, 'Cross accuracy-STD*3': 0.799, 'Overfitting danger': 0.023, 'Time sec': 24}
+	Stats Grid: {'Name': 'Grid XGB', 'Single accuracy': 0.935, 'Cross accuracy': 0.849, 'STD': 0.012, 'Cross accuracy-STD*2': 0.824, 'Cross accuracy-STD*3': 0.812, 'Overfitting danger': 0.081, 'Time sec': 11}
+- Re-add binned strong features for continuous classifiers, but keep Random Forest without continuous fare feature
+- Can't do soft and hard voting for continuous and not continous classifiers together since they have a different number of features, so leaving only for continous
+- Ensembling doing for all together
+	Stats Single: {'Name': 'Log', 'Single accuracy': 0.847, 'Cross accuracy': 0.828, 'STD': 0.025, 'Cross accuracy-STD*2': 0.778, 'Cross accuracy-STD*3': 0.753, 'Overfitting danger': 0.016, 'Time sec': 0}
+	Stats Single: {'Name': 'SVM rbf', 'Single accuracy': 0.866, 'Cross accuracy': 0.841, 'STD': 0.014, 'Cross accuracy-STD*2': 0.812, 'Cross accuracy-STD*3': 0.798, 'Overfitting danger': 0.022, 'Time sec': 0}
+	Stats Single: {'Name': 'SVM poly', 'Single accuracy': 0.878, 'Cross accuracy': 0.825, 'STD': 0.024, 'Cross accuracy-STD*2': 0.778, 'Cross accuracy-STD*3': 0.754, 'Overfitting danger': 0.046, 'Time sec': 0}
+	Stats Single: {'Name': 'NB', 'Single accuracy': 0.788, 'Cross accuracy': 0.782, 'STD': 0.053, 'Cross accuracy-STD*2': 0.676, 'Cross accuracy-STD*3': 0.623, 'Overfitting danger': 0.004, 'Time sec': 0}
+	Stats Single: {'Name': 'RF 9', 'Single accuracy': 0.895, 'Cross accuracy': 0.847, 'STD': 0.019, 'Cross accuracy-STD*2': 0.809, 'Cross accuracy-STD*3': 0.789, 'Overfitting danger': 0.042, 'Time sec': 20}
+	Stats Single: {'Name': 'RF 8', 'Single accuracy': 0.89, 'Cross accuracy': 0.85, 'STD': 0.018, 'Cross accuracy-STD*2': 0.814, 'Cross accuracy-STD*3': 0.797, 'Overfitting danger': 0.036, 'Time sec': 8}
+	Stats Single: {'Name': 'RF 7', 'Single accuracy': 0.888, 'Cross accuracy': 0.852, 'STD': 0.017, 'Cross accuracy-STD*2': 0.817, 'Cross accuracy-STD*3': 0.8, 'Overfitting danger': 0.032, 'Time sec': 8}
+	Stats Single: {'Name': 'XGB', 'Single accuracy': 0.936, 'Cross accuracy': 0.847, 'STD': 0.014, 'Cross accuracy-STD*2': 0.819, 'Cross accuracy-STD*3': 0.804, 'Overfitting danger': 0.083, 'Time sec': 3}
+	Stats Grid: {'Name': 'Grid KNN', 'Single accuracy': 0.848, 'Cross accuracy': 0.833, 'STD': 0.021, 'Cross accuracy-STD*2': 0.79, 'Cross accuracy-STD*3': 0.769, 'Overfitting danger': 0.013, 'Time sec': 11}
+	Stats Grid: {'Name': 'Grid SVM', 'Single accuracy': 0.87, 'Cross accuracy': 0.845, 'STD': 0.014, 'Cross accuracy-STD*2': 0.817, 'Cross accuracy-STD*3': 0.803, 'Overfitting danger': 0.021, 'Time sec': 11}
+	Stats Grid: {'Name': 'Grid RF', 'Single accuracy': 0.877, 'Cross accuracy': 0.853, 'STD': 0.019, 'Cross accuracy-STD*2': 0.814, 'Cross accuracy-STD*3': 0.795, 'Overfitting danger': 0.021, 'Time sec': 33}
+	Stats Grid: {'Name': 'Grid XGB', 'Single accuracy': 0.936, 'Cross accuracy': 0.847, 'STD': 0.014, 'Cross accuracy-STD*2': 0.819, 'Cross accuracy-STD*3': 0.804, 'Overfitting danger': 0.083, 'Time sec': 15}
+	Stats Voting: {'Name': 'Voting soft with grid', 'Single accuracy': 0.862, 'Cross accuracy': 0.844, 'STD': 0.018, 'Cross accuracy-STD*2': 0.809, 'Cross accuracy-STD*3': 0.791, 'Overfitting danger': 0.015, 'Time sec': 1}
+	Stats Voting: {'Name': 'Voting hard with grid', 'Single accuracy': 0.899, 'Cross accuracy': 0.849, 'STD': 0.016, 'Cross accuracy-STD*2': 0.817, 'Cross accuracy-STD*3': 0.802, 'Overfitting danger': 0.045, 'Time sec': 6}
+	Stats Emsemble: {'Name': 'Ensemble RF', 'Single accuracy': 0.956, 'Cross accuracy': 0.916, 'STD': 0.01, 'Cross accuracy-STD*2': 0.896, 'Cross accuracy-STD*3': 0.886, 'Overfitting danger': 0.039, 'Time sec': 9}
+- Ensemble RF - clearly best, but clearly overfits
+- SVM, XGB give great results
+- RF7 no Grid gives good results
+- Voting hard gives good results - high correlation with XGB, and SVM
+- Voting soft doesn't give great results - high correlation with SVM

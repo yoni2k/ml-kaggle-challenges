@@ -394,7 +394,12 @@ def prepare_features(train, x_test, options):
 
     both.corr().to_csv('output/feature_correlations.csv')
 
-    return split_into_x_train_x_test(both)
+    new_x_train, new_x_test = split_into_x_train_x_test(both)
+
+    return new_x_train.drop(options['features_to_drop_continous'], axis=1), \
+           new_x_test.drop(options['features_to_drop_continous'], axis=1), \
+           new_x_train.drop(options['features_to_drop_forest'], axis=1), \
+           new_x_test.drop(options['features_to_drop_forest'], axis=1)
 
 
 def scale_train(x_train):
@@ -478,7 +483,7 @@ def fit_predict_voting(classifiers, name_str, voting_type, x_train, y_train, x_t
     return classifier
 
 
-def fit_ensemble(name_str, train_probas, test_probas, y_train, x_test_scaled, results, preds):
+def fit_ensemble(name_str, train_probas, test_probas, y_train, results, preds):
     start_time = time.time()
 
     classifier = RandomForestClassifier(n_estimators=1000, random_state=RANDOM_STATE, n_jobs=-1)
@@ -493,13 +498,17 @@ def main(options):
 
     train, x_test = read_files()
 
-    x_train, x_test = prepare_features(train, x_test, options)
+    x_train_cont, x_test_cont, x_train_not_cont, x_test_not_cont = prepare_features(train, x_test, options)
 
     y_train = train['Survived']
 
-    scaler = scale_train(x_train)
-    x_train_scaled = scaler.transform(x_train)
-    x_test_scaled = scaler.transform(x_test)
+    scaler = scale_train(x_train_cont)
+    x_train_scaled_cont = scaler.transform(x_train_cont)
+    x_test_scaled_cont = scaler.transform(x_test_cont)
+
+    scaler = scale_train(x_train_not_cont)
+    x_train_scaled_not_cont = scaler.transform(x_train_not_cont)
+    x_test_scaled_not_cont = scaler.transform(x_test_not_cont)
 
     results = []
     preds = pd.DataFrame()
@@ -508,25 +517,25 @@ def main(options):
 
     single_classifiers = {
         'Log': {'clas': LogisticRegression(solver='liblinear', random_state=RANDOM_STATE, n_jobs=-1),
-                'drop': options['features_to_drop_continous']},
+                'Continuous': True},
         #'KNN 14': {'clas': KNeighborsClassifier(n_neighbors=14, n_jobs=-1),
-        #   'drop': options['features_to_drop_continous']},
+        #   'Continuous': True},
         'SVM rbf': {'clas': SVC(gamma='auto', kernel='rbf', probability=True, random_state=RANDOM_STATE),
-                    'drop': options['features_to_drop_continous']},
+                    'Continuous': True},
         'SVM poly': {'clas': SVC(gamma='auto', kernel='poly', probability=True, random_state=RANDOM_STATE),
-                     'drop': options['features_to_drop_continous']},
-        'NB': {'clas': GaussianNB(), 'drop': options['features_to_drop_continous']},  # consistently gives worse results
+                     'Continuous': True},
+        'NB': {'clas': GaussianNB(), 'Continuous': True},  # consistently gives worse results
         'RF 9': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=9, random_state=RANDOM_STATE, n_jobs=-1),
-                 'drop': options['features_to_drop_forest']},
+                 'Continuous': False},
         'RF 8': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=8, random_state=RANDOM_STATE, n_jobs=-1),
-                 'drop': options['features_to_drop_forest']},
+                 'Continuous': False},
         'RF 7': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=7, random_state=RANDOM_STATE, n_jobs=-1),
-                 'drop': options['features_to_drop_forest']},
+                 'Continuous': False},
         #'RF 6': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=6, random_state=RANDOM_STATE, n_jobs=-1),
-        #        'drop': options['features_to_drop_forest']},
+        #        'Continuous': False},
         'XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', n_estimators=1000,
                                           random_state=RANDOM_STATE, n_jobs=-1),
-                'drop': options['features_to_drop_continous']}
+                'Continuous': True}
     }
 
     classifier_not_for_soft = ['XGB', 'Grid XGB']
@@ -535,24 +544,34 @@ def main(options):
     classifiers_for_voting_hard = []
 
     for cl in single_classifiers:
-        classifier = fit_single_classifier(cl,
-                                           x_train_scaled.drop(single_classifiers[cl]['drop'], axis=1),
-                                           y_train,
-                                           x_test_scaled.drop(single_classifiers[cl]['drop'], axis=1),
-                                           single_classifiers[cl]['clas'],
-                                           results, preds, train_probas, test_probas)
-        if cl not in classifier_not_for_soft:
-            classifiers_for_voting_soft.append((cl, classifier))
-        if cl not in classifier_not_for_hard:
-            classifiers_for_voting_hard.append((cl, classifier))
+        if single_classifiers[cl]['Continuous']:
+            classifier = fit_single_classifier(cl,
+                                               x_train_scaled_cont,
+                                               y_train,
+                                               x_test_scaled_cont,
+                                               single_classifiers[cl]['clas'],
+                                               results, preds, train_probas, test_probas)
+            # Since continuous and not continuous don't use the same number of features, can't do voting together
+            if cl not in classifier_not_for_soft:
+                classifiers_for_voting_soft.append((cl, classifier))
+            if cl not in classifier_not_for_hard:
+                classifiers_for_voting_hard.append((cl, classifier))
+        else:
+            classifier = fit_single_classifier(cl,
+                                               x_train_scaled_not_cont,
+                                               y_train,
+                                               x_test_scaled_not_cont,
+                                               single_classifiers[cl]['clas'],
+                                               results, preds, train_probas, test_probas)
+
         if cl == 'Log':
-            importances = pd.DataFrame({'Importance': classifier.coef_[0]}, index=x_train.columns). \
+            importances = pd.DataFrame({'Importance': classifier.coef_[0]}, index=x_train_cont.columns). \
                 reset_index().sort_values(by='Importance', ascending=False)
             print(f'YK: "{cl}" feature importances:\n{pd.DataFrame(importances)}')
             importances['Importance'] = importances['Importance'].abs()
             print(f'YK: "{cl}" feature importances (abs):\n{pd.DataFrame(importances).sort_values(by="Importance", ascending=False).reset_index()}')
         elif 'RF' in cl:
-            importances = pd.DataFrame({'Importance': classifier.feature_importances_}, index=x_train.columns).\
+            importances = pd.DataFrame({'Importance': classifier.feature_importances_}, index=x_train_not_cont.columns).\
                 reset_index().sort_values(by='Importance', ascending=False).reset_index()
             print(f'YK: "{cl}" feature importances:\n{importances}')
         elif cl == 'XGB':
@@ -570,7 +589,7 @@ def main(options):
         #             'grid_params': [{'solver': ['liblinear', 'lbfgs', 'newton-cg', 'sag', 'saga']}]},
         'Grid KNN': {'clas': KNeighborsClassifier(n_neighbors=14, n_jobs=-1),
                      'grid_params': [{'n_neighbors': range(3, 25)}],
-                     'drop': options['features_to_drop_continous']},
+                     'Continuous': True},
         'Grid SVM': {'clas': SVC(gamma='auto', kernel='rbf', probability=True, random_state=RANDOM_STATE),
                      'grid_params':
                          [{
@@ -578,11 +597,11 @@ def main(options):
                             'C': [0.3, 0.5, 1.0, 1.5, 2.0],
                             'gamma': [0.3, 0.2, 0.1, 0.05, 0.01, 'auto_deprecated', 'scale']
                          }],
-                     'drop': options['features_to_drop_continous']
+                     'Continuous': True
                      },
         'Grid RF': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=7, random_state=RANDOM_STATE,n_jobs=-1),
                     'grid_params': [{'max_depth': range(3, 10)}],
-                    'drop': options['features_to_drop_forest']},
+                    'Continuous': False},
         'Grid XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', n_estimators=1000, random_state=RANDOM_STATE, n_jobs=-1),
                      'grid_params':
                          [{
@@ -594,30 +613,40 @@ def main(options):
                              # 'colsample_bytree': [i / 10.0 for i in range(6, 11)] # default 1, not sure needed
                              # 'gamma': [i / 10.0 for i in range(3)]  # default 0
                          }],
-                     'drop': options['features_to_drop_continous']
+                     'Continuous': True
                      }
     }
 
     for cl in grid_classifiers:
-        classifier = fit_grid_classifier(cl,
-                                         x_train_scaled.drop(grid_classifiers[cl]['drop'], axis=1),
-                                         y_train,
-                                         x_test_scaled.drop(grid_classifiers[cl]['drop'], axis=1),
-                                         grid_classifiers[cl]['clas'], grid_classifiers[cl]['grid_params'],
-                                         results, preds, train_probas, test_probas)
-        if cl not in classifier_not_for_soft:
-            classifiers_for_voting_soft.append((cl, classifier))
-        if cl not in classifier_not_for_hard:
-            classifiers_for_voting_hard.append((cl, classifier))
+        if grid_classifiers[cl]['Continuous']:
+            classifier = fit_grid_classifier(cl,
+                                             x_train_scaled_cont,
+                                             y_train,
+                                             x_test_scaled_cont,
+                                             grid_classifiers[cl]['clas'], grid_classifiers[cl]['grid_params'],
+                                             results, preds, train_probas, test_probas)
+            # Since continuous and not continuous don't use the same number of features, can't do voting together
+            if cl not in classifier_not_for_soft:
+                classifiers_for_voting_soft.append((cl, classifier))
+            if cl not in classifier_not_for_hard:
+                classifiers_for_voting_hard.append((cl, classifier))
+        else:
+            classifier = fit_grid_classifier(cl,
+                                             x_train_scaled_not_cont,
+                                             y_train,
+                                             x_test_scaled_not_cont,
+                                             grid_classifiers[cl]['clas'], grid_classifiers[cl]['grid_params'],
+                                             results, preds, train_probas, test_probas)
+
 
     fit_predict_voting(classifiers_for_voting_soft, 'Voting soft with grid', 'soft',
-                               x_train_scaled, y_train, x_test_scaled,
+                               x_train_scaled_cont, y_train, x_test_scaled_cont,
                                results, preds, train_probas, test_probas)
     fit_predict_voting(classifiers_for_voting_hard, 'Voting hard with grid', 'hard',
-                               x_train_scaled, y_train, x_test_scaled,
+                               x_train_scaled_cont, y_train, x_test_scaled_cont,
                                results, preds, train_probas, test_probas)
 
-    fit_ensemble('Ensemble RF', train_probas, test_probas, y_train, x_test_scaled, results, preds)
+    fit_ensemble('Ensemble RF', train_probas, test_probas, y_train, results, preds)
 
     print(f'YK: correlations between predictions:\n{preds.corr()}')
     preds.corr().to_csv('output/classifiers_correlations.csv')
@@ -649,7 +678,7 @@ options = {
         'Embarked'
 
     ],
-    'features_to_drop_continous': ['Fare bin_13.5+'],
+    'features_to_drop_continous': [],  # 'Fare bin_13.5+' currently not dropping since get worse results if dropping
     'features_to_drop_forest': ['Fare log'],
     'minor_columns_to_drop': [
         # -- Age - not extemely important, most models Age_-4 is important (15), XGB gives more age importance (6,8)
