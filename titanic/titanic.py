@@ -698,10 +698,10 @@ options = {
         #       Update 1: 567 seems important in all by XGB, 1 important in all, 8+ not consistent, Family size_2 low in all
         #       Update 2: important in most models, least important category Family size_3, remove
         # 'Family size_1' - important predictor
-        #'Family size_23', # models removed (perhaps because of Ticket frequency connection), but I think should be returned and let models remove -
-        #'Family size_4', # models removed (perhaps because of Ticket frequency connection), but I think should be returned and let models remove -
-        #'Family size_567', # models removed (perhaps because of Ticket frequency connection), but I think should be returned and let models remove -
-        #'Family size_8+', # models removed (perhaps because of Ticket frequency connection), but I think should be returned and let models remove -
+        #'Family size_23', # WAS NOT NEEDED FOR RF models removed (perhaps because of Ticket frequency connection), but I think should be returned and let models remove -
+        #'Family size_4', # WAS NOT NEEDED FOR RF models removed (perhaps because of Ticket frequency connection), but I think should be returned and let models remove -
+        #'Family size_567',
+        #'Family size_8+', # WAS NOT NEEDED FOR RF models removed (perhaps because of Ticket frequency connection), but I think should be returned and let models remove -
         # -- Fare bin - mostly not very important
         'Fare bin_0',
         'Fare bin_0.1-4',
@@ -717,13 +717,13 @@ options = {
 
 
         # -- Deck - some important, some not. what's left is important, unknown_T and DE
-        'DeckBin_AG',
-        'DeckBin_B',
-        'DeckBin_CF',
+        # 'DeckBin_AG',
+        # 'DeckBin_B',
+        # 'DeckBin_CF',
         # 'DeckBin_DE'  # important, perhaps because of mixed deck and more change for non 1st class to survive
         # 'DeckBin_unknown_T'  # important, especially low survival
         # -- Title - most important in most models: Mr important in all, XGB considers everything besides Mr low. Leaving all
-        'Title_Master'  # models removed (only Random Forest) (perhaps because of age connection), but I think should be returned and let models remove -
+        # 'Title_Master'  # WAS NOT NEEDED FOR RF models removed (only Random Forest) (perhaps because of age connection), but I think should be returned and let models remove -
         # -- Pclass - 3 is most important (1,5,8), 1 second (9,19,22 - perhaps have other proxies), 2 - lowest (12,13,24,38).
         # -- Ticket_Frequency - place 7,10,14, leaving
         # -- Known family/ticket survived % - places 2,4 - one of the most important
