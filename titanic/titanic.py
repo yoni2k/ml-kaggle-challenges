@@ -303,8 +303,7 @@ def prepare_features(train, x_test, options):
         features_to_drop_after_use.append('Parch')
 
     both['Family size'] = both['Family size'].replace({1: '1',
-                                                       2: '2',
-                                                       3: '3',
+                                                       2: '23', 3: '23',
                                                        4: '4',
                                                        5: '567', 6: '567', 7: '567',
                                                        8: '8+', 11: '8+'})
@@ -699,10 +698,10 @@ options = {
         #       Update 1: 567 seems important in all by XGB, 1 important in all, 8+ not consistent, Family size_2 low in all
         #       Update 2: important in most models, least important category Family size_3, remove
         # 'Family size_1' - important predictor
-        'Family size_2', # models removed (perhaps because of Ticket frequency connection), but I think should be returned and let models remove -
-        'Family size_3', # models removed (perhaps because of Ticket frequency connection), but I think should be returned and let models remove -
-        'Family size_4', # models removed (perhaps because of Ticket frequency connection), but I think should be returned and let models remove -
-        'Family size_8+', # models removed (perhaps because of Ticket frequency connection), but I think should be returned and let models remove -
+        #'Family size_23', # models removed (perhaps because of Ticket frequency connection), but I think should be returned and let models remove -
+        #'Family size_4', # models removed (perhaps because of Ticket frequency connection), but I think should be returned and let models remove -
+        #'Family size_567', # models removed (perhaps because of Ticket frequency connection), but I think should be returned and let models remove -
+        #'Family size_8+', # models removed (perhaps because of Ticket frequency connection), but I think should be returned and let models remove -
         # -- Fare bin - mostly not very important
         'Fare bin_0',
         'Fare bin_0.1-4',
