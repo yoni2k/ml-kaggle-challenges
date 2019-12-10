@@ -1,12 +1,8 @@
-import warnings
-import re
 import time
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.preprocessing import OneHotEncoder, LabelEncoder, StandardScaler
-from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import GridSearchCV
@@ -16,34 +12,13 @@ from sklearn.svm import SVC
 from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.utils import shuffle
 import xgboost as xgb
 sns.set()
 
 
-"""
-TODO:
-- Update titanic.MD
-"""
-
-
-# TODO: ask Notbook owner of https://www.kaggle.com/gunesevitan/advanced-feature-engineering-tutorial-with-titanic
-'''
-- How come age is replaced with Median and not with Mean?
-- How come fare is replaced with Median and not with mean? - Since only one case will not make a difference
-- Why bin fare? To get rid of outliers or some other reason?
-- How come 13 Fare bins? Is that based on exploratory analysis? What were we looking for to decide on this number?
-- Why bin age? Because of spikes in survival rate?
-- How come binning Age into 10 bins? 
-- Why could it be helpful to have grouped 'Title'? There are a lot of very small categories, 
-    and grouping together doesn't add new info, since already know male/female, age etc.  
-    Also, Mr and Dr/Military/Noble/Clergy don't have significantly different behavior.
-- How come didn't remove reference category for one-hot encoded categories?
-- How come Survival_rate came out not so important in the model, for me it was 65%?
-'''
-
 NUM_TRAIN_SAMPLES = 891
 RANDOM_STATE = 50
+
 
 def read_files():
     train = pd.read_csv('input/train.csv', index_col='PassengerId')
@@ -51,13 +26,8 @@ def read_files():
     return train, x_test
 
 
-# TODO go over all combine and split, remove not used
 def combine_train_x_test(train, x_test):
     return pd.concat([train.drop('Survived', axis=1), x_test])
-
-
-def combine_x_train_x_test(x_train, x_test):
-    return pd.concat([x_train, x_test])
 
 
 def combine_x_train_y_train(x_train, y_train):
@@ -68,10 +38,6 @@ def combine_x_train_y_train(x_train, y_train):
 
 def split_into_x_train_x_test(both):
     return both.iloc[:NUM_TRAIN_SAMPLES], both.iloc[NUM_TRAIN_SAMPLES:]
-
-
-def split_into_x_train_y_train(train):
-    return train.drop('Survived', axis=1), train['Survived']
 
 
 def get_title(full_name):
@@ -97,36 +63,14 @@ def impute_age_regression(both):
 
     age_model = RandomForestRegressor(n_estimators=1000)
     age_model.fit(x_train, y_train)
-    print(f"Age prediction feature importance, features: {features_base_age_on}, importance:\n{age_model.feature_importances_}")
+    print(f"Debug: Age prediction feature importance, features: {features_base_age_on}, "
+          f"importance:\n{age_model.feature_importances_}")
     age_preds = age_model.predict(x_test)
 
     both.loc[both['Age'].isnull(), 'Age'] = age_preds
 
-    print(f'YK: Age prediction score: {round(age_model.score(x_train, y_train) * 100,1)}')
+    print(f'Debug: Age prediction score: {round(age_model.score(x_train, y_train) * 100,1)}')
     return age_preds
-
-
-# TODO decide if leaving
-def impute_age_by_title_pclass(both):
-    for title in ['Mr', 'Miss', 'Mrs']:
-        for cl in [1, 2, 3]:
-            average = both[(both['Age'].isnull() == False) &
-                           (both['Title'] == title) &
-                           (both['Pclass'] == cl)]['Age'].median()
-            print(f"YK: Replacing title {title} in class {cl} age ("
-                  f"{both.loc[(both['Age'].isnull()) & (both['Title'] == title) & (both['Pclass'] == cl), 'Age'].shape[0]}"
-                  f" observations) with {average}")
-            both.loc[(both['Age'].isnull()) &
-                     (both['Title'] == title) &
-                     (both['Pclass'] == cl), 'Age'] = average
-
-    # not enough instances of 'Master' to take median by class also
-    title = 'Master'
-    average = both[(both['Age'].isnull() == False) & (both['Title'] == title)]['Age'].median()
-    print(f"YK: Replacing title {title} age ("
-          f"{both.loc[(both['Age'].isnull()) & (both['Title'] == title), 'Age'].shape[0]}"
-          f" observations) with {average}")
-    both.loc[(both['Age'].isnull()) & (both['Title'] == title), 'Age'] = average
 
 
 def prepare_family_ticket_frequencies(both, y_train):
@@ -180,102 +124,39 @@ def prepare_family_ticket_frequencies(both, y_train):
             both.loc[i, 'Known family/ticket survived %'] = train['Survived'].mean()
             both.loc[i, 'Family/ticket survival known'] = 0
 
-    print(f'YK debug: Train survival rates: \n'
+    print(f'Debug: Train survival rates: \n'
           f'{split_into_x_train_x_test(both)[0]["Known family/ticket survived %"].value_counts(dropna=False)}')
-    print(f'YK debug: Test survival rates: \n'
-        f'{split_into_x_train_x_test(both)[1]["Known family/ticket survived %"].value_counts(dropna=False)}')
+    print(f'Debug: Test survival rates: \n'
+          f'{split_into_x_train_x_test(both)[1]["Known family/ticket survived %"].value_counts(dropna=False)}')
 
     # drop temporary columns used
     both.drop(['Last name', 'Known family survived %', 'Known ticket survived %'], axis=1, inplace=True)
 
 
-# TODO decide if to keep
-def manual_fare_bin_numeric(fare):
-    if fare == 0:
-        return 0  # based on kde
-    elif fare < 4:
-        return 1  # based on kde
-    elif fare < 5:
-        return 2  # based on kde
-    elif fare < 7:
-        return 3  # based on kde
-    elif fare <= 7.796:
-        return 4  # based on survival rate
-    elif fare <= 7.896:
-        return 5  # based on survival rate
-    elif fare <= 7.925:
-        return 6  # based on survival rate
-    elif fare <= 8.662:
-        return 7  # based on survival rate and KDE
-    elif fare <= 12.5:
-        return 8  # based on KDE
-    elif fare <= 13.5:
-        return 9  # based on survival rate and KDE
-    else:
-        return 10
-
-
-def manual_fare_bin_categorical(fare):
-    if fare == 0:
-        return '0'  # based on kde
-    elif fare < 4:
-        return '0.1-4'  # based on kde
-    elif fare < 5:
-        return '4-5'  # based on kde
-    elif fare < 7:
-        return '5-7'  # based on kde
-    elif fare <= 7.796:
-        return '7-7.796'  # based on survival rate
-    elif fare <= 7.896:
-        return '7.796-7.896'  # based on survival rate
-    elif fare <= 7.925:
-        return '7.896-7.925'  # based on survival rate
-    elif fare <= 8.662:
-        return '7.925-8.662'  # based on survival rate and KDE
-    elif fare <= 12.5:
-        return '8.662-12.5'  # based on KDE
-    elif fare <= 13.5:
-        return '12.5-13.5'  # based on survival rate and KDE
-    else:
-        return '13.5+'
-
-
 def manual_age_bin(age):
     if age <= 4:
-        return '-4'  # based on survival rate
+        return '-4'
     elif age <= 11:
-        return '4-11'  # based on survival rate
+        return '4-11'
     elif age <= 24:
-        return '11-24'  # based on survival rate
-    elif age <= 26:
-        return '24-26'  # based on survival rate
-    elif age <= 27:
-        return '26-27'  # based on survival rate
-    elif age <= 31:
-        return '27-31'  # based on survival rate
+        return '11-24'
     elif age <= 32:
-        return '31-32'  # based on survival rate
-    elif age <= 40:
-        return '32-40'  # based on KDE
-    elif age <= 48:
-        return '40-48'  # based on KDE
-    elif age <= 57:
-        return '48-57'  # based on KDE
+        return '24-32'
+    elif age <= 42:
+        return '32-42'
     else:
-        return '57+'  # based on KDE
+        return '42+'
 
 
 def prepare_features(train, x_test, options):
     num_train_samples = train.shape[0]
 
-    print(f'YK: RANDOM_STATE:{RANDOM_STATE}')
-    print(f'YK debug: num_train_samples:{num_train_samples}')
-    print(f'YK: Features before adding / dropping: {x_test.columns.values}')
+    print(f'Debug: RANDOM_STATE:{RANDOM_STATE}, num_train_samples:{num_train_samples}')
+    print(f'Debug: Features before adding / dropping: {x_test.columns.values}')
 
     features_to_drop_after_use = []
     features_to_add_dummies = []
     both = combine_train_x_test(train, x_test)
-    print(f'YK debug: both head:\n{both.head}')
 
     # 1 ---> Adding title, see details in Advanced feature engineering.ipynb
     both['Title'] = both['Name'].apply(get_title).replace(
@@ -302,16 +183,15 @@ def prepare_features(train, x_test, options):
         features_to_add_dummies.append('ParchBin')
         features_to_drop_after_use.append('Parch')
 
-    both['Family size'] = both['Family size'].replace({1: '1',
-                                                       2: '23', 3: '23',
-                                                       4: '4',
-                                                       5: '567', 6: '567', 7: '567',
-                                                       8: '8+', 11: '8+'})
-    features_to_add_dummies.append('Family size')
+    if 'Family size' not in options['major_columns_to_drop']:
+        both['Family size'] = both['Family size'].replace({1: '1',
+                                                           2: '23', 3: '23',
+                                                           4: '4',
+                                                           5: '567', 6: '567', 7: '567',
+                                                           8: '8+', 11: '8+'})
+        features_to_add_dummies.append('Family size')
 
-
-    # 3. ----> Prepare Deck features based on first letter of Cabin, unknown Cabin becomes reference category
-    # Reference category is being removed later based on importance of each of the categories
+    # 3. ----> Prepare Deck features based on first letter of Cabin
     both['Cabin'] = both['Cabin'].fillna('unknown')
     both['Deck'] = both['Cabin'].apply(lambda cab: cab[0] if (cab != 'unknown') else cab)
     both['DeckBin'] = both['Deck'].replace({'unknown': 'unknown_T', 'T': 'unknown_T',
@@ -322,7 +202,6 @@ def prepare_features(train, x_test, options):
     features_to_drop_after_use.append('Cabin')
     features_to_drop_after_use.append('Deck')
     features_to_add_dummies.append('DeckBin')
-
 
     # 4 ---> Add Pclass category
     features_to_add_dummies.append('Pclass')
@@ -349,44 +228,41 @@ def prepare_features(train, x_test, options):
     # Since the missing Fare is only of a person with Ticket_Frequency 1, take median of class 3 of Fare per person
     both['Fare'] = both['Fare'].fillna(both[both['Pclass'] == 3]['Fare per person'].median())
     # Add categorical category of manual bins of fares (see Advanced feature engineering.ipynb notebook)
-    # TODO decide if to leave 'Fare bin' categorical, or turn into numerical
-    both['Fare bin'] = both['Fare per person'].apply(manual_fare_bin_categorical)
-    both['Fare log'] = both['Fare per person'].replace({0: 0.0001}) # to avoid doing log on 0 which is invalid
+    #   Currently decided based on feature importance to only leave Fare 13.5
+    both['Fare 13.5+'] = both['Fare per person'].apply(lambda fare: 1 if fare > 13.5 else 0)
+    both['Fare log'] = both['Fare per person'].replace({0: 0.0001})  # to avoid doing log on 0 which is invalid
     both['Fare log'] = np.log(both['Fare log'])
     features_to_drop_after_use.append('Fare')
     features_to_drop_after_use.append('Fare per person')
-    features_to_add_dummies.append('Fare bin')
-    # TODO if deleting manual bin, add additional category of free tickets and Fare per person of between 0 and 4.5,
-    #   and above 13.5 that clearly affect the results
 
     # 9 --> Add frequencies of survival per family (based on last name) and ticket
     prepare_family_ticket_frequencies(both, train['Survived'])
 
     # 10 --> Age - fill in missing values, bin
     impute_age_regression(both)
-    #impute_age_by_title_pclass(both)
     both['Age Bin'] = both['Age'].apply(manual_age_bin)
-    print(f"Age value_counts:\n{both['Age Bin'].value_counts().sort_index()}")
+    print(f"Debug: Age value_counts:\n{both['Age Bin'].value_counts().sort_index()}")
     features_to_add_dummies.append('Age Bin')
 
     both.drop(features_to_drop_after_use, axis=1, inplace=True)
 
-    print(f'YK: Features after dropping not used at all, before major dropping, shape {both.shape}: {both.columns.values}')
+    print(f'Debug: Features after dropping not used at all, before major dropping, '
+          f'shape {both.shape}: {both.columns.values}')
 
     both.drop(options['major_columns_to_drop'], axis=1, inplace=True)
 
-    print(f'YK: Features after dropping major, before dummies, shape {both.shape}: {both.columns.values}')
+    print(f'Debug: Features after dropping major, before dummies, shape {both.shape}: {both.columns.values}')
 
     both = pd.get_dummies(both, columns=features_to_add_dummies)
 
-    print(f'YK: Features after dummies before dropping minor, shape {both.shape}: {both.columns.values}')
+    print(f'Debug: Features after dummies before dropping minor, shape {both.shape}: {both.columns.values}')
 
     both.drop(options['minor_columns_to_drop'], axis=1, inplace=True)
 
-    print(f'YK: Features after dummies after dropping minor, shape {both.shape}: {both.columns.values}')
+    print(f'Debug: Features after dummies after dropping minor, shape {both.shape}: {both.columns.values}')
 
-    print(f'YK: both.info():\n{both.info()}')
-    print(f'YK: Value counts of all values:')
+    print(f'Debug: both.info:\n{both.info()}')
+    print(f'Debug: Value counts of all values:')
     for feat in both.columns.values:
         print(f'--------------- {feat}:')
         print(both[feat].value_counts())
@@ -395,16 +271,7 @@ def prepare_features(train, x_test, options):
 
     new_x_train, new_x_test = split_into_x_train_x_test(both)
 
-    return new_x_train.drop(options['features_to_drop_continous'], axis=1), \
-           new_x_test.drop(options['features_to_drop_continous'], axis=1), \
-           new_x_train.drop(options['features_to_drop_forest'], axis=1), \
-           new_x_test.drop(options['features_to_drop_forest'], axis=1)
-
-
-def scale_train(x_train):
-    scaler = StandardScaler()
-    scaler.fit(x_train)
-    return scaler
+    return new_x_train, new_x_test
 
 
 def output_preds(preds, x_test, name_suffix):
@@ -443,7 +310,7 @@ def fit_different_classifiers(name_str, type_class, classifier, x_train, y_train
                     'Cross accuracy-STD*3': round(reg_score - reg_std * 3, 3),
                     'Overfitting danger': round((score - reg_score) * score, 3),
                     'Time sec': round(time.time() - start_time)})
-    print(f'Stats {type_class}: {results[-1]}')
+    print(f'Debug: Stats {type_class}: {results[-1]}')
 
 
 def fit_grid_classifier(name_str, x_train, y_train, x_test, single_classifier, grid_params, results, preds,
@@ -453,7 +320,7 @@ def fit_grid_classifier(name_str, x_train, y_train, x_test, single_classifier, g
     grid = GridSearchCV(single_classifier, grid_params, verbose=1, cv=5, n_jobs=-1)
     grid.fit(x_train, y_train)
     classifier = grid.best_estimator_
-    print(f'{name_str} best classifier:\n{classifier}')
+    print(f'Debug: {name_str} best classifier:\n{classifier}')
 
     fit_different_classifiers(name_str, 'Grid', classifier, x_train, y_train, x_test, results, preds,
                               train_probas, test_probas, start_time)
@@ -491,104 +358,84 @@ def fit_ensemble(name_str, train_probas, test_probas, y_train, results, preds):
                               train_probas, test_probas, start_time)
 
 
-
 def main(options):
     start_time_total = time.time()
 
     train, x_test = read_files()
 
-    x_train_cont, x_test_cont, x_train_not_cont, x_test_not_cont = prepare_features(train, x_test, options)
+    x_train, x_test = prepare_features(train, x_test, options)
 
     y_train = train['Survived']
 
-    scaler = scale_train(x_train_cont)
-    x_train_scaled_cont = scaler.transform(x_train_cont)
-    x_test_scaled_cont = scaler.transform(x_test_cont)
-
-    scaler = scale_train(x_train_not_cont)
-    x_train_scaled_not_cont = scaler.transform(x_train_not_cont)
-    x_test_scaled_not_cont = scaler.transform(x_test_not_cont)
+    scaler = StandardScaler()
+    scaler.fit(x_train)
+    x_train_scaled = scaler.transform(x_train)
+    x_test_scaled = scaler.transform(x_test)
 
     results = []
     preds = pd.DataFrame()
     train_probas = pd.DataFrame()
     test_probas = pd.DataFrame()
 
+    # classifiers that we don't use for Grid Search
     single_classifiers = {
-        'Log': {'clas': LogisticRegression(solver='liblinear', random_state=RANDOM_STATE, n_jobs=-1),
-                'Continuous': True},
-        'KNN 14': {'clas': KNeighborsClassifier(n_neighbors=14, n_jobs=-1),
-           'Continuous': True},
-        'SVM rbf': {'clas': SVC(gamma='auto', kernel='rbf', probability=True, random_state=RANDOM_STATE),
-                    'Continuous': True},
-        'SVM poly': {'clas': SVC(gamma='auto', kernel='poly', probability=True, random_state=RANDOM_STATE),
-                     'Continuous': True},
-         'NB': {'clas': GaussianNB(), 'Continuous': True},  # consistently gives worse results
-        'RF 9': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=9, random_state=RANDOM_STATE, n_jobs=-1),
-                 'Continuous': False},
-        'RF 8': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=8, random_state=RANDOM_STATE, n_jobs=-1),
-                 'Continuous': False},
-        'RF 7': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=7, random_state=RANDOM_STATE, n_jobs=-1),
-                 'Continuous': False},
-        'RF 6': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=6, random_state=RANDOM_STATE, n_jobs=-1),
-                'Continuous': False},
+        'Log': {'clas': LogisticRegression(solver='liblinear', random_state=RANDOM_STATE, n_jobs=-1)},
+        'KNN 14': {'clas': KNeighborsClassifier(n_neighbors=14, n_jobs=-1)},
+        'SVM rbf': {'clas': SVC(gamma='auto', kernel='rbf', probability=True, random_state=RANDOM_STATE)},
+        'SVM poly': {'clas': SVC(gamma='auto', kernel='poly', probability=True, random_state=RANDOM_STATE)},
+        'NB': {'clas': GaussianNB()},  # consistently gives worse results
+        'RF 10': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=10, random_state=RANDOM_STATE, n_jobs=-1)},
+        'RF 9': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=9, random_state=RANDOM_STATE, n_jobs=-1)},
+        'RF 8': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=8, random_state=RANDOM_STATE, n_jobs=-1)},
+        'RF 7': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=7, random_state=RANDOM_STATE, n_jobs=-1)},
+        'RF 6': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=6, random_state=RANDOM_STATE, n_jobs=-1)},
         'XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', n_estimators=1000,
-                                          random_state=RANDOM_STATE, n_jobs=-1),
-                'Continuous': True}
+                                          random_state=RANDOM_STATE, n_jobs=-1)}
     }
 
-    classifier_not_for_soft = []  # was 'XGB', 'Grid XGB'
-    classifier_not_for_hard = ['NB', 'Log', 'SVM poly', 'Grid KNN']
-    classifiers_for_voting_soft = []
-    classifiers_for_voting_hard = []
+    grid_classifiers_not_for_ensembling = ['Grid SVM', 'Grid XGB']
+    classifiers_for_ensembling = []
+
+    # Unused prediction probabilities - to prevent taking some classifiers into account for voting and ensemble
+    unused_train_proba = pd.DataFrame()
+    unused_test_proba = pd.DataFrame()
 
     for cl in single_classifiers:
-        if single_classifiers[cl]['Continuous']:
-            classifier = fit_single_classifier(cl,
-                                               x_train_scaled_cont,
-                                               y_train,
-                                               x_test_scaled_cont,
-                                               single_classifiers[cl]['clas'],
-                                               results, preds, train_probas, test_probas)
-            # Since continuous and not continuous don't use the same number of features, can't do voting together
-            if cl not in classifier_not_for_soft:
-                classifiers_for_voting_soft.append((cl, classifier))
-            if cl not in classifier_not_for_hard:
-                classifiers_for_voting_hard.append((cl, classifier))
-        else:
-            classifier = fit_single_classifier(cl,
-                                               x_train_scaled_not_cont,
-                                               y_train,
-                                               x_test_scaled_not_cont,
-                                               single_classifiers[cl]['clas'],
-                                               results, preds, train_probas, test_probas)
-
+        classifier = fit_single_classifier(cl,
+                                           x_train_scaled,
+                                           y_train,
+                                           x_test_scaled,
+                                           single_classifiers[cl]['clas'],
+                                           results, preds, unused_train_proba, unused_test_proba)
+        # Currently, only using Grid classifiers for voting
+        '''
+        if cl not in grid_classifiers_not_for_ensembling:
+            classifiers_for_ensembling.append((cl, classifier))
+        '''
+        # print feature importances for classifiers where it's easy to get this information
         if cl == 'Log':
-            importances = pd.DataFrame({'Importance': classifier.coef_[0]}, index=x_train_cont.columns). \
+            importances = pd.DataFrame({'Importance': classifier.coef_[0]}, index=x_train.columns). \
                 reset_index().sort_values(by='Importance', ascending=False)
-            print(f'YK: "{cl}" feature importances:\n{pd.DataFrame(importances)}')
+            print(f'Debug: "{cl}" feature importances:\n{pd.DataFrame(importances)}')
             importances['Importance'] = importances['Importance'].abs()
-            print(f'YK: "{cl}" feature importances (abs):\n{pd.DataFrame(importances).sort_values(by="Importance", ascending=False).reset_index()}')
+            print(f'Debug: "{cl}" feature importances (abs):\n'
+                  f'{pd.DataFrame(importances).sort_values(by="Importance", ascending=False).reset_index()}')
         elif 'RF' in cl:
-            importances = pd.DataFrame({'Importance': classifier.feature_importances_}, index=x_train_not_cont.columns).\
+            importances = pd.DataFrame({'Importance': classifier.feature_importances_}, index=x_train.columns).\
                 reset_index().sort_values(by='Importance', ascending=False).reset_index()
-            print(f'YK: "{cl}" feature importances:\n{importances}')
+            print(f'Debug: "{cl}" feature importances:\n{importances}')
         elif cl == 'XGB':
             importance = pd.DataFrame(classifier.get_booster().get_score(importance_type="gain"),
                                       index=["Importance"]).transpose()
-            print(f'YK: "{cl}" feature importances:\n{importance.sort_values(by="Importance", ascending=False).reset_index()}')
+            print(f'Debug: "{cl}" feature importances:\n'
+                  f'{importance.sort_values(by="Importance", ascending=False).reset_index()}')
 
-    # TODO keep?
-    #grid_classifiers = {
-    #    'Grid Log': {'clas': LogisticRegression(solver='liblinear', n_jobs=-1, random_state=RANDOM_STATE),
-    #                 'grid_params': [{'solver': ['liblinear', 'lbfgs']}]}}
-
+    # Classifiers we use with Grid search
     grid_classifiers = {
-        #'Grid Log': {'clas': LogisticRegression(solver='liblinear', random_state=RANDOM_STATE, n_jobs=-1),
-        #             'grid_params': [{'solver': ['liblinear', 'lbfgs', 'newton-cg', 'sag', 'saga']}]},
+        'Grid Log': {'clas': LogisticRegression(solver='liblinear', random_state=RANDOM_STATE, n_jobs=-1),
+                     'grid_params': [{'solver': ['liblinear', 'lbfgs', 'newton-cg', 'sag', 'saga']}]},
         'Grid KNN': {'clas': KNeighborsClassifier(n_neighbors=14, n_jobs=-1),
-                     'grid_params': [{'n_neighbors': range(3, 25)}],
-                     'Continuous': True},
+                     'grid_params': [{'n_neighbors': range(3, 25)}]},
         'Grid SVM': {'clas': SVC(gamma='auto', kernel='rbf', probability=True, random_state=RANDOM_STATE),
                      'grid_params':
                          [{
@@ -596,13 +443,14 @@ def main(options):
                             'C': [0.3, 0.5, 1.0, 1.5, 2.0],
                             'gamma': [0.3, 0.2, 0.1, 0.05, 0.01, 'auto_deprecated', 'scale']
                          }],
-                     'Continuous': True
                      },
-        'Grid RF': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=7, random_state=RANDOM_STATE,n_jobs=-1),
-                    'grid_params': [{'max_depth': range(3, 10)}],
-                    'Continuous': False},
-        'Grid XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', n_estimators=1000, random_state=RANDOM_STATE, n_jobs=-1),
-                    'grid_params':
+        'Grid RF': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=7, random_state=RANDOM_STATE, n_jobs=-1),
+                    'grid_params': [{'max_depth': range(3, 10)}]},
+        'Grid XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic',
+                                               n_estimators=1000,
+                                               random_state=RANDOM_STATE,
+                                               n_jobs=-1),
+                     'grid_params':
                          [{
                              'max_depth': range(1, 8, 1)  # default 3
                              # 'n_estimators': range(60, 260, 40), # default 100
@@ -611,136 +459,93 @@ def main(options):
                              # 'subsample': [i / 10.0 for i in range(6, 11)], # default 1, not sure needed
                              # 'colsample_bytree': [i / 10.0 for i in range(6, 11)] # default 1, not sure needed
                              # 'gamma': [i / 10.0 for i in range(3)]  # default 0
-                         }],
-                     'Continuous': True
-                    }
+                         }]
+                     }
     }
 
     for cl in grid_classifiers:
-        if grid_classifiers[cl]['Continuous']:
-            classifier = fit_grid_classifier(cl,
-                                             x_train_scaled_cont,
-                                             y_train,
-                                             x_test_scaled_cont,
-                                             grid_classifiers[cl]['clas'], grid_classifiers[cl]['grid_params'],
-                                             results, preds, train_probas, test_probas)
-            # Since continuous and not continuous don't use the same number of features, can't do voting together
-            if cl not in classifier_not_for_soft:
-                classifiers_for_voting_soft.append((cl, classifier))
-            if cl not in classifier_not_for_hard:
-                classifiers_for_voting_hard.append((cl, classifier))
-        else:
-            classifier = fit_grid_classifier(cl,
-                                             x_train_scaled_not_cont,
-                                             y_train,
-                                             x_test_scaled_not_cont,
-                                             grid_classifiers[cl]['clas'], grid_classifiers[cl]['grid_params'],
-                                             results, preds, train_probas, test_probas)
+        classifier = fit_grid_classifier(
+            cl,
+            x_train_scaled,
+            y_train,
+            x_test_scaled,
+            grid_classifiers[cl]['clas'],
+            grid_classifiers[cl]['grid_params'],
+            results,
+            preds,
+            train_probas if cl not in grid_classifiers_not_for_ensembling else unused_train_proba,
+            test_probas if cl not in grid_classifiers_not_for_ensembling else unused_test_proba)
+        if cl not in grid_classifiers_not_for_ensembling:
+            classifiers_for_ensembling.append((cl, classifier))
 
+    fit_predict_voting(classifiers_for_ensembling, 'Voting soft - part of grid', 'soft',
+                       x_train_scaled, y_train, x_test_scaled,
+                       results, preds, unused_train_proba, unused_test_proba)
+    fit_predict_voting(classifiers_for_ensembling, 'Voting hard - part of grid', 'hard',
+                       x_train_scaled, y_train, x_test_scaled,
+                       results, preds, unused_train_proba, unused_test_proba)
 
-    fit_predict_voting(classifiers_for_voting_soft, 'Voting soft with grid', 'soft',
-                               x_train_scaled_cont, y_train, x_test_scaled_cont,
-                               results, preds, train_probas, test_probas)
-    fit_predict_voting(classifiers_for_voting_hard, 'Voting hard with grid', 'hard',
-                               x_train_scaled_cont, y_train, x_test_scaled_cont,
-                               results, preds, train_probas, test_probas)
+    print(f'Debug: shape of train_probas: {train_probas.shape}, test_probas: {test_probas.shape}')
 
-    fit_ensemble('Ensemble RF - all', train_probas, test_probas, y_train, results, preds)
-    fit_ensemble('Ensemble RF - soft RF',
-                 train_probas[['Grid RF', 'Voting soft with grid']],
-                 test_probas[['Grid RF', 'Voting soft with grid']],
-                 y_train, results, preds)
-    fit_ensemble('Ensemble RF - hard RF',
-                 train_probas[['Grid RF', 'Voting hard with grid']],
-                 test_probas[['Grid RF', 'Voting hard with grid']],
-                 y_train, results, preds)
-    fit_ensemble('Ensemble RF - soft hard RF',
-                 train_probas[['Grid RF', 'Voting soft with grid', 'Voting hard with grid']],
-                 test_probas[['Grid RF', 'Voting soft with grid', 'Voting hard with grid']],
-                 y_train, results, preds)
+    fit_ensemble('Ensemble - part of grid', train_probas, test_probas, y_train, results, preds)
 
-    print(f'YK: correlations between predictions:\n{preds.corr()}')
     preds.corr().to_csv('output/classifiers_correlations.csv')
 
-#    output_preds(preds['RF 7'], x_test, 'rf_7')
-    output_preds(preds['XGB'], x_test, 'xgb')
+    output_preds(preds['RF 7'], x_test, 'rf_7')
 
+    output_preds(preds['Grid Log'], x_test, 'log_grid')
+    output_preds(preds['Grid KNN'], x_test, 'knn_grid')
     output_preds(preds['Grid SVM'], x_test, 'svm_grid')
     output_preds(preds['Grid RF'], x_test, 'rf_grid')
-#    output_preds(preds['Grid XGB'], x_test, 'xgb_grid')
+    output_preds(preds['Grid XGB'], x_test, 'xgb_grid')
 
-    output_preds(preds['Voting soft with grid'], x_test, 'voting_soft')
-    output_preds(preds['Voting hard with grid'], x_test, 'voting_hard')
+    output_preds(preds['Voting soft - part of grid'], x_test, 'voting_soft')
+    output_preds(preds['Voting hard - part of grid'], x_test, 'voting_hard')
 
-    output_preds(preds['Ensemble RF - all'], x_test, 'ensemble_all')
-    output_preds(preds['Ensemble RF - soft RF'], x_test, 'ensemble_soft')
-    output_preds(preds['Ensemble RF - hard RF'], x_test, 'ensemble_hard')
-    output_preds(preds['Ensemble RF - soft hard RF'], x_test, 'ensemble_soft_hard')
+    output_preds(preds['Ensemble - part of grid'], x_test, 'ensemble')
 
     pd.DataFrame(results).to_csv('output/results.csv')
 
-    print(f'YK: Time took: {time.time() - start_time_total} seconds = '
+    print(f'Debug: Time took: {time.time() - start_time_total} seconds = '
           f'{round((time.time() - start_time_total) / 60)} minutes ')
 
+
 options = {
+    # main columns to drop
     'major_columns_to_drop': [
         'Sex',  # Since titles are important, need to remove Sex
-        # -- 'Family/ticket survival known'  # low in all 4
-        'Family/ticket survival known',
-        # -- SibSp/SibSpBin - not extremely important in general (>17 in all models).  Consider removing altogether
-        'SibSp',  # very low in all models
-        'Parch',  # the only one that has high importance is ParchBin_0, but it has high correlation with Family size_0 anyways, so can remove
-        'Embarked'
-
+        'Family/ticket survival known',  # low in all models
+        'SibSp',  # very low in all models, perhaps because of Family size / Ticket_Frequency
+        'Parch',  # very low in all models, perhaps because of Family size / Ticket_Frequency
+        'Embarked',
+        'Fare log',  # seems doesn't make the model stable, causes overfitting, doesn't add much to the model
+        'Family size',  # high correlation with Ticket_Frequency that wins for all models
+        'Age'  # but adding Age bins
     ],
-    'features_to_drop_continous': [],  # 'Fare bin_13.5+' currently not dropping since get worse results if dropping
-    'features_to_drop_forest': ['Fare log', 'Title_Master'],
+    # specific binned features to drop, like a specific bin in the main feature
     'minor_columns_to_drop': [
         # -- Age - not extemely important, most models Age_-4 is important (15), XGB gives more age importance (6,8)
-        #       Update 1: Age_-4 is only very important in 1 model, removing another age 'Age_27-31'
-        #       Update 2: Age is not extremely important, only 1 model has 8, rest > 15, remove Age_11-24
-        # 'Age Bin_-4' - important, very little kids indeed survived the most
-        'Age Bin_4-11',  # low in all 4 (perhaps because of titles that serve same purpose)
-        'Age Bin_11-24',  # in theory should be important, let the models remove it if it's not
-        'Age Bin_24-26',  # WAS NEEDED FOR RF - don't believe it's not overfitting to have this specific age
-        'Age Bin_26-27',  # WAS NEEDED FOR RF - don't believe it's not overfitting to have this specific age
-        'Age Bin_27-31',
-        'Age Bin_31-32',
-        'Age Bin_32-40',  # WAS NEEDED FOR RF - don't see anything special about this group, not sure why appeared special
-        'Age Bin_40-48',
-        'Age Bin_48-57',
-        'Age Bin_57+',
-        # -- Family size - seems more important than ParchBin and SibSpBin, but less consistent between models:
-        #       Update 1: 567 seems important in all by XGB, 1 important in all, 8+ not consistent, Family size_2 low in all
-        #       Update 2: important in most models, least important category Family size_3, remove
-        # 'Family size_1' - important predictor
-        #'Family size_23', # WAS NOT NEEDED FOR RF models removed (perhaps because of Ticket frequency connection), but I think should be returned and let models remove -
-        #'Family size_4', # WAS NOT NEEDED FOR RF models removed (perhaps because of Ticket frequency connection), but I think should be returned and let models remove -
-        #'Family size_567',
-        #'Family size_8+', # WAS NOT NEEDED FOR RF models removed (perhaps because of Ticket frequency connection), but I think should be returned and let models remove -
-        # -- Fare bin - mostly not very important
-        'Fare bin_0',
-        'Fare bin_0.1-4',
-        'Fare bin_4-5',
-        'Fare bin_5-7',
-        'Fare bin_7-7.796',
-        'Fare bin_7.796-7.896',
-        'Fare bin_7.896-7.925',
-        'Fare bin_7.925-8.662',
-        'Fare bin_8.662-12.5',
-        'Fare bin_12.5-13.5',
+        # 'Age Bin_-4',
+        'Age Bin_4-11',  # low in all classifiers
+        # 'Age Bin_11-24',
+        # 'Age Bin_24-32',
+        # 'Age Bin_32-42',
+        # 'Age Bin_42+'
+
+        # --- Fare bin
         # 'Fare bin_13.5+'  # important, places 2-10
 
-
         # -- Deck - some important, some not. what's left is important, unknown_T and DE
-        # 'DeckBin_AG',
-        # 'DeckBin_B',
-        # 'DeckBin_CF',
+        'DeckBin_AG',
+        'DeckBin_B',
+        'DeckBin_CF',
         # 'DeckBin_DE'  # important, perhaps because of mixed deck and more change for non 1st class to survive
         # 'DeckBin_unknown_T'  # important, especially low survival
-        # -- Title - most important in most models: Mr important in all, XGB considers everything besides Mr low. Leaving all
-        # 'Title_Master'  # WAS NOT NEEDED FOR RF models removed (only Random Forest) (perhaps because of age connection), but I think should be returned and let models remove -
-        # -- Pclass - 3 is most important (1,5,8), 1 second (9,19,22 - perhaps have other proxies), 2 - lowest (12,13,24,38).
+
+        # -- Title
+        'Title_Master'  # WAS NOT NEEDED FOR Random Forest (perhaps because of age connection)
+
+        # -- Pclass - important in most classifiers
         # -- Ticket_Frequency - place 7,10,14, leaving
         # -- Known family/ticket survived % - places 2,4 - one of the most important
     ]

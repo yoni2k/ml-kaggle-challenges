@@ -1582,6 +1582,19 @@ Conclusion:
 	- Website gives very low for XGB, pretty low for SVM, and ensembling.
 Next step:
 	- Return the best so far: hard voting with a lot of classifiers.  Do ensembling with RF that's the best + soft/hard.
+	- Got pretty bad results online - ensembling got very bad results no matter how made (.70-.75). Voting got decent but not great results (.76-.77) with hard voting giving better results
+	
+### 83. Removing low performers
+- Remove NB and KNN 14
+- 
+- Age - remove continuous, add smaller number of bins
+	- Changes:
+		- Improved: Log, SVM rbf, XGB, Grid XGB
+		- Got worse: SVM poly, Grid RF, soft voting, hard voting, all ensembles besides soft
+		- Didn't make much of a difference: RF7,8,9
+	- Best / worst:
+		- Best: RF8, RF9 (Grid chose 7), ensemble - all, especially Ensemble RF - all, Ensemble RF - hard RF
+		- Worst: SVM poly (remove), SVM rbf, Grid SVM, Grid KNN
 	
 
 
