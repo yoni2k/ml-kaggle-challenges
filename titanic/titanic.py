@@ -12,6 +12,7 @@ from sklearn.svm import SVC
 from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.tree import DecisionTreeClassifier
 import xgboost as xgb
 sns.set()
 
@@ -244,6 +245,9 @@ def prepare_features(train, x_test, options):
     print(f"Debug: Age value_counts:\n{both['Age Bin'].value_counts().sort_index()}")
     features_to_add_dummies.append('Age Bin')
 
+    print(f'Debug: Features before dropping not used at all, '
+          f'shape {both.shape}: {both.columns.values}')
+
     both.drop(features_to_drop_after_use, axis=1, inplace=True)
 
     print(f'Debug: Features after dropping not used at all, before major dropping, '
@@ -347,15 +351,6 @@ def fit_predict_voting(classifiers, name_str, voting_type, x_train, y_train, x_t
                               train_probas, test_probas, start_time)
 
     return classifier
-
-
-def fit_ensemble(name_str, train_probas, test_probas, y_train, results, preds):
-    start_time = time.time()
-
-    classifier = RandomForestClassifier(n_estimators=1000, random_state=RANDOM_STATE, n_jobs=-1)
-
-    fit_different_classifiers(name_str, 'Emsemble', classifier, train_probas, y_train, test_probas, results, preds,
-                              train_probas, test_probas, start_time)
 
 
 def main(options):
@@ -478,6 +473,9 @@ def main(options):
         if cl not in grid_classifiers_not_for_ensembling:
             classifiers_for_ensembling.append((cl, classifier))
 
+    # Ensembling from previous classifiers
+    # Voting based on part of the Grid results - see grid_classifiers_not_for_ensembling
+
     fit_predict_voting(classifiers_for_ensembling, 'Voting soft - part of grid', 'soft',
                        x_train_scaled, y_train, x_test_scaled,
                        results, preds, unused_train_proba, unused_test_proba)
@@ -485,9 +483,22 @@ def main(options):
                        x_train_scaled, y_train, x_test_scaled,
                        results, preds, unused_train_proba, unused_test_proba)
 
-    print(f'Debug: shape of train_probas: {train_probas.shape}, test_probas: {test_probas.shape}')
+    # Ensembling based on probabilities of previous classifiers
+    # Based on part of the Grid results - see grid_classifiers_not_for_ensembling
 
-    fit_ensemble('Ensemble - part of grid', train_probas, test_probas, y_train, results, preds)
+    print(f'Debug: shape of train_probas: {train_probas.shape}, test_probas: {test_probas.shape}')
+    print(f'Debug: head of train_probas:\n{train_probas.head()}')
+
+    fit_grid_classifier('Ensemble RF - part of grid', train_probas, y_train, test_probas,
+                        RandomForestClassifier(n_estimators=1000, random_state=RANDOM_STATE, n_jobs=-1),
+                        [{'max_depth': range(3, 10)}],
+                        results, preds, unused_train_proba, unused_test_proba)
+
+    fit_grid_classifier('Ensemble Log - part of grid', train_probas, y_train, test_probas,
+                        LogisticRegression(solver='liblinear', random_state=RANDOM_STATE, n_jobs=-1),
+                        [{'solver': ['liblinear', 'lbfgs', 'newton-cg', 'sag', 'saga']}],
+                        results, preds, unused_train_proba, unused_test_proba)
+
 
     preds.corr().to_csv('output/classifiers_correlations.csv')
 
@@ -502,7 +513,8 @@ def main(options):
     output_preds(preds['Voting soft - part of grid'], x_test, 'voting_soft')
     output_preds(preds['Voting hard - part of grid'], x_test, 'voting_hard')
 
-    output_preds(preds['Ensemble - part of grid'], x_test, 'ensemble')
+    output_preds(preds['Ensemble RF - part of grid'], x_test, 'ensemble_rf')
+    output_preds(preds['Ensemble Log - part of grid'], x_test, 'ensemble_log')
 
     pd.DataFrame(results).to_csv('output/results.csv')
 

@@ -1584,17 +1584,11 @@ Next step:
 	- Return the best so far: hard voting with a lot of classifiers.  Do ensembling with RF that's the best + soft/hard.
 	- Got pretty bad results online - ensembling got very bad results no matter how made (.70-.75). Voting got decent but not great results (.76-.77) with hard voting giving better results
 	
-### 83. Removing low performers
-- Remove NB and KNN 14
-- 
-- Age - remove continuous, add smaller number of bins
-	- Changes:
-		- Improved: Log, SVM rbf, XGB, Grid XGB
-		- Got worse: SVM poly, Grid RF, soft voting, hard voting, all ensembles besides soft
-		- Didn't make much of a difference: RF7,8,9
-	- Best / worst:
-		- Best: RF8, RF9 (Grid chose 7), ensemble - all, especially Ensemble RF - all, Ensemble RF - hard RF
-		- Worst: SVM poly (remove), SVM rbf, Grid SVM, Grid KNN
+### 83 - a few steps of removing low performing classifiers, doing ensembling only with best ones. 
+Also, adding Log ensembling and Grid Search on Random Forest ensembling as the final layer.
+- Current best performing classifiers (with Grid): Log (80 accuracy), KNN (80 accuracy), RF (79.5 accuracy).  SVN also performs good, but once included, it takes over the voting etc, so was removed
+- Ensembling: soft voting, hard voting, Random Forest with Grid search, Logistic Regression with Grid search.  All with best performing classifiers above.
+- All the above gives close to accuracy 80 on the website.  Best - soft voting that gives 80.3, with hard voting being in 2nd place with 80. Ensemblers give 79.5
 	
 
 
