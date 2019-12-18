@@ -2,6 +2,7 @@ import time
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import os
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_val_score
@@ -15,40 +16,6 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.tree import DecisionTreeClassifier
 import xgboost as xgb
 sns.set()
-
-'''
-TODO:
-Beginning:
-- Use different scores: cross_val_score(model, X, Y, cv=kfold, scoring=<method>). 
-    Confusion Matrix / Precision / Recall / F1 Score, or ROC curve
-- Do different views of the features (what's included / not included / in what format)
-- Shuffle with random_state - some algorithms are effected by the order
-A bit later:
-- Take code and ideas from https://machinelearningmastery.com/spot-check-machine-learning-algorithms-in-python/
-- Do all feature preparation on each fold separately - both train and test, and each fold of the train.  This will prevent leakage, but it will actually probably lower the score
-- Look only at - STD*3
-- First do Grid, then cross-validation
-- Introduce random state for cross-validation if not used today
-- Consider Bagging and not just cross-validation at one of the lower levels
-    Use Out of Bag accuracy when doing Bagging
-- k-Fold actual training (in addition to Bagging? Instead?) How to actually combine results?
-    kfold = KFold(n_splits=10, random_state=7)
-    model = LogisticRegression(solver='liblinear')
-    results = cross_val_score(model, X, Y, cv=kfold)
-- Play with cross-validation size - give a few
-- Play with an average of a few random sizes 
-- Automate bottom line report and choosing of the model
-- Do feature selection with RFECV per algorithm 
-Middle:
-- Add extra trees algorithm, AdaBoost, Bernoulli NB (perhaps instead / in addition to Gaussasian NB), others from his list of best / all
-    From his list of algorithms for classification: Random Forest, XGBoost, SVM, (Backpropogation - what specifically is it?), Decision Trees (CART and C4.5/C5.0), Naive Bayes, Logistic Regression and Linear Discriminant Analysis, k-Nearest Neighbors and Learning Vector Quantization (what is it?)
-- Give a chance to each one of the classifiers
-- XGBoost - do much more parameter optimizations
-End:
-- Voting only on models I know work best
-- Consider using statistical tests to decide with algorithm is better: parametric / non parametric, P-value
-
-'''
 
 NUM_TRAIN_SAMPLES = 891
 RANDOM_STATE = 50
@@ -182,7 +149,7 @@ def manual_age_bin(age):
         return '42+'
 
 
-def prepare_features(train, x_test, options):
+def prepare_features(train, x_test, options, output_folder):
     num_train_samples = train.shape[0]
 
     print(f'Debug: RANDOM_STATE:{RANDOM_STATE}, num_train_samples:{num_train_samples}')
@@ -304,34 +271,35 @@ def prepare_features(train, x_test, options):
         print(f'--------------- {feat}:')
         print(both[feat].value_counts())
 
-    both.corr().to_csv('output/feature_correlations.csv')
+    # TODO - should it be here?
+    both.corr().to_csv(output_folder + 'feature_correlations.csv')
 
     new_x_train, new_x_test = split_into_x_train_x_test(both)
 
     return new_x_train, new_x_test
 
 
-def output_single_preds(preds, x_test, name_suffix):
+def output_single_preds(preds, x_test, output_folder, name_suffix):
     pred_df = pd.DataFrame(preds)
     pred_df.set_index(x_test.index, inplace=True)
     pred_df.columns = ['Survived']
-    pred_df.to_csv(f'output/preds_{name_suffix}.csv')
+    pred_df.to_csv(f'{output_folder}preds_{name_suffix}.csv')
 
 
-def output_all_preds(preds, x_test):
-    output_single_preds(preds['RF 7'], x_test, 'rf_7')
+def output_all_preds(preds, x_test, output_folder):
+    output_single_preds(preds['RF 7'], x_test, output_folder, 'rf_7')
 
-    output_single_preds(preds['Grid Log'], x_test, 'log_grid')
-    output_single_preds(preds['Grid KNN'], x_test, 'knn_grid')
-    output_single_preds(preds['Grid SVM'], x_test, 'svm_grid')
-    output_single_preds(preds['Grid RF'], x_test, 'rf_grid')
-    output_single_preds(preds['Grid XGB'], x_test, 'xgb_grid')
+    output_single_preds(preds['Grid Log'], x_test, output_folder, 'log_grid')
+    output_single_preds(preds['Grid KNN'], x_test, output_folder, 'knn_grid')
+    output_single_preds(preds['Grid SVM'], x_test, output_folder, 'svm_grid')
+    output_single_preds(preds['Grid RF'], x_test, output_folder, 'rf_grid')
+    output_single_preds(preds['Grid XGB'], x_test, output_folder, 'xgb_grid')
 
-    output_single_preds(preds['Voting soft - part of grid'], x_test, 'voting_soft')
-    output_single_preds(preds['Voting hard - part of grid'], x_test, 'voting_hard')
+    output_single_preds(preds['Voting soft - part of grid'], x_test, output_folder, 'voting_soft')
+    output_single_preds(preds['Voting hard - part of grid'], x_test, output_folder, 'voting_hard')
 
-    output_single_preds(preds['Ensemble RF - part of grid'], x_test, 'ensemble_rf')
-    output_single_preds(preds['Ensemble Log - part of grid'], x_test, 'ensemble_log')
+    output_single_preds(preds['Ensemble RF - part of grid'], x_test, output_folder, 'ensemble_rf')
+    output_single_preds(preds['Ensemble Log - part of grid'], x_test, output_folder, 'ensemble_log')
 
 
 def cross_valid(classifier, x_train, y_train):
@@ -424,9 +392,12 @@ def print_feature_importances(cl, classifier, x_train):
 def main(options):
     start_time_total = time.time()
 
+    output_folder = 'output/' + time.strftime("%Y_%m_%d_%H_%M_%S") + '/'
+    os.mkdir(output_folder)
+
     train, x_test = read_files()
 
-    x_train, x_test = prepare_features(train, x_test, options)
+    x_train, x_test = prepare_features(train, x_test, options, output_folder)
 
     y_train = train['Survived']
 
@@ -506,15 +477,49 @@ def main(options):
                         [{'solver': ['liblinear', 'lbfgs', 'newton-cg', 'sag', 'saga']}],
                         results, preds, unused_train_proba, unused_test_proba)
 
-    preds.corr().to_csv('output/classifiers_correlations.csv')
+    preds.corr().to_csv(output_folder + 'classifiers_correlations.csv')
 
-    output_all_preds(preds, x_test)
+    output_all_preds(preds, x_test, output_folder)
 
-    pd.DataFrame(results).to_csv('output/results.csv')
+    pd.DataFrame(results).to_csv(output_folder + 'results.csv')
 
     print(f'Debug: Time took: {time.time() - start_time_total} seconds = '
           f'{round((time.time() - start_time_total) / 60)} minutes ')
 
+
+'''
+TODO:
+Beginning:
+- Use different scores: cross_val_score(model, X, Y, cv=kfold, scoring=<method>). 
+    Confusion Matrix / Precision / Recall / F1 Score, or ROC curve
+- Do different views of the features (what's included / not included / in what format)
+- Shuffle with random_state - some algorithms are effected by the order
+A bit later:
+- Take code and ideas from https://machinelearningmastery.com/spot-check-machine-learning-algorithms-in-python/
+- Do all feature preparation on each fold separately - both train and test, and each fold of the train.  This will prevent leakage, but it will actually probably lower the score
+- Look only at - STD*3
+- First do Grid, then cross-validation
+- Introduce random state for cross-validation if not used today
+- Consider Bagging and not just cross-validation at one of the lower levels
+    Use Out of Bag accuracy when doing Bagging
+- k-Fold actual training (in addition to Bagging? Instead?) How to actually combine results?
+    kfold = KFold(n_splits=10, random_state=7)
+    model = LogisticRegression(solver='liblinear')
+    results = cross_val_score(model, X, Y, cv=kfold)
+- Play with cross-validation size - give a few
+- Play with an average of a few random sizes 
+- Automate bottom line report and choosing of the model
+- Do feature selection with RFECV per algorithm 
+Middle:
+- Add extra trees algorithm, AdaBoost, Bernoulli NB (perhaps instead / in addition to Gaussasian NB), others from his list of best / all
+    From his list of algorithms for classification: Random Forest, XGBoost, SVM, (Backpropogation - what specifically is it?), Decision Trees (CART and C4.5/C5.0), Naive Bayes, Logistic Regression and Linear Discriminant Analysis, k-Nearest Neighbors and Learning Vector Quantization (what is it?)
+- Give a chance to each one of the classifiers
+- XGBoost - do much more parameter optimizations
+End:
+- Voting only on models I know work best
+- Consider using statistical tests to decide with algorithm is better: parametric / non parametric, P-value
+
+'''
 
 options = {
     # main columns to drop
