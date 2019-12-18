@@ -6,6 +6,13 @@ import os
 import csv
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import roc_auc_score
+from sklearn.metrics import f1_score
+from sklearn.metrics import precision_score
+from sklearn.metrics import recall_score
+
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import VotingClassifier
@@ -297,11 +304,20 @@ def cross_valid(classifier, x_train, y_train):
 
 def fit_different_classifiers(name_str, type_class, classifier, x_train, y_train, x_test, results, preds,
                               train_probas, test_probas, start_time):
-    reg_score, reg_std = cross_valid(classifier, x_train, y_train)
+    cross_acc_score, cross_acc_std = cross_valid(classifier, x_train, y_train)
 
     classifier.fit(x_train, y_train)
     preds[name_str] = classifier.predict(x_test)
-    score = classifier.score(x_train, y_train)
+    train_acc_score = classifier.score(x_train, y_train)
+
+    train_preds = classifier.predict(x_train)
+    train_roc_auc_score = round(roc_auc_score(y_train, classifier.predict_proba(x_train)[:, 1]), 2)
+    train_f1_score_not_survived = round(f1_score(y_train, train_preds, average="micro", labels=[0]), 2)
+    train_f1_score_survived = round(f1_score(y_train, train_preds, average="micro", labels=[1]), 2)
+    train_precision_score_not_survived = round(precision_score(y_train, train_preds, average="micro", labels=[0]), 2)
+    train_precision_score_survived = round(precision_score(y_train, train_preds, average="micro", labels=[1]), 2)
+    train_recall_score_not_survived = round(recall_score(y_train, train_preds, average="micro", labels=[0]), 2)
+    train_recall_score_survived = round(recall_score(y_train, train_preds, average="micro", labels=[1]), 2)
 
     try:
         train_probas[name_str] = classifier.predict_proba(x_train)[:, 0]
@@ -311,14 +327,22 @@ def fit_different_classifiers(name_str, type_class, classifier, x_train, y_train
         train_probas[name_str] = np.mean(x_train, axis=1)
         test_probas[name_str] = np.mean(x_test, axis=1)
 
+    cross_acc_min_3_std = cross_acc_score - cross_acc_std * 3
+
     results.append({'Name': name_str,
-                    'Single accuracy': round(score, 3),
-                    'Cross accuracy': round(reg_score, 3),
-                    'STD': round(reg_std, 3),
-                    'Cross accuracy-STD*2': round(reg_score - reg_std * 2, 3),
-                    'Cross accuracy-STD*3': round(reg_score - reg_std * 3, 3),
-                    'Overfitting danger': round((score - reg_score) * score, 3),
+                    'Train acc': round(train_acc_score * 100, 1),
+                    'Cross acc': round(cross_acc_score * 100, 1),
+                    'Cross acc STD': round(cross_acc_std * 100, 1),
+                    'Cross acc-STD*3': round(cross_acc_min_3_std * 100, 1),
+                    'Train - Cross acc-STD*3': round((train_acc_score - cross_acc_min_3_std) * 100, 1),
                     'Time sec': round(time.time() - start_time),
+                    'Train auc': train_roc_auc_score,
+                    'Train f1 died': train_f1_score_not_survived,
+                    'Train f1 survived': train_f1_score_survived,
+                    'Train precision died': train_precision_score_not_survived,
+                    'Train precision survived': train_precision_score_survived,
+                    'Train recall died': train_recall_score_not_survived,
+                    'Train recall survived': train_recall_score_survived,
                     'Classifier options': classifier.get_params()})
     print(f'Debug: Stats {type_class}: {results[-1]}')
 
@@ -524,6 +548,7 @@ End:
 
 options = {
     'output_preds': False,
+    # TODO - need to somehow print options of the grid in a useful way
     'input_options_not_to_output': ['single_classifiers', 'grid_classifiers'],
     # main columns to drop
     'major_columns_to_drop': [
