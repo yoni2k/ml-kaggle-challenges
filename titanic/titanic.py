@@ -280,27 +280,14 @@ def prepare_features(train, x_test, options, output_folder):
     return new_x_train, new_x_test
 
 
-def output_single_preds(preds, x_test, output_folder, name_suffix):
-    pred_df = pd.DataFrame(preds)
-    pred_df.set_index(x_test.index, inplace=True)
-    pred_df.columns = ['Survived']
-    pred_df.to_csv(f'{output_folder}preds_{name_suffix}.csv')
-
-
 def output_all_preds(preds, x_test, output_folder):
-    output_single_preds(preds['RF 7'], x_test, output_folder, 'rf_7')
-
-    output_single_preds(preds['Grid Log'], x_test, output_folder, 'log_grid')
-    output_single_preds(preds['Grid KNN'], x_test, output_folder, 'knn_grid')
-    output_single_preds(preds['Grid SVM'], x_test, output_folder, 'svm_grid')
-    output_single_preds(preds['Grid RF'], x_test, output_folder, 'rf_grid')
-    output_single_preds(preds['Grid XGB'], x_test, output_folder, 'xgb_grid')
-
-    output_single_preds(preds['Voting soft - part of grid'], x_test, output_folder, 'voting_soft')
-    output_single_preds(preds['Voting hard - part of grid'], x_test, output_folder, 'voting_hard')
-
-    output_single_preds(preds['Ensemble RF - part of grid'], x_test, output_folder, 'ensemble_rf')
-    output_single_preds(preds['Ensemble Log - part of grid'], x_test, output_folder, 'ensemble_log')
+    preds_dir = output_folder + 'preds/'
+    os.mkdir(preds_dir)
+    for pred_name in preds:
+        pred_df = pd.DataFrame(preds[pred_name])
+        pred_df.set_index(x_test.index, inplace=True)
+        pred_df.columns = ['Survived']
+        pred_df.to_csv(f'{preds_dir}preds_{pred_name}.csv')
 
 
 def cross_valid(classifier, x_train, y_train):
@@ -489,7 +476,8 @@ def main(options):
 
     preds.corr().to_csv(output_folder + 'classifiers_correlations.csv')
 
-    output_all_preds(preds, x_test, output_folder)
+    if (options['output_preds']):
+        output_all_preds(preds, x_test, output_folder)
 
     pd.DataFrame(results).to_csv(output_folder + 'results.csv')
 
@@ -532,6 +520,7 @@ End:
 '''
 
 options = {
+    'output_preds': False,
     'input_options_not_to_output': ['single_classifiers', 'grid_classifiers'],
     # main columns to drop
     'major_columns_to_drop': [
