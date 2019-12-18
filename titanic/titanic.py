@@ -16,6 +16,40 @@ from sklearn.tree import DecisionTreeClassifier
 import xgboost as xgb
 sns.set()
 
+'''
+TODO:
+Beginning:
+- Use different scores: cross_val_score(model, X, Y, cv=kfold, scoring=<method>). 
+    Confusion Matrix / Precision / Recall / F1 Score, or ROC curve
+- Do different views of the features (what's included / not included / in what format)
+- Shuffle with random_state - some algorithms are effected by the order
+A bit later:
+- Take code and ideas from https://machinelearningmastery.com/spot-check-machine-learning-algorithms-in-python/
+- Do all feature preparation on each fold separately - both train and test, and each fold of the train.  This will prevent leakage, but it will actually probably lower the score
+- Look only at - STD*3
+- First do Grid, then cross-validation
+- Introduce random state for cross-validation if not used today
+- Consider Bagging and not just cross-validation at one of the lower levels
+    Use Out of Bag accuracy when doing Bagging
+- k-Fold actual training (in addition to Bagging? Instead?) How to actually combine results?
+    kfold = KFold(n_splits=10, random_state=7)
+    model = LogisticRegression(solver='liblinear')
+    results = cross_val_score(model, X, Y, cv=kfold)
+- Play with cross-validation size - give a few
+- Play with an average of a few random sizes 
+- Automate bottom line report and choosing of the model
+- Do feature selection with RFECV per algorithm 
+Middle:
+- Add extra trees algorithm, AdaBoost, Bernoulli NB (perhaps instead / in addition to Gaussasian NB), others from his list of best / all
+    From his list of algorithms for classification: Random Forest, XGBoost, SVM, (Backpropogation - what specifically is it?), Decision Trees (CART and C4.5/C5.0), Naive Bayes, Logistic Regression and Linear Discriminant Analysis, k-Nearest Neighbors and Learning Vector Quantization (what is it?)
+- Give a chance to each one of the classifiers
+- XGBoost - do much more parameter optimizations
+End:
+- Voting only on models I know work best
+- Consider using statistical tests to decide with algorithm is better: parametric / non parametric, P-value
+
+'''
+
 
 NUM_TRAIN_SAMPLES = 891
 RANDOM_STATE = 50
@@ -447,13 +481,13 @@ def main(options):
                                                n_jobs=-1),
                      'grid_params':
                          [{
-                             'max_depth': range(1, 8, 1)  # default 3
+                             'max_depth': range(1, 8, 1)  # default 3 - higher depth - less bias, more variance
                              # 'n_estimators': range(60, 260, 40), # default 100
                              # 'learning_rate': [0.3, 0.2, 0.1, 0.01],  # , 0.001, 0.0001
-                             # 'min_child_weight': [0.5, 1, 2],  # default 1
-                             # 'subsample': [i / 10.0 for i in range(6, 11)], # default 1, not sure needed
-                             # 'colsample_bytree': [i / 10.0 for i in range(6, 11)] # default 1, not sure needed
-                             # 'gamma': [i / 10.0 for i in range(3)]  # default 0
+                             # 'min_child_weight': [0.5, 1, 2],  # default 1 - higher number, less overfitting, when to stop splitting the child given sum of weights
+                             # 'subsample': [i / 10.0 for i in range(6, 11)], # default 1, smaller values prevent overfitting
+                             # 'colsample_bytree': [i / 10.0 for i in range(6, 11)] # default 1, fraction of features selected for each tree
+                             # 'gamma': [i / 10.0 for i in range(3)]  # default 0 - for what gain in metric to continue splitting
                          }]
                      }
     }
