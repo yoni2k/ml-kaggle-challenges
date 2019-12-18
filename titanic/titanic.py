@@ -297,14 +297,19 @@ def output_all_preds(preds, x_test, output_folder):
         pred_df.to_csv(f'{preds_dir}preds_{pred_name}.csv')
 
 
-def cross_valid(classifier, x_train, y_train):
-    accuracies = cross_val_score(estimator=classifier, X=x_train, y=y_train, cv=5)
-    return accuracies.mean(), accuracies.std()
+def dif_detailed_with_folds(name_str, type_class, classifier, x_train, y_train, x_test, results, preds,
+                            train_probas, test_probas, start_time):
+
+    for cv_fold in options['cv_folds']:
+        fit_main_detailed(name_str, type_class, classifier, x_train, y_train, x_test,
+                          results, preds, train_probas, test_probas, start_time, cv_fold)
 
 
-def fit_different_classifiers(name_str, type_class, classifier, x_train, y_train, x_test, results, preds,
-                              train_probas, test_probas, start_time):
-    cross_acc_score, cross_acc_std = cross_valid(classifier, x_train, y_train)
+def fit_main_detailed(name_str, type_class, classifier, x_train, y_train, x_test, results, preds,
+                      train_probas, test_probas, start_time, cv_folds):
+
+    accuracies = cross_val_score(estimator=classifier, X=x_train, y=y_train, cv=cv_folds)
+    cross_acc_score, cross_acc_std = accuracies.mean(), accuracies.std()
 
     classifier.fit(x_train, y_train)
     preds[name_str] = classifier.predict(x_test)
@@ -330,6 +335,7 @@ def fit_different_classifiers(name_str, type_class, classifier, x_train, y_train
     cross_acc_min_3_std = cross_acc_score - cross_acc_std * 3
 
     results.append({'Name': name_str,
+                    'CV folds': cv_folds,
                     'Train acc': round(train_acc_score * 100, 1),
                     'Cross acc': round(cross_acc_score * 100, 1),
                     'Cross acc STD': round(cross_acc_std * 100, 1),
@@ -356,8 +362,8 @@ def fit_grid_classifier(name_str, x_train, y_train, x_test, single_classifier, g
     classifier = grid.best_estimator_
     print(f'Debug: {name_str} best classifier:\n{classifier}')
 
-    fit_different_classifiers(name_str, 'Grid', classifier, x_train, y_train, x_test, results, preds,
-                              train_probas, test_probas, start_time)
+    dif_detailed_with_folds(name_str, 'Grid', classifier, x_train, y_train, x_test, results, preds,
+                      train_probas, test_probas, start_time)
 
     return classifier
 
@@ -365,8 +371,8 @@ def fit_grid_classifier(name_str, x_train, y_train, x_test, single_classifier, g
 def fit_single_classifier(name_str, x_train, y_train, x_test, classifier, results, preds, train_probas, test_probas):
     start_time = time.time()
 
-    fit_different_classifiers(name_str, 'Single', classifier, x_train, y_train, x_test, results, preds,
-                              train_probas, test_probas, start_time)
+    dif_detailed_with_folds(name_str, 'Single', classifier, x_train, y_train, x_test, results, preds,
+                      train_probas, test_probas, start_time)
 
     return classifier
 
@@ -377,8 +383,8 @@ def fit_predict_voting(classifiers, name_str, voting_type, x_train, y_train, x_t
 
     classifier = VotingClassifier(estimators=classifiers, voting=voting_type, n_jobs=-1)
 
-    fit_different_classifiers(name_str, 'Voting', classifier, x_train, y_train, x_test, results, preds,
-                              train_probas, test_probas, start_time)
+    dif_detailed_with_folds(name_str, 'Voting', classifier, x_train, y_train, x_test, results, preds,
+                      train_probas, test_probas, start_time)
 
     return classifier
 
@@ -503,7 +509,7 @@ def main(options):
 
     preds.corr().to_csv(output_folder + 'classifiers_correlations.csv')
 
-    if (options['output_preds']):
+    if options['output_preds']:
         output_all_preds(preds, x_test, output_folder)
 
     pd.DataFrame(results).to_csv(output_folder + 'results.csv')
@@ -515,8 +521,6 @@ def main(options):
 '''
 TODO:
 Beginning:
-- Use different scores: cross_val_score(model, X, Y, cv=kfold, scoring=<method>). 
-    Confusion Matrix / Precision / Recall / F1 Score, or ROC curve
 - Do different views of the features (what's included / not included / in what format)
 - Shuffle with random_state - some algorithms are effected by the order
 A bit later:
@@ -550,6 +554,7 @@ options = {
     'output_preds': False,
     # TODO - need to somehow print options of the grid in a useful way
     'input_options_not_to_output': ['single_classifiers', 'grid_classifiers'],
+    'cv_folds': [2, 3, 5, 10],
     # main columns to drop
     'major_columns_to_drop': [
         'Sex',  # Since titles are important, need to remove Sex
