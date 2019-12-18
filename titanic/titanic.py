@@ -318,7 +318,8 @@ def fit_different_classifiers(name_str, type_class, classifier, x_train, y_train
                     'Cross accuracy-STD*2': round(reg_score - reg_std * 2, 3),
                     'Cross accuracy-STD*3': round(reg_score - reg_std * 3, 3),
                     'Overfitting danger': round((score - reg_score) * score, 3),
-                    'Time sec': round(time.time() - start_time)})
+                    'Time sec': round(time.time() - start_time),
+                    'Classifier options': classifier.get_params()})
     print(f'Debug: Stats {type_class}: {results[-1]}')
 
 
@@ -451,12 +452,13 @@ def main(options):
     # Ensembling from previous classifiers
     # Voting based on part of the Grid results - see grid_classifiers_not_for_ensembling
 
-    fit_predict_voting(classifiers_for_ensembling, 'Voting soft - part of grid', 'soft',
-                       x_train_scaled, y_train, x_test_scaled,
-                       results, preds, unused_train_proba, unused_test_proba)
-    fit_predict_voting(classifiers_for_ensembling, 'Voting hard - part of grid', 'hard',
-                       x_train_scaled, y_train, x_test_scaled,
-                       results, preds, unused_train_proba, unused_test_proba)
+    if classifiers_for_ensembling:
+        fit_predict_voting(classifiers_for_ensembling, 'Voting soft - part of grid', 'soft',
+                           x_train_scaled, y_train, x_test_scaled,
+                           results, preds, unused_train_proba, unused_test_proba)
+        fit_predict_voting(classifiers_for_ensembling, 'Voting hard - part of grid', 'hard',
+                           x_train_scaled, y_train, x_test_scaled,
+                           results, preds, unused_train_proba, unused_test_proba)
 
     # Ensembling based on probabilities of previous classifiers
     # Based on part of the Grid results - see grid_classifiers_not_for_ensembling
@@ -464,15 +466,16 @@ def main(options):
     print(f'Debug: shape of train_probas: {train_probas.shape}, test_probas: {test_probas.shape}')
     print(f'Debug: head of train_probas:\n{train_probas.head()}')
 
-    fit_grid_classifier('Ensemble RF - part of grid', train_probas, y_train, test_probas,
-                        RandomForestClassifier(n_estimators=1000, random_state=RANDOM_STATE, n_jobs=-1),
-                        [{'max_depth': range(3, 10)}],
-                        results, preds, unused_train_proba, unused_test_proba)
+    if train_probas.shape[0] > 0:
+        fit_grid_classifier('Ensemble RF - part of grid', train_probas, y_train, test_probas,
+                            RandomForestClassifier(n_estimators=1000, random_state=RANDOM_STATE, n_jobs=-1),
+                            [{'max_depth': range(3, 10)}],
+                            results, preds, unused_train_proba, unused_test_proba)
 
-    fit_grid_classifier('Ensemble Log - part of grid', train_probas, y_train, test_probas,
-                        LogisticRegression(solver='liblinear', random_state=RANDOM_STATE, n_jobs=-1),
-                        [{'solver': ['liblinear', 'lbfgs', 'newton-cg', 'sag', 'saga']}],
-                        results, preds, unused_train_proba, unused_test_proba)
+        fit_grid_classifier('Ensemble Log - part of grid', train_probas, y_train, test_probas,
+                            LogisticRegression(solver='liblinear', random_state=RANDOM_STATE, n_jobs=-1),
+                            [{'solver': ['liblinear', 'lbfgs', 'newton-cg', 'sag', 'saga']}],
+                            results, preds, unused_train_proba, unused_test_proba)
 
     preds.corr().to_csv(output_folder + 'classifiers_correlations.csv')
 
@@ -563,48 +566,49 @@ options = {
     # classifiers that we don't use for Grid Search
     'single_classifiers': {
         'Log': {'clas': LogisticRegression(solver='liblinear', random_state=RANDOM_STATE, n_jobs=-1)},
-        'KNN 14': {'clas': KNeighborsClassifier(n_neighbors=14, n_jobs=-1)},
-        'SVM rbf': {'clas': SVC(gamma='auto', kernel='rbf', probability=True, random_state=RANDOM_STATE)},
-        'SVM poly': {'clas': SVC(gamma='auto', kernel='poly', probability=True, random_state=RANDOM_STATE)},
-        'NB': {'clas': GaussianNB()},  # consistently gives worse results
-        'RF 10': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=10, random_state=RANDOM_STATE, n_jobs=-1)},
-        'RF 9': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=9, random_state=RANDOM_STATE, n_jobs=-1)},
-        'RF 8': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=8, random_state=RANDOM_STATE, n_jobs=-1)},
-        'RF 7': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=7, random_state=RANDOM_STATE, n_jobs=-1)},
-        'RF 6': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=6, random_state=RANDOM_STATE, n_jobs=-1)},
-        'XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', n_estimators=1000,
-                                          random_state=RANDOM_STATE, n_jobs=-1)}},
+#        'KNN 14': {'clas': KNeighborsClassifier(n_neighbors=14, n_jobs=-1)},
+#        'SVM rbf': {'clas': SVC(gamma='auto', kernel='rbf', probability=True, random_state=RANDOM_STATE)},
+#        'SVM poly': {'clas': SVC(gamma='auto', kernel='poly', probability=True, random_state=RANDOM_STATE)},
+#        'NB': {'clas': GaussianNB()},  # consistently gives worse results
+#        'RF 10': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=10, random_state=RANDOM_STATE, n_jobs=-1)},
+#        'RF 9': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=9, random_state=RANDOM_STATE, n_jobs=-1)},
+#        'RF 8': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=8, random_state=RANDOM_STATE, n_jobs=-1)},
+#        'RF 7': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=7, random_state=RANDOM_STATE, n_jobs=-1)},
+#        'RF 6': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=6, random_state=RANDOM_STATE, n_jobs=-1)},
+#        'XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', n_estimators=1000,
+ #                                         random_state=RANDOM_STATE, n_jobs=-1)}
+    },
     # Classifiers we use with Grid search
     'grid_classifiers': {
-        'Grid Log': {'clas': LogisticRegression(solver='liblinear', random_state=RANDOM_STATE, n_jobs=-1),
-                     'grid_params': [{'solver': ['liblinear', 'lbfgs', 'newton-cg', 'sag', 'saga']}]},
-        'Grid KNN': {'clas': KNeighborsClassifier(n_neighbors=14, n_jobs=-1),
-                     'grid_params': [{'n_neighbors': range(3, 25)}]},
-        'Grid SVM': {'clas': SVC(gamma='auto', kernel='rbf', probability=True, random_state=RANDOM_STATE),
-                     'grid_params':
-                         [{
-                            'kernel': ['rbf', 'poly', 'sigmoid'],
-                            'C': [0.3, 0.5, 1.0, 1.5, 2.0],
-                            'gamma': [0.3, 0.2, 0.1, 0.05, 0.01, 'auto_deprecated', 'scale']
-                         }],
-                     },
-        'Grid RF': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=7, random_state=RANDOM_STATE, n_jobs=-1),
-                    'grid_params': [{'max_depth': range(3, 10)}]},
-        'Grid XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic',
-                                               n_estimators=1000,
-                                               random_state=RANDOM_STATE,
-                                               n_jobs=-1),
-                     'grid_params':
-                         [{
-                             'max_depth': range(1, 8, 1)  # default 3 - higher depth - less bias, more variance
-                             # 'n_estimators': range(60, 260, 40), # default 100
-                             # 'learning_rate': [0.3, 0.2, 0.1, 0.01],  # , 0.001, 0.0001
-                             # 'min_child_weight': [0.5, 1, 2],  # default 1 - higher number, less overfitting, when to stop splitting the child given sum of weights
-                             # 'subsample': [i / 10.0 for i in range(6, 11)], # default 1, smaller values prevent overfitting
-                             # 'colsample_bytree': [i / 10.0 for i in range(6, 11)] # default 1, fraction of features selected for each tree
-                             # 'gamma': [i / 10.0 for i in range(3)]  # default 0 - for what gain in metric to continue splitting
-                         }]
-                     }
+ #       'Grid Log': {'clas': LogisticRegression(solver='liblinear', random_state=RANDOM_STATE, n_jobs=-1),
+ #                    'grid_params': [{'solver': ['liblinear', 'lbfgs', 'newton-cg', 'sag', 'saga']}]},
+ #       'Grid KNN': {'clas': KNeighborsClassifier(n_neighbors=14, n_jobs=-1),
+ #                    'grid_params': [{'n_neighbors': range(3, 25)}]},
+ #       'Grid SVM': {'clas': SVC(gamma='auto', kernel='rbf', probability=True, random_state=RANDOM_STATE),
+ #                    'grid_params':
+ #                        [{
+ #                           'kernel': ['rbf', 'poly', 'sigmoid'],
+ #                           'C': [0.3, 0.5, 1.0, 1.5, 2.0],
+ #                           'gamma': [0.3, 0.2, 0.1, 0.05, 0.01, 'auto_deprecated', 'scale']
+ #                        }],
+ #                    },
+ #       'Grid RF': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=7, random_state=RANDOM_STATE, n_jobs=-1),
+ #                   'grid_params': [{'max_depth': range(3, 10)}]},
+ #       'Grid XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic',
+ #                                              n_estimators=1000,
+ #                                              random_state=RANDOM_STATE,
+ #                                              n_jobs=-1),
+ #                    'grid_params':
+ #                        [{
+ #                            'max_depth': range(1, 8, 1)  # default 3 - higher depth - less bias, more variance
+ #                            # 'n_estimators': range(60, 260, 40), # default 100
+ #                            # 'learning_rate': [0.3, 0.2, 0.1, 0.01],  # , 0.001, 0.0001
+ #                            # 'min_child_weight': [0.5, 1, 2],  # default 1 - higher number, less overfitting, when to stop splitting the child given sum of weights
+ #                            # 'subsample': [i / 10.0 for i in range(6, 11)], # default 1, smaller values prevent overfitting
+ #                            # 'colsample_bytree': [i / 10.0 for i in range(6, 11)] # default 1, fraction of features selected for each tree
+ #                            # 'gamma': [i / 10.0 for i in range(3)]  # default 0 - for what gain in metric to continue splitting
+ #                        }]
+ #                    }
     },
     'grid_classifiers_not_for_ensembling': ['Grid SVM', 'Grid XGB']
 }
