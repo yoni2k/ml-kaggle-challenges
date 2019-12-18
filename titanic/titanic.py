@@ -2,10 +2,12 @@ import time
 import numpy as np
 import pandas as pd
 import seaborn as sns
+
 import os
 import csv
+
 from sklearn.preprocessing import LabelEncoder, StandardScaler
-from sklearn.linear_model import LogisticRegression
+
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import roc_auc_score
@@ -13,9 +15,13 @@ from sklearn.metrics import f1_score
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
 
+from sklearn.model_selection import KFold
 from sklearn.model_selection import cross_val_score
+
 from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import VotingClassifier
+
+from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 from sklearn.naive_bayes import GaussianNB
@@ -26,7 +32,7 @@ import xgboost as xgb
 sns.set()
 
 NUM_TRAIN_SAMPLES = 891
-RANDOM_STATE = 50
+RANDOM_STATE_FIRST = 50
 
 
 def read_files():
@@ -160,7 +166,7 @@ def manual_age_bin(age):
 def prepare_features(train, x_test, options, output_folder):
     num_train_samples = train.shape[0]
 
-    print(f'Debug: RANDOM_STATE:{RANDOM_STATE}, num_train_samples:{num_train_samples}')
+    print(f'Debug: RANDOM_STATE:{RANDOM_STATE_FIRST}, num_train_samples:{num_train_samples}')
     print(f'Debug: Features before adding / dropping: {x_test.columns.values}')
 
     features_to_drop_after_use = []
@@ -301,15 +307,31 @@ def dif_detailed_with_folds(name_str, type_class, classifier, x_train, y_train, 
                             train_probas, test_probas, start_time):
 
     for cv_fold in options['cv_folds']:
-        fit_main_detailed(name_str, type_class, classifier, x_train, y_train, x_test,
-                          results, preds, train_probas, test_probas, start_time, cv_fold)
+        fit_detailed(name_str, type_class, classifier, x_train, y_train, x_test,
+                     results, preds, train_probas, test_probas, start_time, cv_fold)
 
 
-def fit_main_detailed(name_str, type_class, classifier, x_train, y_train, x_test, results, preds,
-                      train_probas, test_probas, start_time, cv_folds):
+def get_cross_val_score_various_rands(classifier, x_train, y_train, cv_folds, num_rands):
+    accuracies_with_rand = []
+    stds_with_rand = []
 
-    accuracies = cross_val_score(estimator=classifier, X=x_train, y=y_train, cv=cv_folds)
-    cross_acc_score, cross_acc_std = accuracies.mean(), accuracies.std()
+    for rand_loop in range(num_rands):
+        rand = rand_loop + RANDOM_STATE_FIRST
+        fold = KFold(cv_folds, True, random_state=rand)
+        classifier.set_params(random_state=rand)
+        accuracies = cross_val_score(estimator=classifier, X=x_train, y=y_train, cv=fold)
+
+        accuracies_with_rand.append(accuracies.mean())
+        stds_with_rand.append(accuracies.std())
+
+    return np.mean(accuracies_with_rand), np.mean(stds_with_rand), np.std(stds_with_rand)
+
+
+def fit_detailed(name_str, type_class, classifier, x_train, y_train, x_test, results, preds,
+                 train_probas, test_probas, start_time, cv_folds):
+
+    cross_acc_score, cross_acc_std, cross_acc_std_std = get_cross_val_score_various_rands(
+        classifier, x_train, y_train, cv_folds, options['num_rands'])
 
     classifier.fit(x_train, y_train)
     preds[name_str] = classifier.predict(x_test)
@@ -333,13 +355,16 @@ def fit_main_detailed(name_str, type_class, classifier, x_train, y_train, x_test
         test_probas[name_str] = np.mean(x_test, axis=1)
 
     cross_acc_min_3_std = cross_acc_score - cross_acc_std * 3
+    cross_acc_min_3_std_with_rand = cross_acc_min_3_std - cross_acc_std_std
 
     results.append({'Name': name_str,
                     'CV folds': cv_folds,
                     'Train acc': round(train_acc_score * 100, 1),
                     'Cross acc': round(cross_acc_score * 100, 1),
                     'Cross acc STD': round(cross_acc_std * 100, 1),
-                    'Cross acc-STD*3': round(cross_acc_min_3_std * 100, 1),
+                    'Cross acc STD STD': round(cross_acc_std_std * 100, 1),
+                    'Cross acc - 3*STD': round(cross_acc_min_3_std * 100, 1),
+                    'Cross acc - 3*STD - STD_rand': round(cross_acc_min_3_std_with_rand * 100, 1),
                     'Train - Cross acc-STD*3': round((train_acc_score - cross_acc_min_3_std) * 100, 1),
                     'Time sec': round(time.time() - start_time),
                     'Train auc': train_roc_auc_score,
@@ -418,7 +443,7 @@ def write_to_file_input_options(output_folder, options):
 def main(options):
     start_time_total = time.time()
 
-    output_folder = 'output/' + time.strftime("%Y_%m_%d_%H_%M_%S") + '/'
+    output_folder = 'output/_' + time.strftime("%Y_%m_%d_%H_%M_%S") + '/'
     os.mkdir(output_folder)
 
     write_to_file_input_options(output_folder, options)
@@ -498,12 +523,12 @@ def main(options):
 
     if train_probas.shape[0] > 0:
         fit_grid_classifier('Ensemble RF - part of grid', train_probas, y_train, test_probas,
-                            RandomForestClassifier(n_estimators=1000, random_state=RANDOM_STATE, n_jobs=-1),
+                            RandomForestClassifier(n_estimators=1000, random_state=RANDOM_STATE_FIRST, n_jobs=-1),
                             [{'max_depth': range(3, 10)}],
                             results, preds, unused_train_proba, unused_test_proba)
 
         fit_grid_classifier('Ensemble Log - part of grid', train_probas, y_train, test_probas,
-                            LogisticRegression(solver='liblinear', random_state=RANDOM_STATE, n_jobs=-1),
+                            LogisticRegression(solver='liblinear', random_state=RANDOM_STATE_FIRST, n_jobs=-1),
                             [{'solver': ['liblinear', 'lbfgs', 'newton-cg', 'sag', 'saga']}],
                             results, preds, unused_train_proba, unused_test_proba)
 
@@ -554,7 +579,8 @@ options = {
     'output_preds': False,
     # TODO - need to somehow print options of the grid in a useful way
     'input_options_not_to_output': ['single_classifiers', 'grid_classifiers'],
-    'cv_folds': [2, 3, 5, 10],
+    'cv_folds': [2, 3, 5, 10],  # options of number of folds for Cross validation
+    'num_rands': 15,  # number of times to run the same thing with various random numbers
     # main columns to drop
     'major_columns_to_drop': [
         'Sex',  # Since titles are important, need to remove Sex
@@ -595,7 +621,7 @@ options = {
     ],
     # classifiers that we don't use for Grid Search
     'single_classifiers': {
-        'Log': {'clas': LogisticRegression(solver='liblinear', random_state=RANDOM_STATE, n_jobs=-1)},
+        'Log': {'clas': LogisticRegression(solver='liblinear', random_state=RANDOM_STATE_FIRST, n_jobs=-1)},
 #        'KNN 14': {'clas': KNeighborsClassifier(n_neighbors=14, n_jobs=-1)},
 #        'SVM rbf': {'clas': SVC(gamma='auto', kernel='rbf', probability=True, random_state=RANDOM_STATE)},
 #        'SVM poly': {'clas': SVC(gamma='auto', kernel='poly', probability=True, random_state=RANDOM_STATE)},
