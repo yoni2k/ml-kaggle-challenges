@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import os
+import csv
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_val_score
@@ -389,11 +390,20 @@ def print_feature_importances(cl, classifier, x_train):
               f'{importance.sort_values(by="Importance", ascending=False).reset_index()}')
 
 
+def write_to_file_input_options(output_folder, options):
+    w = csv.writer(open(output_folder + 'input_options.csv', 'w', newline=''))
+    for key, val in options.items():
+        if key not in options['input_options_not_to_output']:
+            w.writerow([key, val])
+
+
 def main(options):
     start_time_total = time.time()
 
     output_folder = 'output/' + time.strftime("%Y_%m_%d_%H_%M_%S") + '/'
     os.mkdir(output_folder)
+
+    write_to_file_input_options(output_folder, options)
 
     train, x_test = read_files()
 
@@ -522,6 +532,7 @@ End:
 '''
 
 options = {
+    'input_options_not_to_output': ['single_classifiers', 'grid_classifiers'],
     # main columns to drop
     'major_columns_to_drop': [
         'Sex',  # Since titles are important, need to remove Sex
