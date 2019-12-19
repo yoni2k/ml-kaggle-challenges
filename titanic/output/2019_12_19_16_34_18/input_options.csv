@@ -1,0 +1,8 @@
+output_preds,False
+input_options_not_to_output,"['single_classifiers', 'grid_classifiers']"
+cv_folds,"[2, 3, 5, 10]"
+num_rands,15
+features_based_on_train_only,True
+major_columns_to_drop,"['Sex', 'Family/ticket survival known', 'SibSp', 'Parch', 'Embarked', 'Fare log', 'Family size', 'Age']"
+minor_columns_to_drop,"['Age Bin_4-11', 'DeckBin_AG', 'DeckBin_B', 'DeckBin_CF', 'Title_Master']"
+grid_classifiers_not_for_ensembling,"['Grid SVM', 'Grid XGB']"

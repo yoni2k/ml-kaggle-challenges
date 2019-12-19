@@ -553,18 +553,19 @@ def dif_detailed_with_folds(name_str, type_class, classifier, x_train, y_train, 
 
 def get_cross_val_score_various_rands(classifier, x_train, y_train, cv_folds, num_rands):
     accuracies_with_rand = []
-    stds_with_rand = []
 
     for rand_loop in range(num_rands):
         rand = rand_loop + RANDOM_STATE_FIRST
-        classifier.set_params(random_state=rand)
-        fold = KFold(cv_folds, True, random_state=rand)  # TODO now replace
-        accuracies = cross_val_score(estimator=classifier, X=x_train, y=y_train, cv=fold)
+        classifier.set_params(random_state=rand_loop + RANDOM_STATE_FIRST)
 
-        accuracies_with_rand.append(accuracies.mean())
-        stds_with_rand.append(accuracies.std())
+        fold = KFold(cv_folds, True, random_state=rand)
 
-    return np.mean(accuracies_with_rand), np.mean(stds_with_rand), np.std(stds_with_rand)
+        for train_indicies, test_indicies in fold.split(x_train, y_train):
+            classifier.fit(x_train[train_indicies], y_train.reset_index(drop=True)[train_indicies])
+            accuracy = classifier.score(x_train[test_indicies], y_train.reset_index(drop=True)[test_indicies])
+            accuracies_with_rand.append(accuracy)
+
+    return np.mean(accuracies_with_rand), np.std(accuracies_with_rand)
 
 
 def fit_detailed(name_str, type_class, classifier, x_train, y_train, x_test, train, results, preds,
@@ -577,7 +578,7 @@ def fit_detailed(name_str, type_class, classifier, x_train, y_train, x_test, tra
         x_train_scaled = x_train
         x_test_scaled = x_test
 
-    cross_acc_score, cross_acc_std, cross_acc_std_std = get_cross_val_score_various_rands(
+    cross_acc_score, cross_acc_std = get_cross_val_score_various_rands(
         classifier, x_train_scaled, y_train, cv_folds, options['num_rands'])
 
     classifier.fit(x_train_scaled, y_train)
@@ -602,16 +603,13 @@ def fit_detailed(name_str, type_class, classifier, x_train, y_train, x_test, tra
         test_probas[name_str] = np.mean(x_test_scaled, axis=1)
 
     cross_acc_min_3_std = cross_acc_score - cross_acc_std * 3
-    cross_acc_min_3_std_with_rand = cross_acc_min_3_std - cross_acc_std_std
 
     results.append({'Name': name_str,
                     'CV folds': cv_folds,
                     'Train acc': round(train_acc_score * 100, 1),
                     'Cross acc': round(cross_acc_score * 100, 1),
                     'Cross acc STD': round(cross_acc_std * 100, 1),
-                    'Cross acc STD STD': round(cross_acc_std_std * 100, 1),
                     'Cross acc - 3*STD': round(cross_acc_min_3_std * 100, 1),
-                    'Cross acc - 3*STD - STD_rand': round(cross_acc_min_3_std_with_rand * 100, 1),
                     'Train - Cross acc-STD*3': round((train_acc_score - cross_acc_min_3_std) * 100, 1),
                     'Time sec': round(time.time() - start_time),
                     'Train auc': train_roc_auc_score,
@@ -831,7 +829,7 @@ options = {
     'input_options_not_to_output': ['single_classifiers', 'grid_classifiers'],
     'cv_folds': [2, 3, 5, 10],  # options of number of folds for Cross validation
     'num_rands': 15,  # number of times to run the same thing with various random numbers
-    'features_based_on_train_only': False,
+    'features_based_on_train_only': True,
     # main columns to drop
     'major_columns_to_drop': [
         'Sex',  # Since titles are important, need to remove Sex
