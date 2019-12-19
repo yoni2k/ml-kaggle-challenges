@@ -547,28 +547,26 @@ def main(options):
 TODO:
 Beginning:
 - Do different views of the features (what's included / not included / in what format)
-- Shuffle with random_state - some algorithms are effected by the order
-A bit later:
-- Take code and ideas from https://machinelearningmastery.com/spot-check-machine-learning-algorithms-in-python/
 - Do all feature preparation on each fold separately - both train and test, and each fold of the train.  This will prevent leakage, but it will actually probably lower the score
-- Look only at - STD*3
-- First do Grid, then cross-validation
-- Introduce random state for cross-validation if not used today
 - Consider Bagging and not just cross-validation at one of the lower levels
     Use Out of Bag accuracy when doing Bagging
 - k-Fold actual training (in addition to Bagging? Instead?) How to actually combine results?
-    kfold = KFold(n_splits=10, random_state=7)
-    model = LogisticRegression(solver='liblinear')
-    results = cross_val_score(model, X, Y, cv=kfold)
-- Play with cross-validation size - give a few
-- Play with an average of a few random sizes 
+A bit later:
+- Take code and ideas from https://machinelearningmastery.com/spot-check-machine-learning-algorithms-in-python/
+- First do Grid, then cross-validation
 - Automate bottom line report and choosing of the model
-- Do feature selection with RFECV per algorithm 
+- Do feature selection with RFECV per algorithm
+- Try stratified fold
+Make sure didn't break after this step: 
+- Make sure doesn't break: Shuffle with random_state - some algorithms are effected by the order, random state for cross-validation
+- Make sure actually using different cross-validation sizes
+- Make sure using average of a few random sizes 
 Middle:
 - Add extra trees algorithm, AdaBoost, Bernoulli NB (perhaps instead / in addition to Gaussasian NB), others from his list of best / all
     From his list of algorithms for classification: Random Forest, XGBoost, SVM, (Backpropogation - what specifically is it?), Decision Trees (CART and C4.5/C5.0), Naive Bayes, Logistic Regression and Linear Discriminant Analysis, k-Nearest Neighbors and Learning Vector Quantization (what is it?)
 - Give a chance to each one of the classifiers
 - XGBoost - do much more parameter optimizations
+- Read in my summaries what other steps need to try 
 End:
 - Voting only on models I know work best
 - Consider using statistical tests to decide with algorithm is better: parametric / non parametric, P-value
