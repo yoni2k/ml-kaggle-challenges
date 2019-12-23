@@ -74,9 +74,6 @@ def impute_age_regression(full_x_train, full_x_test):
     full_x_train.loc[full_x_train['Age'].isnull(), 'Age'] = age_model.predict(age_predict_train)
     full_x_test.loc[full_x_test['Age'].isnull(), 'Age'] = age_model.predict(age_predict_test)
 
-    full_x_train.drop(features_base_age_on, axis=1, inplace=True)
-    full_x_test.drop(features_base_age_on, axis=1, inplace=True)
-
     print(f'Debug: Age prediction score: {round(age_model.score(age_x_train, age_y_train) * 100, 1)}')
 
 
@@ -129,7 +126,7 @@ def prepare_family_ticket_frequencies_actual(data, is_train, train, last_names_s
           f'{data["Known family/ticket survived %"].value_counts(dropna=False)}')
 
     # drop temporary columns used
-    data.drop(['Last name IMPUTE', 'Ticket IMPUTE', 'Known family survived %', 'Known ticket survived %'], axis=1, inplace=True)
+    data.drop(['Known family survived %', 'Known ticket survived %'], axis=1, inplace=True)
 
 
 def prepare_family_ticket_frequencies(x_train, x_test, train):
@@ -181,7 +178,6 @@ def prepare_features_scale_once(data, train):
          'Ms': 'Miss', 'Mlle': 'Miss',
          'Sir': 'Mr', 'Major': 'Mr', 'Capt': 'Mr', 'Jonkheer': 'Mr', 'Don': 'Mr', 'Col': 'Mr', 'Rev': 'Mr', 'Dr': 'Mr'})
     features_to_add_dummies.append('Title')
-    features_to_drop_after_use.append('Name')
 
     # 2 ---> Create a new feature of number 'Family size' of relatives regardless of who they are
     #   Group SibSp, Parch, Family size based on different survival rates
@@ -241,7 +237,6 @@ def prepare_features_scale_once(data, train):
     # TODO:
     # A leaked feature, consider re-adding later as an option
     # both['Ticket_Frequency'] = both.groupby('Ticket')['Ticket'].transform('count')
-    features_to_drop_after_use.append('Ticket')
 
     # 8 --> Fare. Add new category of "Fare per person" since fares are currently per ticket, and Set missing values
     #   Replace with bins, and get rid of regular Fare
@@ -311,7 +306,6 @@ def prepare_features_scale_every_time(x_train, x_test, train):
     print(f'Debug: EVERY_TIME Preparing features of data of shape: x_train: {x_train.shape}, x_test: {x_test.shape}')
     print(f'Debug: EVERY_TIME Features before adding / dropping: {x_train.columns.values}')
 
-    features_to_drop_after_use = []
     features_to_add_dummies = []
 
     # 9 --> Add frequencies of survival per family (based on last name) and ticket
@@ -329,13 +323,15 @@ def prepare_features_scale_every_time(x_train, x_test, train):
     print(f"Debug: EVERY_TIME Age value_counts x_test:\n{x_test['Age Bin'].value_counts().sort_index()}")
     features_to_add_dummies.append('Age Bin')
 
-    print(f'Debug: EVERY_TIME Features before dropping not used at all, '
+    print(f'Debug: EVERY_TIME Features before removing features saved for imputing: x_train '
           f'shape {x_train.shape}: {x_train.columns.values}')
 
-    x_train.drop(features_to_drop_after_use, axis=1, inplace=True)
-    x_test.drop(features_to_drop_after_use, axis=1, inplace=True)
+    features_saved_for_imputing = [feat for feat in x_train.columns.values if 'IMPUTE' in feat]
 
-    print(f'Debug: EVERY_TIME Features after dropping not used at all, before major dropping, x_train '
+    x_train.drop(features_saved_for_imputing, axis=1, inplace=True)
+    x_test.drop(features_saved_for_imputing, axis=1, inplace=True)
+
+    print(f'Debug: EVERY_TIME Features before major dropping, x_train '
           f'shape {x_train.shape}: {x_train.columns.values}')
 
     x_train.drop(options['major_columns_to_drop_every_time'], axis=1, inplace=True)
@@ -401,7 +397,7 @@ def get_cross_val_score_various_rands(classifier, x_train, y_train, cv_folds, nu
     for rand_loop in range(num_rands):
         rand = rand_loop + RANDOM_STATE_FIRST
         classifier.set_params(random_state=rand_loop + RANDOM_STATE_FIRST)
-        print(f'Debug: doing rand {rand_loop} out of {num_rands}')
+        print(f'Debug: doing rand {rand_loop + 1} out of {num_rands}')
 
         fold = KFold(cv_folds, True, random_state=rand)
         i = 0
@@ -642,7 +638,6 @@ def main():
 '''
 TODO:
 Beginning:
-- Do all feature preparation on each fold separately - both train and test, and each fold of the train.  This will prevent leakage, but it will actually probably lower the score
 - k-Fold actual training (in addition to Bagging? Instead?) How to actually combine results?
 - Consider Bagging and not just cross-validation at one of the lower levels
     Use Out of Bag accuracy when doing Bagging
@@ -678,6 +673,8 @@ options = {
     # TODO is there a nice way to do it than to split up both major and minor into once and every time?
     # main columns to drop
     'major_columns_to_drop_once': [
+        'Ticket',
+        'Name',
         'Sex',  # Since titles are important, need to remove Sex
         'SibSp',  # very low in all models, perhaps because of Family size / Ticket_Frequency
         'Parch',  # very low in all models, perhaps because of Family size / Ticket_Frequency
