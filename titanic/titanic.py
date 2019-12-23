@@ -187,7 +187,6 @@ def prepare_features_scale_once(data, train):
         data['SibSpBin'] = data['SibSp'].replace({0: '0', 1: '1', 2: '2', 3: '3', 4: '4',
                                                   5: '5+', 8: '5+'})
         features_to_add_dummies.append('SibSpBin')
-        features_to_drop_after_use.append('SibSp')
     if 'Parch' not in options['major_columns_to_drop_once']:
         # TODO would you do the same map looking at only part of the data?
         data['ParchBin'] = data['Parch'].replace({0: '0',
@@ -196,7 +195,6 @@ def prepare_features_scale_once(data, train):
                                                   3: '3',
                                                   4: '4+', 5: '4+', 6: '4+', 9: '4+'})
         features_to_add_dummies.append('ParchBin')
-        features_to_drop_after_use.append('Parch')
 
     if 'Family size' not in options['major_columns_to_drop_once']:
         data['Family size'] = 1 + data['SibSp'] + data['Parch']
@@ -292,11 +290,7 @@ def prepare_features_scale_once(data, train):
 
     data = pd.get_dummies(data, columns=features_to_add_dummies)
 
-    print(f'Debug: ONCE Features after dummies before dropping minor, shape {data.shape}: {data.columns.values}')
-
-    data.drop(options['minor_columns_to_drop_once'], axis=1, inplace=True)
-
-    print(f'Debug: ONCE Features after dummies after dropping minor, shape {data.shape}: {data.columns.values}')
+    print(f'Debug: ONCE Features after dummies after dummies, shape {data.shape}: {data.columns.values}')
 
     print(f'Debug: ONCE data.info:\n{data.info()}')
     print(f'Debug: ONCE Value counts of all values:')
@@ -359,13 +353,7 @@ def prepare_features_scale_every_time(x_train, x_test, train):
     x_train = pd.get_dummies(x_train, columns=features_to_add_dummies)
     x_test = pd.get_dummies(x_test, columns=features_to_add_dummies)
 
-    print(f'Debug: EVERY_TIME Features after dummies before dropping minor, x_train shape {x_train.shape}: '
-          f'{x_train.columns.values}')
-
-    x_train.drop(options['minor_columns_to_drop_every_time'], axis=1, inplace=True)
-    x_test.drop(options['minor_columns_to_drop_every_time'], axis=1, inplace=True)
-
-    print(f'Debug: EVERY_TIME Features after dummies after dropping minor, x_train shape {x_train.shape}: '
+    print(f'Debug: EVERY_TIME Features after dummies after dropping, x_train shape {x_train.shape}: '
           f'{x_train.columns.values}')
 
     print(f'Debug: EVERY_TIME x_train.info:\n{x_train.info()}')
@@ -405,27 +393,6 @@ def dif_detailed_with_folds(name_str, type_class, classifier, x_train, y_train, 
                      results, preds, train_probas, test_probas, start_time, cv_fold)
 
 
-def get_cross_val_score_various_rands_prepared(classifier, x_train, y_train, cv_folds, num_rands):
-    accuracies_with_rand = []
-
-    for rand_loop in range(num_rands):
-        rand = rand_loop + RANDOM_STATE_FIRST
-        classifier.set_params(random_state=rand_loop + RANDOM_STATE_FIRST)
-        print(f'Debug: doing rand {rand_loop + 1} out of {num_rands}')
-
-        fold = KFold(cv_folds, True, random_state=rand)
-        i = 0
-
-        for train_indicies, test_indicies in fold.split(x_train, y_train):
-            i = i + 1
-            print(f'Debug: doing fold {i} out of {cv_folds}')
-            classifier.fit(x_train[train_indicies], y_train.reset_index(drop=True)[train_indicies])
-            accuracy = classifier.score(x_train[test_indicies], y_train.reset_index(drop=True)[test_indicies])
-            accuracies_with_rand.append(accuracy)
-
-    return np.mean(accuracies_with_rand), np.std(accuracies_with_rand)
-
-
 def get_cross_val_score_various_rands(classifier, x_train, y_train, cv_folds, num_rands):
     accuracies_with_rand = []
 
@@ -447,9 +414,20 @@ def get_cross_val_score_various_rands(classifier, x_train, y_train, cv_folds, nu
             # Copy is done to prevent changes to original data frame since numerous different changes will be done
             x_train_scaled, x_test_scaled, columns = prepare_features_scale_every_time(
                 x_train.iloc[train_indicies].copy(), x_train.iloc[test_indicies].copy(), train)
-            print(f'Debug time: Preparing features: {time.time() - time_temp} seconds')
-            classifier.fit(x_train_scaled, y_train.reset_index(drop=True)[train_indicies])
-            accuracy = classifier.score(x_test_scaled, y_train.reset_index(drop=True)[test_indicies])
+            print(f'Debug time: In CV - Preparing features: {time.time() - time_temp} seconds')
+
+            time_temp = time.time()
+            fold_rfe = KFold(cv_folds, True, random_state=RANDOM_STATE_FIRST)
+
+            rfe = RFECV(classifier, cv=fold_rfe, n_jobs=-1)
+            rfe.fit(x_train_scaled, y_train.reset_index(drop=True)[train_indicies])
+            print(f'Debug time: In CV - RFE: {time.time() - time_temp} seconds')
+            print(f'Debug: RFE: in CV - out of total of {x_train_scaled.shape[1]} features, '
+                  f'{rfe.n_features_} were chosen:\n{columns[rfe.support_]}')
+
+            classifier.fit(x_train_scaled[:, rfe.support_], y_train.reset_index(drop=True)[train_indicies])
+            accuracy = classifier.score(x_test_scaled[:, rfe.support_],
+                                            y_train.reset_index(drop=True)[test_indicies])
             accuracies_with_rand.append(accuracy)
 
     return np.mean(accuracies_with_rand), np.std(accuracies_with_rand)
@@ -461,21 +439,19 @@ def fit_detailed(name_str, type_class, classifier, x_train, y_train, x_test, tra
     cross_acc_score, cross_acc_std = get_cross_val_score_various_rands(
         classifier, x_train, y_train, cv_folds, options['num_rands'])
 
-    x_train_scaled, x_test_scaled, columns = prepare_features_scale_every_time(
+    x_train_scaled_no_rfe, x_test_scaled_no_rfe, columns = prepare_features_scale_every_time(
         x_train.copy(), x_test.copy(), train)
 
     fold = KFold(cv_folds, True, random_state=RANDOM_STATE_FIRST)
 
     rfe = RFECV(classifier, cv=fold, n_jobs=-1)
-    rfe.fit(x_train_scaled, y_train)
-    print(f'Debug: RFE: for {name_str},{type_class} - out of total of {x_train_scaled.shape[1]} features, '
+    rfe.fit(x_train_scaled_no_rfe, y_train)
+    print(f'Debug: RFE: for {name_str},{type_class} - out of total of {x_train_scaled_no_rfe.shape[1]} features, '
           f'{rfe.n_features_} were chosen:\n{columns[rfe.support_]}')
 
-    classifier.fit(x_train_scaled[:, rfe.support_], y_train)
-    train_acc_score_rfe = classifier.score(x_train_scaled[:, rfe.support_], y_train)
-
-    cross_acc_score_rfe, cross_acc_std_rfe = get_cross_val_score_various_rands_prepared(
-        classifier, x_train_scaled[:, rfe.support_], y_train, cv_folds, options['num_rands'])
+    x_train_scaled = x_train_scaled_no_rfe[:, rfe.support_]
+    x_test_scaled = x_test_scaled_no_rfe[:, rfe.support_]
+    columns = columns[rfe.support_]
 
     classifier.fit(x_train_scaled, y_train)
     preds[name_str] = classifier.predict(x_test_scaled)
@@ -499,20 +475,17 @@ def fit_detailed(name_str, type_class, classifier, x_train, y_train, x_test, tra
         test_probas[name_str] = np.mean(x_test_scaled, axis=1)
 
     cross_acc_min_3_std = cross_acc_score - cross_acc_std * 3
-    cross_acc_min_3_std_rfe = cross_acc_score_rfe - cross_acc_std_rfe * 3
 
     results.append({'Features options': str(options['feature_view']),
                     'Name': name_str,
                     'CV folds': cv_folds,
-                    'Train acc RFE': round(train_acc_score_rfe * 100, 1),
-                    'Cross acc RFE': round(cross_acc_score_rfe * 100, 1),
-                    'Cross acc - 3*STD RFE': round(cross_acc_min_3_std_rfe * 100, 1),
-                    'Train - Cross acc-STD*3 RFE': round((train_acc_score_rfe - cross_acc_min_3_std_rfe) * 100, 1),
+
                     'Train acc': round(train_acc_score * 100, 1),
                     'Cross acc': round(cross_acc_score * 100, 1),
                     'Cross acc STD': round(cross_acc_std * 100, 1),
                     'Cross acc - 3*STD': round(cross_acc_min_3_std * 100, 1),
                     'Train - Cross acc-STD*3': round((train_acc_score - cross_acc_min_3_std) * 100, 1),
+
                     'Time sec': round(time.time() - start_time),
                     'Train auc': train_roc_auc_score,
                     'Train f1 died': train_f1_score_not_survived,
@@ -739,7 +712,6 @@ End:
 - Consider using statistical tests to decide with algorithm is better: parametric / non parametric, P-value
 
 '''
-
 options = {
     'output_preds': False,
     # TODO - need to somehow print options of the grid in a useful way
@@ -752,44 +724,13 @@ options = {
         'Ticket',  # not helpful as is, but could have been used in feature extraction
         'Name',  # not helpful as is, but could have been used in feature extraction
         'Cabin',  # not helpful as is, but could have been used in feature extraction
-        'Sex',  # Since titles are important, need to remove Sex
-        'SibSp',  # very low in all models, perhaps because of Family size / Ticket_Frequency
-        'Parch',  # very low in all models, perhaps because of Family size / Ticket_Frequency
-        'Embarked',
+        # 'Sex',  # Since titles are important, need to remove Sex
+        #'SibSp',  # very low in all models, perhaps because of Family size / Ticket_Frequency
+        #'Parch',  # very low in all models, perhaps because of Family size / Ticket_Frequency
+        #'Embarked',
     ],
     'major_columns_to_drop_every_time': [
-        'Family/ticket survival known',  # low in all models
-    ],
-    # specific binned features to drop, like a specific bin in the main feature
-    'minor_columns_to_drop_once': [
-        # --- Fare bin
-        # 'Fare bin_13.5+'  # important, places 2-10
-
-        # -- Deck - some important, some not. what's left is important, unknown_T and DE
-        'DeckBin_AG',
-        'DeckBin_B',
-        'DeckBin_CF',
-        # 'DeckBin_DE'  # important, perhaps because of mixed deck and more change for non 1st class to survive
-        # 'DeckBin_unknown_T'  # important, especially low survival
-
-        # -- Title
-        'Title_Master'  # WAS NOT NEEDED FOR Random Forest (perhaps because of age connection)
-
-        # -- Pclass - important in most classifiers
-        # -- Ticket_Frequency - place 7,10,14, leaving
-        # -- Known family/ticket survived % - places 2,4 - one of the most important
-    ],
-    # specific binned features to drop, like a specific bin in the main feature
-    'minor_columns_to_drop_every_time': [
-        # -- Age - not extemely important, most models Age_-4 is important (15), XGB gives more age importance (6,8)
-        # 'Age Bin_-4',
-        # TODO now was not commented out, but since one of the options is not to have bins at all, had to comment out
-        #   will not be relevant, once automatically remove not important features
-        # 'Age Bin_4-11',  # low in all classifiers
-        # 'Age Bin_11-24',
-        # 'Age Bin_24-32',
-        # 'Age Bin_32-42',
-        # 'Age Bin_42+'
+        # 'Family/ticket survival known',  # low in all models
     ],
     'features_variations': {
         # 'SibSp': ['Num', 'ManualBin', 'AutobinXXX', 'Num+ManualBin'],  # TODO - add - currently not used
