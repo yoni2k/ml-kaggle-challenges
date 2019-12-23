@@ -181,7 +181,6 @@ def prepare_features_scale_once(data, train):
 
     # 2 ---> Create a new feature of number 'Family size' of relatives regardless of who they are
     #   Group SibSp, Parch, Family size based on different survival rates
-    data['Family size'] = 1 + data['SibSp'] + data['Parch']
     if 'SibSp' not in options['major_columns_to_drop_once']:
         # TODO would you do the same map looking at only part of the data?
         data['SibSpBin'] = data['SibSp'].replace({0: '0', 1: '1', 2: '2', 3: '3', 4: '4',
@@ -198,14 +197,18 @@ def prepare_features_scale_once(data, train):
         features_to_add_dummies.append('ParchBin')
         features_to_drop_after_use.append('Parch')
 
-    if 'Family size bin' not in options['major_columns_to_drop_once']:
+    if 'Family size' not in options['major_columns_to_drop_once']:
+        data['Family size'] = 1 + data['SibSp'] + data['Parch']
         # TODO would you do the same map looking at only part of the data?
-        data['Family size bin'] = data['Family size'].replace({1: '1',
-                                                               2: '23', 3: '23',
-                                                               4: '4',
-                                                               5: '567', 6: '567', 7: '567',
-                                                               8: '8+', 11: '8+'})
-        features_to_add_dummies.append('Family size bin')
+        if options['feature_view']['Family size'] != 'Num':
+            data['Family size bin'] = data['Family size'].replace({1: '1',
+                                                                   2: '23', 3: '23',
+                                                                   4: '4',
+                                                                   5: '567', 6: '567', 7: '567',
+                                                                   8: '8+', 11: '8+'})
+            features_to_add_dummies.append('Family size bin')
+        if options['feature_view']['Family size'] == 'Bin':
+            features_to_drop_after_use.append('Family size')
 
     # 3. ----> Prepare Deck features based on first letter of Cabin
     data['Cabin'] = data['Cabin'].fillna('unknown')
@@ -216,7 +219,6 @@ def prepare_features_scale_once(data, train):
                                             'D': 'DE', 'E': 'DE',
                                             'C': 'CF', 'F': 'CF',
                                             'A': 'AG', 'G': 'AG'})
-    features_to_drop_after_use.append('Cabin')
     features_to_drop_after_use.append('Deck')
     features_to_add_dummies.append('DeckBin')
 
@@ -255,16 +257,18 @@ def prepare_features_scale_once(data, train):
     data['Fare 13.5+'] = data['Fare per person'].apply(lambda fare: 1 if fare > 13.5 else 0)
     data['Fare log'] = data['Fare per person'].replace({0: 0.0001})  # to avoid doing log on 0 which is invalid
     data['Fare log'] = np.log(data['Fare log'])
-    features_to_drop_after_use.append('Fare')
-    features_to_drop_after_use.append('Fare per person')
-
-    # To make things faster, calculate once, needed every time for extraction of family frequency
-    data['Last name IMPUTE'] = data['Name'].apply(extract_lastname)
+    if 'Num' not in options['feature_view']['Fare']:
+        features_to_drop_after_use.append('Fare per person')
+    if '13.5' not in options['feature_view']['Fare']:
+        features_to_drop_after_use.append('Fare 13.5+')
+    if 'Log' not in options['feature_view']['Fare']:
+        features_to_drop_after_use.append('Fare log')
 
     # TODO - think if there is a nicer way to do this
-    # Copy relevant categories once, will be used for imputing age, then deleted.
+    # Copy relevant categories once, will be used for imputing age and family frequency, then deleted.
     # This way the logic of whether to leave them / delete them / put dummies instead can be done without worrying
     #   that it will hurt the imputing of age / ticket frequencies
+    data['Last name IMPUTE'] = data['Name'].apply(extract_lastname)
     data['Ticket IMPUTE'] = data['Ticket']
     data['Pclass IMPUTE'] = data['Pclass']
     data['Title IMPUTE'] = data['Title']
@@ -306,6 +310,7 @@ def prepare_features_scale_every_time(x_train, x_test, train):
     print(f'Debug: EVERY_TIME Preparing features of data of shape: x_train: {x_train.shape}, x_test: {x_test.shape}')
     print(f'Debug: EVERY_TIME Features before adding / dropping: {x_train.columns.values}')
 
+    features_to_drop_after_use = []
     features_to_add_dummies = []
 
     # 9 --> Add frequencies of survival per family (based on last name) and ticket
@@ -317,11 +322,20 @@ def prepare_features_scale_every_time(x_train, x_test, train):
     time_stamp = time.time()
     impute_age_regression(x_train, x_test)
     print(f'Debug time: Impute age: {time.time() - time_stamp} seconds')
-    x_train['Age Bin'] = x_train['Age'].apply(manual_age_bin)
-    x_test['Age Bin'] = x_test['Age'].apply(manual_age_bin)
-    print(f"Debug: EVERY_TIME Age value_counts x_train:\n{x_train['Age Bin'].value_counts().sort_index()}")
-    print(f"Debug: EVERY_TIME Age value_counts x_test:\n{x_test['Age Bin'].value_counts().sort_index()}")
-    features_to_add_dummies.append('Age Bin')
+    if 'Bin' in options['feature_view']['Age']:
+        x_train['Age Bin'] = x_train['Age'].apply(manual_age_bin)
+        x_test['Age Bin'] = x_test['Age'].apply(manual_age_bin)
+        print(f"Debug: EVERY_TIME Age value_counts x_train:\n{x_train['Age Bin'].value_counts().sort_index()}")
+        print(f"Debug: EVERY_TIME Age value_counts x_test:\n{x_test['Age Bin'].value_counts().sort_index()}")
+        features_to_add_dummies.append('Age Bin')
+    if 'Num' not in options['feature_view']['Age']:
+        features_to_drop_after_use.append('Age')
+
+    print(f'Debug: EVERY_TIME Features before dropping not used at all, x_train '
+          f'shape {x_train.shape}: {x_train.columns.values}')
+
+    x_train.drop(features_to_drop_after_use, axis=1, inplace=True)
+    x_test.drop(features_to_drop_after_use, axis=1, inplace=True)
 
     print(f'Debug: EVERY_TIME Features before removing features saved for imputing: x_train '
           f'shape {x_train.shape}: {x_train.columns.values}')
@@ -450,7 +464,8 @@ def fit_detailed(name_str, type_class, classifier, x_train, y_train, x_test, tra
 
     cross_acc_min_3_std = cross_acc_score - cross_acc_std * 3
 
-    results.append({'Name': name_str,
+    results.append({'Features options': str(options['feature_view']),
+                    'Name': name_str,
                     'CV folds': cv_folds,
                     'Train acc': round(train_acc_score * 100, 1),
                     'Cross acc': round(cross_acc_score * 100, 1),
@@ -533,23 +548,13 @@ def write_to_file_input_options(output_folder):
             w.writerow([key, val])
 
 
-def main():
+def single_features_view(x_train, y_train, x_test, train, results, output_folder, feature_view_name):
     start_time_total = time.time()
-
-    output_folder = 'output/_' + time.strftime("%Y_%m_%d_%H_%M_%S") + '/'
-    os.mkdir(output_folder)
-
-    write_to_file_input_options(output_folder)
-
-    train, x_test = read_files()
-    x_train = train.drop('Survived', axis=1)
-    y_train = train['Survived']
 
     x_train = prepare_features_scale_once(x_train, train)
     x_test = prepare_features_scale_once(x_test, train)
     train = pd.concat([x_train, y_train], axis=1)
 
-    results = []
     preds = pd.DataFrame()
     train_probas = pd.DataFrame()
     test_probas = pd.DataFrame()
@@ -624,14 +629,44 @@ def main():
                             [{'solver': ['liblinear', 'lbfgs', 'newton-cg', 'sag', 'saga']}],
                             results, preds, unused_train_proba, unused_test_proba)
 
-    preds.corr().to_csv(output_folder + 'classifiers_correlations.csv')
+    view_output_folder = output_folder + '/' + feature_view_name + '/'
+    os.mkdir(view_output_folder)
+
+    preds.corr().to_csv(view_output_folder + 'classifiers_correlations.csv')
 
     if options['output_preds']:
-        output_all_preds(preds, x_test, output_folder)
+        output_all_preds(preds, x_test, view_output_folder)
+
+    print(f'Debug: single_features_view Time took: {time.time() - start_time_total} seconds = '
+          f'{round((time.time() - start_time_total) / 60)} minutes ')
+
+
+def main():
+    start_time_total = time.time()
+    options['feature_view'] = {}
+    results = []
+
+    output_folder = 'output/_' + time.strftime("%Y_%m_%d_%H_%M_%S") + '/'
+    os.mkdir(output_folder)
+
+    write_to_file_input_options(output_folder)
+
+    train, x_test = read_files()
+    x_train = train.drop('Survived', axis=1)
+    y_train = train['Survived']
+
+    for fam_opt in options['features_variations']['Family size']:
+        options['feature_view']['Family size'] = fam_opt
+        for fare_opt in options['features_variations']['Fare']:
+            options['feature_view']['Fare'] = fare_opt
+            for age_opt in options['features_variations']['Age']:
+                options['feature_view']['Age'] = age_opt
+                single_features_view(x_train.copy(), y_train.copy(), x_test.copy(), train.copy(), results,
+                                     output_folder, 'Fam_' + fam_opt + '_Fare_' + fare_opt + '_Age_' + age_opt)
 
     pd.DataFrame(results).to_csv(output_folder + 'results.csv')
 
-    print(f'Debug: Time took: {time.time() - start_time_total} seconds = '
+    print(f'Debug: Total Time took: {time.time() - start_time_total} seconds = '
           f'{round((time.time() - start_time_total) / 60)} minutes ')
 
 
@@ -641,7 +676,6 @@ Beginning:
 - k-Fold actual training (in addition to Bagging? Instead?) How to actually combine results?
 - Consider Bagging and not just cross-validation at one of the lower levels
     Use Out of Bag accuracy when doing Bagging
-- Do different views of the features (what's included / not included / in what format)
 A bit later:
 - Take code and ideas from https://machinelearningmastery.com/spot-check-machine-learning-algorithms-in-python/
 - First do Grid, then cross-validation
@@ -652,6 +686,7 @@ Make sure didn't break after this step:
 - Make sure doesn't break: Shuffle with random_state - some algorithms are effected by the order, random state for cross-validation
 - Make sure actually using different cross-validation sizes
 - Make sure using average of a few random sizes 
+- Consider adding more views of features (age, family size etc.)
 Middle:
 - Add extra trees algorithm, AdaBoost, Bernoulli NB (perhaps instead / in addition to Gaussasian NB), others from his list of best / all
     From his list of algorithms for classification: Random Forest, XGBoost, SVM, (Backpropogation - what specifically is it?), Decision Trees (CART and C4.5/C5.0), Naive Bayes, Logistic Regression and Linear Discriminant Analysis, k-Nearest Neighbors and Learning Vector Quantization (what is it?)
@@ -673,15 +708,13 @@ options = {
     # TODO is there a nice way to do it than to split up both major and minor into once and every time?
     # main columns to drop
     'major_columns_to_drop_once': [
-        'Ticket',
-        'Name',
+        'Ticket',  # not helpful as is, but could have been used in feature extraction
+        'Name',  # not helpful as is, but could have been used in feature extraction
+        'Cabin',  # not helpful as is, but could have been used in feature extraction
         'Sex',  # Since titles are important, need to remove Sex
         'SibSp',  # very low in all models, perhaps because of Family size / Ticket_Frequency
         'Parch',  # very low in all models, perhaps because of Family size / Ticket_Frequency
         'Embarked',
-        'Fare log',  # seems doesn't make the model stable, causes overfitting, doesn't add much to the model
-        'Family size',  # high correlation with Ticket_Frequency that wins for all models
-        # 'Age'  # but adding Age bins
     ],
     'major_columns_to_drop_every_time': [
         'Family/ticket survival known',  # low in all models
@@ -709,12 +742,26 @@ options = {
     'minor_columns_to_drop_every_time': [
         # -- Age - not extemely important, most models Age_-4 is important (15), XGB gives more age importance (6,8)
         # 'Age Bin_-4',
-        'Age Bin_4-11',  # low in all classifiers
+        # TODO now was not commented out, but since one of the options is not to have bins at all, had to comment out
+        #   will not be relevant, once automatically remove not important features
+        # 'Age Bin_4-11',  # low in all classifiers
         # 'Age Bin_11-24',
         # 'Age Bin_24-32',
         # 'Age Bin_32-42',
         # 'Age Bin_42+'
     ],
+    'features_variations': {
+        # 'SibSp': ['Num', 'ManualBin', 'AutobinXXX', 'Num+ManualBin'],  # TODO - add - currently not used
+        # 'Parch': ['Num', 'ManualBin', 'AutobinXXX', 'Num+ManualBin'],  # TODO - add - currently not used
+
+        'Family size': ['Bin', 'Num', 'Both'],  # TODO - add a different way to bin?
+        # 'Family size': ['Bin'],  # TODO - add a different way to bin?
+        'Age': ['Bin', 'Num', 'Bin+Num'],  # TODO - add other ways to bin?
+        'Fare': ['Num', 'Log', '13.5+', 'Log+13.5', 'Num+13.5'],  # TODO - should add more ways, like manual or automatic bin?
+        # 'Fare': ['13.5+'],  # TODO - should add more ways, like manual or automatic bin?
+
+        # 'Deck': []  # TODO - should add different ways to combine?
+    },
     # classifiers that we don't use for Grid Search
     'single_classifiers': {
         'Log': {'clas': LogisticRegression(solver='liblinear', random_state=RANDOM_STATE_FIRST, n_jobs=-1)},
