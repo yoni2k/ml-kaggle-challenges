@@ -17,6 +17,7 @@ from sklearn.metrics import recall_score
 
 from sklearn.model_selection import KFold
 from sklearn.model_selection import cross_val_score
+from sklearn.feature_selection import RFECV
 
 from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import VotingClassifier
@@ -263,6 +264,7 @@ def prepare_features_scale_once(data, train):
         features_to_drop_after_use.append('Fare 13.5+')
     if 'Log' not in options['feature_view']['Fare']:
         features_to_drop_after_use.append('Fare log')
+    features_to_drop_after_use.append('Fare')
 
     # TODO - think if there is a nicer way to do this
     # Copy relevant categories once, will be used for imputing age and family frequency, then deleted.
@@ -441,6 +443,16 @@ def fit_detailed(name_str, type_class, classifier, x_train, y_train, x_test, tra
     x_train_scaled, x_test_scaled, columns = prepare_features_scale_every_time(
         x_train.copy(), x_test.copy(), train)
 
+    fold = KFold(cv_folds, True, random_state=RANDOM_STATE_FIRST)
+
+    rfe = RFECV(classifier, cv=fold, n_jobs=-1)
+    rfe.fit(x_train_scaled, y_train)
+    print(f'Debug: RFE: for {name_str},{type_class} - out of total of {x_train_scaled.shape[1]} features, '
+          f'{rfe.n_features_} were chosen:\n{columns[rfe.support_]}')
+
+    classifier.fit(x_train_scaled[:, rfe.support_], y_train)
+    train_acc_score_rfe = classifier.score(x_train_scaled[:, rfe.support_], y_train)
+
     classifier.fit(x_train_scaled, y_train)
     preds[name_str] = classifier.predict(x_test_scaled)
     train_acc_score = classifier.score(x_train_scaled, y_train)
@@ -467,6 +479,7 @@ def fit_detailed(name_str, type_class, classifier, x_train, y_train, x_test, tra
     results.append({'Features options': str(options['feature_view']),
                     'Name': name_str,
                     'CV folds': cv_folds,
+                    'Train acc RFE': round(train_acc_score_rfe * 100, 1),
                     'Train acc': round(train_acc_score * 100, 1),
                     'Cross acc': round(cross_acc_score * 100, 1),
                     'Cross acc STD': round(cross_acc_std * 100, 1),
@@ -754,11 +767,12 @@ options = {
         # 'SibSp': ['Num', 'ManualBin', 'AutobinXXX', 'Num+ManualBin'],  # TODO - add - currently not used
         # 'Parch': ['Num', 'ManualBin', 'AutobinXXX', 'Num+ManualBin'],  # TODO - add - currently not used
 
-        'Family size': ['Bin', 'Num', 'Both'],  # TODO - add a different way to bin?
-        # 'Family size': ['Bin'],  # TODO - add a different way to bin?
-        'Age': ['Bin', 'Num', 'Bin+Num'],  # TODO - add other ways to bin?
-        'Fare': ['Num', 'Log', '13.5+', 'Log+13.5', 'Num+13.5'],  # TODO - should add more ways, like manual or automatic bin?
-        # 'Fare': ['13.5+'],  # TODO - should add more ways, like manual or automatic bin?
+        # 'Family size': ['Bin', 'Num', 'Both'],  # TODO - add a different way to bin?
+        'Family size': ['Both'],  # TODO - add a different way to bin?
+        # 'Age': ['Bin', 'Num', 'Bin+Num'],  # TODO - add other ways to bin?
+        'Age': ['Bin+Num'],  # TODO - add other ways to bin?
+        # 'Fare': ['Num', 'Log', '13.5+', 'Log+13.5', 'Num+13.5'],  # TODO - should add more ways, like manual or automatic bin?
+        'Fare': ['Log+13.5'],  # TODO - should add more ways, like manual or automatic bin?
 
         # 'Deck': []  # TODO - should add different ways to combine?
     },

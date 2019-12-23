@@ -1,0 +1,11 @@
+output_preds,False
+input_options_not_to_output,"['single_classifiers', 'grid_classifiers']"
+cv_folds,[5]
+num_rands,5
+major_columns_to_drop_once,"['Ticket', 'Name', 'Cabin', 'Sex', 'SibSp', 'Parch', 'Embarked']"
+major_columns_to_drop_every_time,['Family/ticket survival known']
+minor_columns_to_drop_once,"['DeckBin_AG', 'DeckBin_B', 'DeckBin_CF', 'Title_Master']"
+minor_columns_to_drop_every_time,[]
+features_variations,"{'Family size': ['Both'], 'Age': ['Bin+Num'], 'Fare': ['Log+13.5']}"
+grid_classifiers_not_for_ensembling,"['Grid SVM', 'Grid XGB']"
+feature_view,{}
