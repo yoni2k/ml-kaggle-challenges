@@ -405,6 +405,27 @@ def dif_detailed_with_folds(name_str, type_class, classifier, x_train, y_train, 
                      results, preds, train_probas, test_probas, start_time, cv_fold)
 
 
+def get_cross_val_score_various_rands_prepared(classifier, x_train, y_train, cv_folds, num_rands):
+    accuracies_with_rand = []
+
+    for rand_loop in range(num_rands):
+        rand = rand_loop + RANDOM_STATE_FIRST
+        classifier.set_params(random_state=rand_loop + RANDOM_STATE_FIRST)
+        print(f'Debug: doing rand {rand_loop + 1} out of {num_rands}')
+
+        fold = KFold(cv_folds, True, random_state=rand)
+        i = 0
+
+        for train_indicies, test_indicies in fold.split(x_train, y_train):
+            i = i + 1
+            print(f'Debug: doing fold {i} out of {cv_folds}')
+            classifier.fit(x_train[train_indicies], y_train.reset_index(drop=True)[train_indicies])
+            accuracy = classifier.score(x_train[test_indicies], y_train.reset_index(drop=True)[test_indicies])
+            accuracies_with_rand.append(accuracy)
+
+    return np.mean(accuracies_with_rand), np.std(accuracies_with_rand)
+
+
 def get_cross_val_score_various_rands(classifier, x_train, y_train, cv_folds, num_rands):
     accuracies_with_rand = []
 
@@ -453,6 +474,9 @@ def fit_detailed(name_str, type_class, classifier, x_train, y_train, x_test, tra
     classifier.fit(x_train_scaled[:, rfe.support_], y_train)
     train_acc_score_rfe = classifier.score(x_train_scaled[:, rfe.support_], y_train)
 
+    cross_acc_score_rfe, cross_acc_std_rfe = get_cross_val_score_various_rands_prepared(
+        classifier, x_train_scaled[:, rfe.support_], y_train, cv_folds, options['num_rands'])
+
     classifier.fit(x_train_scaled, y_train)
     preds[name_str] = classifier.predict(x_test_scaled)
     train_acc_score = classifier.score(x_train_scaled, y_train)
@@ -475,11 +499,15 @@ def fit_detailed(name_str, type_class, classifier, x_train, y_train, x_test, tra
         test_probas[name_str] = np.mean(x_test_scaled, axis=1)
 
     cross_acc_min_3_std = cross_acc_score - cross_acc_std * 3
+    cross_acc_min_3_std_rfe = cross_acc_score_rfe - cross_acc_std_rfe * 3
 
     results.append({'Features options': str(options['feature_view']),
                     'Name': name_str,
                     'CV folds': cv_folds,
                     'Train acc RFE': round(train_acc_score_rfe * 100, 1),
+                    'Cross acc RFE': round(cross_acc_score_rfe * 100, 1),
+                    'Cross acc - 3*STD RFE': round(cross_acc_min_3_std_rfe * 100, 1),
+                    'Train - Cross acc-STD*3 RFE': round((train_acc_score_rfe - cross_acc_min_3_std_rfe) * 100, 1),
                     'Train acc': round(train_acc_score * 100, 1),
                     'Cross acc': round(cross_acc_score * 100, 1),
                     'Cross acc STD': round(cross_acc_std * 100, 1),
