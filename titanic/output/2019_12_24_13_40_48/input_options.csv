@@ -1,0 +1,8 @@
+output_preds,False
+input_options_not_to_output,"['classifiers', 'grid_classifiers']"
+num_folds,5
+num_rands,5
+major_columns_to_drop_once,"['Ticket', 'Name', 'Cabin']"
+major_columns_to_drop_every_time,[]
+features_variations,"{'Family size': ['Both'], 'Age': ['Bin+Num'], 'Fare': ['Log+13.5']}"
+feature_view,{}

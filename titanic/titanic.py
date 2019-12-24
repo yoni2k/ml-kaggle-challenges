@@ -384,81 +384,139 @@ def output_all_preds(preds, x_test, output_folder):
         pred_df.to_csv(f'{preds_dir}preds_{pred_name}.csv')
 
 
-def dif_detailed_with_folds(name_str, type_class, classifier, x_train, y_train, x_test, train, results, preds,
-                            train_probas, test_probas, start_time):
+def get_cross_val_score_prepared(classifier, x_train, y_train):
 
-    for cv_fold in options['cv_folds']:
-        print(f'Debug doing fold {cv_fold} of {name_str} of type {type_class}')
-        fit_detailed(name_str, type_class, classifier, x_train, y_train, x_test, train,
-                     results, preds, train_probas, test_probas, start_time, cv_fold)
+    time_start = time.time()
 
-
-def get_cross_val_score_various_rands(classifier, x_train, y_train, cv_folds, num_rands):
     accuracies_with_rand = []
 
-    full_train = pd.concat([x_train, y_train], axis=1)
-
-    for rand_loop in range(num_rands):
+    for rand_loop in range(options['num_rands']):
         rand = rand_loop + RANDOM_STATE_FIRST
-        classifier.set_params(random_state=rand_loop + RANDOM_STATE_FIRST)
-        print(f'Debug: doing rand {rand_loop + 1} out of {num_rands}')
+        classifier.set_params(random_state=rand)
+        print(f'Debug: In get_cross_val_score_prepared - doing rand {rand_loop + 1} out of {options["num_rands"]}')
 
-        fold = KFold(cv_folds, True, random_state=rand)
+        fold = KFold(options['num_folds'], True, random_state=rand)
         i = 0
 
         for train_indicies, test_indicies in fold.split(x_train, y_train):
             i = i + 1
-            print(f'Debug: doing fold {i} out of {cv_folds}')
-            train = full_train.iloc[train_indicies]
-            time_temp = time.time()
-            # Copy is done to prevent changes to original data frame since numerous different changes will be done
-            x_train_scaled, x_test_scaled, columns = prepare_features_scale_every_time(
-                x_train.iloc[train_indicies].copy(), x_train.iloc[test_indicies].copy(), train)
-            print(f'Debug time: In CV - Preparing features: {time.time() - time_temp} seconds')
+            print(f'Debug: In get_cross_val_score_prepared - doing fold {i} out of {options["num_folds"]}')
 
-            time_temp = time.time()
-            fold_rfe = KFold(cv_folds, True, random_state=RANDOM_STATE_FIRST)
+            x_train_sub = x_train[train_indicies]
+            x_test_sub = x_train[test_indicies]
+            y_train_sub = y_train.reset_index(drop=True)[train_indicies]
+            y_test_sub = y_train.reset_index(drop=True)[test_indicies]
 
-            rfe = RFECV(classifier, cv=fold_rfe, n_jobs=-1)
-            rfe.fit(x_train_scaled, y_train.reset_index(drop=True)[train_indicies])
-            print(f'Debug time: In CV - RFE: {time.time() - time_temp} seconds')
-            print(f'Debug: RFE: in CV - out of total of {x_train_scaled.shape[1]} features, '
-                  f'{rfe.n_features_} were chosen:\n{columns[rfe.support_]}')
-
-            classifier.fit(x_train_scaled[:, rfe.support_], y_train.reset_index(drop=True)[train_indicies])
-            accuracy = classifier.score(x_test_scaled[:, rfe.support_],
-                                            y_train.reset_index(drop=True)[test_indicies])
+            classifier.fit(x_train_sub, y_train_sub)
+            accuracy = classifier.score(x_test_sub, y_test_sub)
             accuracies_with_rand.append(accuracy)
+
+    print(f'Debug time: In get_cross_val_score_prepared - Total: {time.time() - time_start} seconds')
 
     return np.mean(accuracies_with_rand), np.std(accuracies_with_rand)
 
 
-def fit_detailed(name_str, type_class, classifier, x_train, y_train, x_test, train, results, preds,
-                 train_probas, test_probas, start_time, cv_folds):
+def get_cross_val_score_full(classifier, x_train, y_train, param_grid):
 
-    cross_acc_score, cross_acc_std = get_cross_val_score_various_rands(
-        classifier, x_train, y_train, cv_folds, options['num_rands'])
+    time_start = time.time()
+
+    accuracies_with_rand = []
+
+    full_train = pd.concat([x_train, y_train], axis=1)
+
+    for rand_loop in range(options['num_rands']):
+        rand = rand_loop + RANDOM_STATE_FIRST
+        classifier.set_params(random_state=rand)
+        print(f'Debug: doing rand {rand_loop + 1} out of {options["num_rands"]}')
+
+        fold = KFold(options['num_folds'], True, random_state=rand)
+        i = 0
+
+        for train_indicies, test_indicies in fold.split(x_train, y_train):
+            i = i + 1
+            print(f'Debug: doing fold {i} out of {options["num_folds"]}')
+            train = full_train.iloc[train_indicies]
+            time_temp = time.time()
+            # Copy is done to prevent changes to original data frame since numerous different changes will be done
+            x_train_scaled_no_rfe, x_test_scaled_no_rfe, columns = prepare_features_scale_every_time(
+                x_train.iloc[train_indicies].copy(), x_train.iloc[test_indicies].copy(), train)
+            y_train_train = y_train.reset_index(drop=True)[train_indicies]
+            y_train_test = y_train.reset_index(drop=True)[test_indicies]
+            print(f'Debug time: In CV - Preparing features: {time.time() - time_temp} seconds')
+
+            time_temp = time.time()
+            fold_rfe = KFold(options['num_folds'], True, random_state=RANDOM_STATE_FIRST)
+            rfe = RFECV(classifier, cv=fold_rfe, n_jobs=-1)
+
+            rfe.fit(x_train_scaled_no_rfe, y_train_train)
+            print(f'Debug time: In CV - RFE: {time.time() - time_temp} seconds')
+            print(f'Debug: RFE: in CV - out of total of {x_train_scaled_no_rfe.shape[1]} features, '
+                  f'{rfe.n_features_} were chosen:\n{columns[rfe.support_]}')
+
+            x_train_scaled = x_train_scaled_no_rfe[:, rfe.support_]
+            x_test_scaled = x_test_scaled_no_rfe[:, rfe.support_]
+
+            time_temp = time.time()
+            if param_grid:
+                fold_grid = KFold(options['num_folds'], True, random_state=RANDOM_STATE_FIRST)
+
+                grid = GridSearchCV(classifier, param_grid, cv=fold_grid, n_jobs=-1)
+                grid.fit(x_train_scaled, y_train_train)
+                accuracy = grid.score(x_test_scaled, y_train_test)
+                print(f'Debug time: In CV - Grid search: {time.time() - time_temp} seconds')
+            else:
+                classifier.fit(x_train_scaled, y_train_train)
+                accuracy = classifier.score(x_test_scaled, y_train_test)
+            accuracies_with_rand.append(accuracy)
+
+    print(f'Debug time: In CV - Total: {time.time() - time_start} seconds')
+
+    return np.mean(accuracies_with_rand), np.std(accuracies_with_rand)
+
+
+def fit_detailed(name_str, type_class, basic_classifier, x_train, y_train, x_test, train, results, preds,
+                 train_probas, test_probas, param_grid=None):
+
+    start_time = time.time()
+
+    if 'random_state' in basic_classifier.get_params():
+        basic_classifier.set_params(random_state=RANDOM_STATE_FIRST)
+    if 'n_jobs' in basic_classifier.get_params():
+        basic_classifier.set_params(n_jobs=-1)
+
+    cross_acc_score_full, cross_acc_std_full = get_cross_val_score_full(
+        basic_classifier, x_train, y_train, param_grid)
 
     x_train_scaled_no_rfe, x_test_scaled_no_rfe, columns = prepare_features_scale_every_time(
         x_train.copy(), x_test.copy(), train)
 
-    fold = KFold(cv_folds, True, random_state=RANDOM_STATE_FIRST)
+    rfe_fold = KFold(options['num_folds'], True, random_state=RANDOM_STATE_FIRST)
 
-    rfe = RFECV(classifier, cv=fold, n_jobs=-1)
+    rfe = RFECV(basic_classifier, cv=rfe_fold, n_jobs=-1)
+
     rfe.fit(x_train_scaled_no_rfe, y_train)
-    print(f'Debug: RFE: for {name_str},{type_class} - out of total of {x_train_scaled_no_rfe.shape[1]} features, '
-          f'{rfe.n_features_} were chosen:\n{columns[rfe.support_]}')
 
     x_train_scaled = x_train_scaled_no_rfe[:, rfe.support_]
     x_test_scaled = x_test_scaled_no_rfe[:, rfe.support_]
     columns = columns[rfe.support_]
+    print(f'Debug: RFE: for {name_str},{type_class} - out of total of {x_train_scaled_no_rfe.shape[1]} features, '
+          f'{rfe.n_features_} were chosen:\n{columns}')
 
-    classifier.fit(x_train_scaled, y_train)
-    preds[name_str] = classifier.predict(x_test_scaled)
-    train_acc_score = classifier.score(x_train_scaled, y_train)
+    if param_grid:
+        grid_fold = KFold(options['num_folds'], True, random_state=RANDOM_STATE_FIRST)
 
-    train_preds = classifier.predict(x_train_scaled)
-    train_roc_auc_score = round(roc_auc_score(y_train, classifier.predict_proba(x_train_scaled)[:, 1]), 2)
+        grid = GridSearchCV(estimator=basic_classifier, param_grid=param_grid, cv=grid_fold, n_jobs=-1)
+        grid.fit(x_train_scaled, y_train)
+        best_estimator = grid.best_estimator_
+    else:
+        basic_classifier.fit(x_train_scaled, y_train)
+        best_estimator = basic_classifier
+
+    preds[name_str] = best_estimator.predict(x_test_scaled)
+    train_acc_score = best_estimator.score(x_train_scaled, y_train)
+    train_preds = best_estimator.predict(x_train_scaled)
+
+    train_roc_auc_score = round(roc_auc_score(y_train, best_estimator.predict_proba(x_train_scaled)[:, 1]), 2)
     train_f1_score_not_survived = round(f1_score(y_train, train_preds, average="micro", labels=[0]), 2)
     train_f1_score_survived = round(f1_score(y_train, train_preds, average="micro", labels=[1]), 2)
     train_precision_score_not_survived = round(precision_score(y_train, train_preds, average="micro", labels=[0]), 2)
@@ -467,24 +525,32 @@ def fit_detailed(name_str, type_class, classifier, x_train, y_train, x_test, tra
     train_recall_score_survived = round(recall_score(y_train, train_preds, average="micro", labels=[1]), 2)
 
     try:
-        train_probas[name_str] = classifier.predict_proba(x_train_scaled)[:, 0]
-        test_probas[name_str] = classifier.predict_proba(x_test_scaled)[:, 0]
+        train_probas[name_str] = best_estimator.predict_proba(x_train_scaled)[:, 0]
+        test_probas[name_str] = best_estimator.predict_proba(x_test_scaled)[:, 0]
     except AttributeError:
         # For Hard voting probabilities where predict_proba is not supported
         train_probas[name_str] = np.mean(x_train_scaled, axis=1)
         test_probas[name_str] = np.mean(x_test_scaled, axis=1)
 
-    cross_acc_min_3_std = cross_acc_score - cross_acc_std * 3
+    cross_acc_min_3_std_full = cross_acc_score_full - cross_acc_std_full * 3
+
+    cross_acc_score_specific, cross_acc_std_specific = get_cross_val_score_prepared(
+        best_estimator, x_train_scaled, y_train)
+    cross_acc_min_3_std_specific = cross_acc_score_specific - cross_acc_std_specific * 3
 
     results.append({'Features options': str(options['feature_view']),
                     'Name': name_str,
-                    'CV folds': cv_folds,
-
+                    'Type': type_class,
                     'Train acc': round(train_acc_score * 100, 1),
-                    'Cross acc': round(cross_acc_score * 100, 1),
-                    'Cross acc STD': round(cross_acc_std * 100, 1),
-                    'Cross acc - 3*STD': round(cross_acc_min_3_std * 100, 1),
-                    'Train - Cross acc-STD*3': round((train_acc_score - cross_acc_min_3_std) * 100, 1),
+                    'Full Cross acc': round(cross_acc_score_full * 100, 1),
+                    'Full Cross acc STD': round(cross_acc_std_full * 100, 1),
+                    'Full Cross acc - 3*STD': round(cross_acc_min_3_std_full * 100, 1),
+                    'Full Train - Cross acc-STD*3': round((train_acc_score - cross_acc_min_3_std_full) * 100, 1),
+
+                    'Spec Cross acc': round(cross_acc_score_specific * 100, 1),
+                    'Spec Cross acc STD': round(cross_acc_std_specific * 100, 1),
+                    'Spec Cross acc - 3*STD': round(cross_acc_min_3_std_specific * 100, 1),
+                    'Spec Train - Cross acc-STD*3': round((train_acc_score - cross_acc_min_3_std_specific) * 100, 1),
 
                     'Time sec': round(time.time() - start_time),
                     'Train auc': train_roc_auc_score,
@@ -494,44 +560,23 @@ def fit_detailed(name_str, type_class, classifier, x_train, y_train, x_test, tra
                     'Train precision survived': train_precision_score_survived,
                     'Train recall died': train_recall_score_not_survived,
                     'Train recall survived': train_recall_score_survived,
-                    'Classifier options': classifier.get_params()})
+                    'Num features': len(columns),
+                    'Features': list(columns),
+                    'Classifier options': best_estimator.get_params()})
     print(f'Debug: Stats {type_class}: {results[-1]}')
 
-    print_feature_importances(name_str, classifier, columns)
+    print_feature_importances(name_str, best_estimator, columns)
+
+    return best_estimator
 
 
-def fit_grid_classifier(name_str, x_train, y_train, x_test, train, single_classifier, grid_params, results, preds,
-                        train_probas, test_probas):
-    start_time = time.time()
-
-    grid = GridSearchCV(single_classifier, grid_params, verbose=1, cv=5, n_jobs=-1)
-    grid.fit(x_train, y_train)
-    classifier = grid.best_estimator_
-    print(f'Debug: {name_str} best classifier:\n{classifier}')
-
-    dif_detailed_with_folds(name_str, 'Grid', classifier, x_train, y_train, x_test, train, results, preds,
-                      train_probas, test_probas, start_time)
-
-    return classifier
-
-
-def fit_single_classifier(name_str, x_train, y_train, x_test, train, classifier, results, preds, train_probas, test_probas):
-    start_time = time.time()
-
-    dif_detailed_with_folds(name_str, 'Single', classifier, x_train, y_train, x_test, train, results, preds,
-                      train_probas, test_probas, start_time)
-
-    return classifier
-
-
+# TODO - should stay?
 def fit_predict_voting(classifiers, name_str, voting_type, x_train, y_train, x_test, train, results, preds,
                        train_probas, test_probas):
-    start_time = time.time()
-
     classifier = VotingClassifier(estimators=classifiers, voting=voting_type, n_jobs=-1)
 
-    dif_detailed_with_folds(name_str, 'Voting', classifier, x_train, y_train, x_test, train, results, preds,
-                      train_probas, test_probas, start_time)
+    fit_detailed(name_str, 'Voting', classifier, x_train, y_train, x_test, train, results, preds,
+                 train_probas, test_probas)
 
     return classifier
 
@@ -573,49 +618,36 @@ def single_features_view(x_train, y_train, x_test, train, results, output_folder
     train_probas = pd.DataFrame()
     test_probas = pd.DataFrame()
 
-    single_classifiers = options['single_classifiers']
-    grid_classifiers = options['grid_classifiers']
-    grid_classifiers_not_for_ensembling = options['grid_classifiers_not_for_ensembling']
-
     classifiers_for_ensembling = []
 
     # Unused prediction probabilities - to prevent taking some classifiers into account for voting and ensemble
     unused_train_proba = pd.DataFrame()
     unused_test_proba = pd.DataFrame()
 
-    for cl in single_classifiers:
-        classifier = fit_single_classifier(cl,
-                                           x_train,
-                                           y_train,
-                                           x_test,
-                                           train,
-                                           single_classifiers[cl]['clas'],
-                                           results, preds, unused_train_proba, unused_test_proba)
-        # Currently, only using Grid classifiers for voting
-        '''
-        if cl not in grid_classifiers_not_for_ensembling:
-            classifiers_for_ensembling.append((cl, classifier))
-        '''
-
-    for cl in grid_classifiers:
-        classifier = fit_grid_classifier(
+    for cl in options['classifiers']:
+        use_in_ensemble = options['classifiers'][cl]['Use in ensemble']
+        grid_params = options['classifiers'][cl]['grid_params']
+        classifier = fit_detailed(
             cl,
+            'Single' if not grid_params else 'Grid',
+            options['classifiers'][cl]['clas'],
             x_train,
             y_train,
             x_test,
             train,
-            grid_classifiers[cl]['clas'],
-            grid_classifiers[cl]['grid_params'],
             results,
             preds,
-            train_probas if cl not in grid_classifiers_not_for_ensembling else unused_train_proba,
-            test_probas if cl not in grid_classifiers_not_for_ensembling else unused_test_proba)
-        if cl not in grid_classifiers_not_for_ensembling:
+            train_probas if use_in_ensemble else unused_train_proba,
+            test_probas if use_in_ensemble else unused_test_proba,
+            param_grid=grid_params)
+
+        if options['classifiers'][cl]['Use in ensemble']:
             classifiers_for_ensembling.append((cl, classifier))
 
     # Ensembling from previous classifiers
     # Voting based on part of the Grid results - see grid_classifiers_not_for_ensembling
 
+    '''
     if classifiers_for_ensembling:
         fit_predict_voting(classifiers_for_ensembling, 'Voting soft - part of grid', 'soft',
                            x_train, y_train, x_test, train,
@@ -623,6 +655,7 @@ def single_features_view(x_train, y_train, x_test, train, results, output_folder
         fit_predict_voting(classifiers_for_ensembling, 'Voting hard - part of grid', 'hard',
                            x_train, y_train, x_test, train,
                            results, preds, unused_train_proba, unused_test_proba)
+    '''
 
     # Ensembling based on probabilities of previous classifiers
     # Based on part of the Grid results - see grid_classifiers_not_for_ensembling
@@ -631,17 +664,21 @@ def single_features_view(x_train, y_train, x_test, train, results, output_folder
     print(f'Debug: head of train_probas:\n{train_probas.head()}')
 
     if train_probas.shape[0] > 0:
-        # TODO - signature was changed to include train - fix
+        # TODO - signature was changed to include train - fix, method replaced directly with fit_detailed
+        '''
         fit_grid_classifier('Ensemble RF - part of grid', train_probas, y_train, test_probas,
-                            RandomForestClassifier(n_estimators=1000, random_state=RANDOM_STATE_FIRST, n_jobs=-1),
+                            RandomForestClassifier(n_estimators=1000, n_jobs=-1),
                             [{'max_depth': range(3, 10)}],
                             results, preds, unused_train_proba, unused_test_proba)
+        '''
 
-        # TODO - signature was changed to include train - fix
+        # TODO - signature was changed to include train - fix, method replaced directly with fit_detailed
+        '''
         fit_grid_classifier('Ensemble Log - part of grid', train_probas, y_train, test_probas,
-                            LogisticRegression(solver='liblinear', random_state=RANDOM_STATE_FIRST, n_jobs=-1),
+                            LogisticRegression(solver='liblinear', n_jobs=-1),
                             [{'solver': ['liblinear', 'lbfgs', 'newton-cg', 'sag', 'saga']}],
                             results, preds, unused_train_proba, unused_test_proba)
+        '''
 
     view_output_folder = output_folder + '/' + feature_view_name + '/'
     os.mkdir(view_output_folder)
@@ -690,18 +727,14 @@ Beginning:
 - k-Fold actual training (in addition to Bagging? Instead?) How to actually combine results?
 - Consider Bagging and not just cross-validation at one of the lower levels
     Use Out of Bag accuracy when doing Bagging
-A bit later:
-- Take code and ideas from https://machinelearningmastery.com/spot-check-machine-learning-algorithms-in-python/
-- First do Grid, then cross-validation
-- Automate bottom line report and choosing of the model
-- Do feature selection with RFECV per algorithm
-- Try stratified fold
 Make sure didn't break after this step: 
 - Make sure doesn't break: Shuffle with random_state - some algorithms are effected by the order, random state for cross-validation
 - Make sure actually using different cross-validation sizes
 - Make sure using average of a few random sizes 
 - Consider adding more views of features (age, family size etc.)
 Middle:
+- Try stratified fold
+- Automate bottom line report and choosing of the model
 - Add extra trees algorithm, AdaBoost, Bernoulli NB (perhaps instead / in addition to Gaussasian NB), others from his list of best / all
     From his list of algorithms for classification: Random Forest, XGBoost, SVM, (Backpropogation - what specifically is it?), Decision Trees (CART and C4.5/C5.0), Naive Bayes, Logistic Regression and Linear Discriminant Analysis, k-Nearest Neighbors and Learning Vector Quantization (what is it?)
 - Give a chance to each one of the classifiers
@@ -715,8 +748,8 @@ End:
 options = {
     'output_preds': False,
     # TODO - need to somehow print options of the grid in a useful way
-    'input_options_not_to_output': ['single_classifiers', 'grid_classifiers'],
-    'cv_folds': [5],  # options of number of folds for Cross validation.  Try with 10 also - gives even worse result
+    'input_options_not_to_output': ['classifiers', 'grid_classifiers'],
+    'num_folds': 5,  # options of number of folds for Cross validation.  Try with 10 also - gives even worse result
     'num_rands': 5,  # number of times to run the same thing with various random numbers. Better to have 10-15, 5 for now to make it quicker
     # TODO is there a nice way to do it than to split up both major and minor into once and every time?
     # main columns to drop
@@ -745,41 +778,54 @@ options = {
 
         # 'Deck': []  # TODO - should add different ways to combine?
     },
-    # classifiers that we don't use for Grid Search
-    'single_classifiers': {
-        'Log': {'clas': LogisticRegression(solver='liblinear', random_state=RANDOM_STATE_FIRST, n_jobs=-1)},
-#        'KNN 14': {'clas': KNeighborsClassifier(n_neighbors=14, n_jobs=-1)},
-#        'SVM rbf': {'clas': SVC(gamma='auto', kernel='rbf', probability=True, random_state=RANDOM_STATE)},
-#        'SVM poly': {'clas': SVC(gamma='auto', kernel='poly', probability=True, random_state=RANDOM_STATE)},
-#        'NB': {'clas': GaussianNB()},  # consistently gives worse results
-#        'RF 10': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=10, random_state=RANDOM_STATE, n_jobs=-1)},
-#        'RF 9': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=9, random_state=RANDOM_STATE, n_jobs=-1)},
-#        'RF 8': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=8, random_state=RANDOM_STATE, n_jobs=-1)},
-#        'RF 7': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=7, random_state=RANDOM_STATE, n_jobs=-1)},
-#        'RF 6': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=6, random_state=RANDOM_STATE, n_jobs=-1)},
-#        'XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', n_estimators=1000,
- #                                         random_state=RANDOM_STATE, n_jobs=-1)}
-    },
-    # Classifiers we use with Grid search
-    'grid_classifiers': {
- #       'Grid Log': {'clas': LogisticRegression(solver='liblinear', random_state=RANDOM_STATE, n_jobs=-1),
- #                    'grid_params': [{'solver': ['liblinear', 'lbfgs', 'newton-cg', 'sag', 'saga']}]},
- #       'Grid KNN': {'clas': KNeighborsClassifier(n_neighbors=14, n_jobs=-1),
- #                    'grid_params': [{'n_neighbors': range(3, 25)}]},
- #       'Grid SVM': {'clas': SVC(gamma='auto', kernel='rbf', probability=True, random_state=RANDOM_STATE),
- #                    'grid_params':
- #                        [{
- #                           'kernel': ['rbf', 'poly', 'sigmoid'],
- #                           'C': [0.3, 0.5, 1.0, 1.5, 2.0],
- #                           'gamma': [0.3, 0.2, 0.1, 0.05, 0.01, 'auto_deprecated', 'scale']
- #                        }],
- #                    },
- #       'Grid RF': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=7, random_state=RANDOM_STATE, n_jobs=-1),
- #                   'grid_params': [{'max_depth': range(3, 10)}]},
- #       'Grid XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic',
- #                                              n_estimators=1000,
- #                                              random_state=RANDOM_STATE,
- #                                              n_jobs=-1),
+    'classifiers': {
+        # Look promising
+        'Log': {'clas': LogisticRegression(solver='lbfgs'), 'grid_params': None, 'Use in ensemble': False},
+
+        # Possibly retry later - probably not needed (redundant)
+# Removed - was found that lbfgs is very slightly better usually, no point of running full Grid every time
+         'Grid Log': {'clas': LogisticRegression(solver='liblinear'),
+                      'grid_params': [{'solver': ['liblinear', 'lbfgs', 'newton-cg', 'sag', 'saga']}],
+                      'Use in ensemble': False
+                      },
+
+        # Possibly retry later - probably not needed (average performers)
+
+
+        # Bad performers
+
+
+        # Redundant
+
+
+        # Not classified yet:
+
+#        'KNN 14': {'clas': KNeighborsClassifier(n_neighbors=14), 'grid_params': None, 'Use in ensemble': False},
+#       'Grid KNN': {'clas': KNeighborsClassifier(n_neighbors=14),
+ #                    'grid_params': [{'n_neighbors': range(3, 25)}], 'Use in ensemble': False},
+#        'SVM rbf': {'clas': SVC(gamma='auto', kernel='rbf', probability=True), 'grid_params': None, 'Use in ensemble': False},
+#        'SVM poly': {'clas': SVC(gamma='auto', kernel='poly', probability=True), 'grid_params': None, 'Use in ensemble': False},
+        #       'Grid SVM': {'clas': SVC(gamma='auto', kernel='rbf', probability=True),
+        #                    'grid_params':
+        #                        [{
+        #                           'kernel': ['rbf', 'poly', 'sigmoid'],
+        #                           'C': [0.3, 0.5, 1.0, 1.5, 2.0],
+        #                           'gamma': [0.3, 0.2, 0.1, 0.05, 0.01, 'auto_deprecated', 'scale']
+        #                        }],
+        #                        'Use in ensemble': False
+        #                        },
+#        'NB': {'clas': GaussianNB(), 'grid_params': None, 'Use in ensemble': False},  # consistently gives worse results
+#        'RF 10': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=10), 'grid_params': None, 'Use in ensemble': False},
+#        'RF 9': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=9), 'grid_params': None, 'Use in ensemble': False},
+#        'RF 8': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=8), 'grid_params': None, 'Use in ensemble': False},
+#        'RF 7': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=7), 'grid_params': None, 'Use in ensemble': False},
+#        'RF 6': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=6), 'grid_params': None, 'Use in ensemble': False},
+ #       'Grid RF': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=7),
+ #                   'grid_params': [{'max_depth': range(3, 10)}],
+#                   'Use in ensemble': False
+#                   },
+#        'XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', n_estimators=1000), 'grid_params': None, 'Use in ensemble': False},
+ #       'Grid XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', n_estimators=1000),
  #                    'grid_params':
  #                        [{
  #                            'max_depth': range(1, 8, 1)  # default 3 - higher depth - less bias, more variance
@@ -789,10 +835,10 @@ options = {
  #                            # 'subsample': [i / 10.0 for i in range(6, 11)], # default 1, smaller values prevent overfitting
  #                            # 'colsample_bytree': [i / 10.0 for i in range(6, 11)] # default 1, fraction of features selected for each tree
  #                            # 'gamma': [i / 10.0 for i in range(3)]  # default 0 - for what gain in metric to continue splitting
- #                        }]
+ #                        }],
+#                        'Use in ensemble': False,
  #                    }
-    },
-    'grid_classifiers_not_for_ensembling': ['Grid SVM', 'Grid XGB']
+    }
 }
 
 main()
