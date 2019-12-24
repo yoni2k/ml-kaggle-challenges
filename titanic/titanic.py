@@ -21,6 +21,7 @@ from sklearn.feature_selection import RFECV
 
 from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import VotingClassifier
+from sklearn.ensemble import BaggingClassifier
 
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
@@ -404,6 +405,9 @@ def get_cross_val_score_prepared(classifier, x_train, y_train):
 
             x_train_sub = x_train[train_indicies]
             x_test_sub = x_train[test_indicies]
+
+            # TODO perhaps should be rescaled again
+
             y_train_sub = y_train.reset_index(drop=True)[train_indicies]
             y_test_sub = y_train.reset_index(drop=True)[test_indicies]
 
@@ -474,6 +478,94 @@ def get_cross_val_score_full(classifier, x_train, y_train, param_grid):
     return np.mean(accuracies_with_rand), np.std(accuracies_with_rand)
 
 
+def fit_bagged(name_str, basic_classifier, x_train, y_train, x_test, train, results, preds,
+                 train_probas, test_probas):
+    highest_accuracy = 0
+    start_time = time.time()
+
+    if 'random_state' in basic_classifier.get_params():
+        basic_classifier.set_params(random_state=RANDOM_STATE_FIRST)
+    if 'n_jobs' in basic_classifier.get_params():
+        basic_classifier.set_params(n_jobs=-1)
+
+    x_train_scaled_no_rfe, x_test_scaled_no_rfe, columns = prepare_features_scale_every_time(
+        x_train.copy(), x_test.copy(), train)
+
+    rfe_fold = KFold(options['num_folds'], True, random_state=RANDOM_STATE_FIRST)
+
+    rfe = RFECV(basic_classifier, cv=rfe_fold, n_jobs=-1)
+
+    rfe.fit(x_train_scaled_no_rfe, y_train)
+
+    x_train_scaled = x_train_scaled_no_rfe[:, rfe.support_]
+    x_test_scaled = x_test_scaled_no_rfe[:, rfe.support_]
+    columns = columns[rfe.support_]
+    print(f'Debug: RFE: for Bag of {name_str} - out of total of {x_train_scaled_no_rfe.shape[1]} features, '
+          f'{rfe.n_features_} were chosen:\n{columns}')
+
+    # TODO perhaps x_train_scaled and x_test_scaled should be rescaled again
+
+    for sample_fraction in options['bagging_fractions']:
+        for features_fraction in options['bagging_feature_fractions']:
+            for bootstrap in options['bagging_bootstrap']:
+                type_class = 'Bag ' + str(sample_fraction) + ' Feat ' + str(features_fraction) + \
+                             ' replace ' + str(bootstrap)
+                bag = BaggingClassifier(basic_classifier, n_estimators=100, oob_score=bootstrap,
+                                        max_samples=sample_fraction,
+                                        max_features=features_fraction,
+                                        bootstrap=bootstrap,
+                                        n_jobs=-1, random_state=RANDOM_STATE_FIRST)
+
+                bag.fit(x_train_scaled, y_train)
+                best_estimator = bag
+
+                preds[name_str + '_' + type_class] = best_estimator.predict(x_test_scaled)
+                train_acc_score = best_estimator.score(x_train_scaled, y_train)
+                train_preds = best_estimator.predict(x_train_scaled)
+
+                # Comparing the training score, and not OOB because OOB is not available without replacement
+                if train_acc_score > highest_accuracy:
+                    highest_accuracy_estimator = best_estimator
+                    highest_accuracy = train_acc_score
+
+                train_roc_auc_score = round(roc_auc_score(y_train, best_estimator.predict_proba(x_train_scaled)[:, 1]), 2)
+                train_f1_score_not_survived = round(f1_score(y_train, train_preds, average="micro", labels=[0]), 2)
+                train_f1_score_survived = round(f1_score(y_train, train_preds, average="micro", labels=[1]), 2)
+                train_precision_score_not_survived = round(precision_score(y_train, train_preds, average="micro", labels=[0]), 2)
+                train_precision_score_survived = round(precision_score(y_train, train_preds, average="micro", labels=[1]), 2)
+                train_recall_score_not_survived = round(recall_score(y_train, train_preds, average="micro", labels=[0]), 2)
+                train_recall_score_survived = round(recall_score(y_train, train_preds, average="micro", labels=[1]), 2)
+
+                try:
+                    train_probas[name_str] = best_estimator.predict_proba(x_train_scaled)[:, 0]
+                    test_probas[name_str] = best_estimator.predict_proba(x_test_scaled)[:, 0]
+                except AttributeError:
+                    # For Hard voting probabilities where predict_proba is not supported
+                    train_probas[name_str] = np.mean(x_train_scaled, axis=1)
+                    test_probas[name_str] = np.mean(x_test_scaled, axis=1)
+
+                results.append({'Features options': str(options['feature_view']),
+                                'Name': name_str,
+                                'Type': type_class,
+                                'Train acc': round(train_acc_score * 100, 1),
+                                'OOB acc': round(bag.oob_score_ * 100, 1) if bootstrap else np.NaN,
+                                'Train acc - OOB acc': round((train_acc_score - bag.oob_score_) * 100, 1) if bootstrap else np.NaN,
+                                'Time sec': round(time.time() - start_time),
+                                'Train auc': train_roc_auc_score,
+                                'Train f1 died': train_f1_score_not_survived,
+                                'Train f1 survived': train_f1_score_survived,
+                                'Train precision died': train_precision_score_not_survived,
+                                'Train precision survived': train_precision_score_survived,
+                                'Train recall died': train_recall_score_not_survived,
+                                'Train recall survived': train_recall_score_survived,
+                                'Num features': len(columns),
+                                'Features': list(columns),
+                                'Classifier options': best_estimator.get_params()})
+                print(f'Debug: Stats: {results[-1]}')
+
+    return highest_accuracy_estimator
+
+
 def fit_detailed(name_str, type_class, basic_classifier, x_train, y_train, x_test, train, results, preds,
                  train_probas, test_probas, param_grid=None):
 
@@ -512,7 +604,7 @@ def fit_detailed(name_str, type_class, basic_classifier, x_train, y_train, x_tes
         basic_classifier.fit(x_train_scaled, y_train)
         best_estimator = basic_classifier
 
-    preds[name_str] = best_estimator.predict(x_test_scaled)
+    preds[name_str + '_' + type_class] = best_estimator.predict(x_test_scaled)
     train_acc_score = best_estimator.score(x_train_scaled, y_train)
     train_preds = best_estimator.predict(x_train_scaled)
 
@@ -542,6 +634,8 @@ def fit_detailed(name_str, type_class, basic_classifier, x_train, y_train, x_tes
                     'Name': name_str,
                     'Type': type_class,
                     'Train acc': round(train_acc_score * 100, 1),
+                    'OOB acc': np.NAN,  # placeholder because of bagging to make it nicer
+                    'Train acc - OOB acc': np.NAN,  # placeholder because of bagging to make it nicer
                     'Full Cross acc': round(cross_acc_score_full * 100, 1),
                     'Full Cross acc STD': round(cross_acc_std_full * 100, 1),
                     'Full Cross acc - 3*STD': round(cross_acc_min_3_std_full * 100, 1),
@@ -644,6 +738,24 @@ def single_features_view(x_train, y_train, x_test, train, results, output_folder
         if options['classifiers'][cl]['Use in ensemble']:
             classifiers_for_ensembling.append((cl, classifier))
 
+    for cl in options['classifiers']:
+        if options['classifiers'][cl]['Bag']:
+            use_in_ensemble = options['classifiers'][cl]['Use in ensemble']
+            classifier = fit_bagged(
+                cl,
+                options['classifiers'][cl]['clas'],
+                x_train,
+                y_train,
+                x_test,
+                train,
+                results,
+                preds,
+                train_probas if use_in_ensemble else unused_train_proba,
+                test_probas if use_in_ensemble else unused_test_proba)
+
+            if options['classifiers'][cl]['Use in ensemble']:
+                classifiers_for_ensembling.append((cl, classifier))
+
     # Ensembling from previous classifiers
     # Voting based on part of the Grid results - see grid_classifiers_not_for_ensembling
 
@@ -723,22 +835,14 @@ def main():
 
 '''
 TODO:
-Beginning:
-- k-Fold actual training (in addition to Bagging? Instead?) How to actually combine results?
-- Consider Bagging and not just cross-validation at one of the lower levels
-    Use Out of Bag accuracy when doing Bagging
-Make sure didn't break after this step: 
-- Make sure doesn't break: Shuffle with random_state - some algorithms are effected by the order, random state for cross-validation
-- Make sure actually using different cross-validation sizes
-- Make sure using average of a few random sizes 
-- Consider adding more views of features (age, family size etc.)
-Middle:
-- Try stratified fold
-- Automate bottom line report and choosing of the model
-- Add extra trees algorithm, AdaBoost, Bernoulli NB (perhaps instead / in addition to Gaussasian NB), others from his list of best / all
-    From his list of algorithms for classification: Random Forest, XGBoost, SVM, (Backpropogation - what specifically is it?), Decision Trees (CART and C4.5/C5.0), Naive Bayes, Logistic Regression and Linear Discriminant Analysis, k-Nearest Neighbors and Learning Vector Quantization (what is it?)
 - Give a chance to each one of the classifiers
 - XGBoost - do much more parameter optimizations
+- Try stratified fold
+- Add extra trees algorithm, AdaBoost, Bernoulli NB (perhaps instead / in addition to Gaussasian NB), others from his list of best / all
+    From his list of algorithms for classification: Random Forest, XGBoost, SVM, (Backpropogation - what specifically is it?), Decision Trees (CART and C4.5/C5.0), Naive Bayes, Logistic Regression and Linear Discriminant Analysis, k-Nearest Neighbors and Learning Vector Quantization (what is it?)
+- Automate bottom line report and choosing of the model
+- Go over all TODOs in this file
+- Consider adding more views of features (age, family size etc.)
 - Read in my summaries what other steps need to try 
 End:
 - Voting only on models I know work best
@@ -751,6 +855,9 @@ options = {
     'input_options_not_to_output': ['classifiers', 'grid_classifiers'],
     'num_folds': 5,  # options of number of folds for Cross validation.  Try with 10 also - gives even worse result
     'num_rands': 5,  # number of times to run the same thing with various random numbers. Better to have 10-15, 5 for now to make it quicker
+    'bagging_fractions': [0.9],  # [0.3, 0.5, .75, 0.9]
+    'bagging_feature_fractions': [1.0],  #  [.5, .75, .9, .95, 1.0]
+    'bagging_bootstrap': [True],  # [True, False]
     # TODO is there a nice way to do it than to split up both major and minor into once and every time?
     # main columns to drop
     'major_columns_to_drop_once': [
@@ -780,19 +887,20 @@ options = {
     },
     'classifiers': {
         # Look promising
-        'Log': {'clas': LogisticRegression(solver='lbfgs'), 'grid_params': None, 'Use in ensemble': False},
+        'Log': {'clas': LogisticRegression(solver='lbfgs'), 'grid_params': None, 'Use in ensemble': False, 'Bag': True},
 
         # Possibly retry later - probably not needed (redundant)
 # Removed - was found that lbfgs is very slightly better usually, no point of running full Grid every time
-         'Grid Log': {'clas': LogisticRegression(solver='liblinear'),
-                      'grid_params': [{'solver': ['liblinear', 'lbfgs', 'newton-cg', 'sag', 'saga']}],
-                      'Use in ensemble': False
-                      },
+#         'Grid Log': {'clas': LogisticRegression(solver='liblinear'),
+#                      'grid_params': [{'solver': ['liblinear', 'lbfgs', 'newton-cg', 'sag', 'saga']}],
+#                      'Use in ensemble': False, 'Bag': True
+#                      },
 
         # Possibly retry later - probably not needed (average performers)
 
 
         # Bad performers
+#        'NB': {'clas': GaussianNB(), 'grid_params': None, 'Use in ensemble': False, 'Bag': True},  # consistently gives worse results
 
 
         # Redundant
@@ -800,11 +908,11 @@ options = {
 
         # Not classified yet:
 
-#        'KNN 14': {'clas': KNeighborsClassifier(n_neighbors=14), 'grid_params': None, 'Use in ensemble': False},
+#        'KNN 14': {'clas': KNeighborsClassifier(n_neighbors=14), 'grid_params': None, 'Use in ensemble': False, 'Bag': True},
 #       'Grid KNN': {'clas': KNeighborsClassifier(n_neighbors=14),
- #                    'grid_params': [{'n_neighbors': range(3, 25)}], 'Use in ensemble': False},
-#        'SVM rbf': {'clas': SVC(gamma='auto', kernel='rbf', probability=True), 'grid_params': None, 'Use in ensemble': False},
-#        'SVM poly': {'clas': SVC(gamma='auto', kernel='poly', probability=True), 'grid_params': None, 'Use in ensemble': False},
+ #                    'grid_params': [{'n_neighbors': range(3, 25)}], 'Use in ensemble': False, 'Bag': True},
+#        'SVM rbf': {'clas': SVC(gamma='auto', kernel='rbf', probability=True), 'grid_params': None, 'Use in ensemble': False, 'Bag': True},
+#        'SVM poly': {'clas': SVC(gamma='auto', kernel='poly', probability=True), 'grid_params': None, 'Use in ensemble': False, 'Bag': True},
         #       'Grid SVM': {'clas': SVC(gamma='auto', kernel='rbf', probability=True),
         #                    'grid_params':
         #                        [{
@@ -812,19 +920,18 @@ options = {
         #                           'C': [0.3, 0.5, 1.0, 1.5, 2.0],
         #                           'gamma': [0.3, 0.2, 0.1, 0.05, 0.01, 'auto_deprecated', 'scale']
         #                        }],
-        #                        'Use in ensemble': False
+        #                        'Use in ensemble': False, 'Bag': True
         #                        },
-#        'NB': {'clas': GaussianNB(), 'grid_params': None, 'Use in ensemble': False},  # consistently gives worse results
-#        'RF 10': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=10), 'grid_params': None, 'Use in ensemble': False},
-#        'RF 9': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=9), 'grid_params': None, 'Use in ensemble': False},
-#        'RF 8': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=8), 'grid_params': None, 'Use in ensemble': False},
-#        'RF 7': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=7), 'grid_params': None, 'Use in ensemble': False},
-#        'RF 6': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=6), 'grid_params': None, 'Use in ensemble': False},
+#        'RF 10': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=10), 'grid_params': None, 'Use in ensemble': False, 'Bag': True},
+#        'RF 9': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=9), 'grid_params': None, 'Use in ensemble': False, 'Bag': True},
+#        'RF 8': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=8), 'grid_params': None, 'Use in ensemble': False, 'Bag': True},
+#        'RF 7': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=7), 'grid_params': None, 'Use in ensemble': False, 'Bag': True},
+#        'RF 6': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=6), 'grid_params': None, 'Use in ensemble': False, 'Bag': True},
  #       'Grid RF': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=7),
  #                   'grid_params': [{'max_depth': range(3, 10)}],
-#                   'Use in ensemble': False
+#                   'Use in ensemble': False, 'Bag': True
 #                   },
-#        'XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', n_estimators=1000), 'grid_params': None, 'Use in ensemble': False},
+#        'XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', n_estimators=1000), 'grid_params': None, 'Use in ensemble': False, 'Bag': True},
  #       'Grid XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', n_estimators=1000),
  #                    'grid_params':
  #                        [{
@@ -836,7 +943,7 @@ options = {
  #                            # 'colsample_bytree': [i / 10.0 for i in range(6, 11)] # default 1, fraction of features selected for each tree
  #                            # 'gamma': [i / 10.0 for i in range(3)]  # default 0 - for what gain in metric to continue splitting
  #                        }],
-#                        'Use in ensemble': False,
+#                        'Use in ensemble': False, 'Bag': True
  #                    }
     }
 }
