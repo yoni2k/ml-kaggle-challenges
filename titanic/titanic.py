@@ -734,7 +734,7 @@ def single_features_view(x_train, y_train, x_test, train, results, output_folder
     unused_train_proba = pd.DataFrame()
     unused_test_proba = pd.DataFrame()
 
-    for cl in options['classifiers']:
+    for cl in []:  # options['classifiers']:
         use_in_ensemble = options['classifiers'][cl]['Use in ensemble']
         grid_params = options['classifiers'][cl]['grid_params']
         classifier = fit_detailed(
@@ -871,9 +871,12 @@ options = {
     'input_options_not_to_output': ['classifiers', 'grid_classifiers'],
     'num_folds': 5,  # options of number of folds for Cross validation.  Try with 10 also - gives even worse result
     'num_rands': 5,  # number of times to run the same thing with various random numbers. Better to have 10-15, 5 for now to make it quicker
-    'bagging_fractions': [0.9],  # [0.3, 0.5, .75, 0.9]
-    'bagging_feature_fractions': [1.0],  #  [.5, .75, .9, .95, 1.0]
-    'bagging_bootstrap': [True],  # [True, False]
+    'bagging_fractions': [0.5, .75, 0.9],
+    # 'bagging_fractions': [0.9],
+    'bagging_feature_fractions': [.75, .9, .95, 1.0],
+    # 'bagging_feature_fractions': [1.0],
+    'bagging_bootstrap': [True, False],
+    # 'bagging_bootstrap': [True],
     # TODO is there a nice way to do it than to split up both major and minor into once and every time?
     # main columns to drop
     'major_columns_to_drop_once': [
@@ -903,30 +906,38 @@ options = {
     },
     'classifiers': {
         # Look promising
-#        'Log': {'clas': LogisticRegression(solver='lbfgs'), 'grid_params': None, 'Use in ensemble': False, 'Bag': True},
+#        'Log': {'clas': LogisticRegression(solver='lbfgs'), 'grid_params': None, 'Use in ensemble': False, 'Bag': True},  # Around 77
+#        'KNN 7': {'clas': KNeighborsClassifier(n_neighbors=7),                                                      # Gives around 77
+#                  'grid_params': None, 'Use in ensemble': False, 'Bag': False},
+        'KNN 9': {'clas': KNeighborsClassifier(n_neighbors=9), 'grid_params': None, 'Use in ensemble': False,      # Gives around 76-78
+                  'Bag': True},
+#        'KNN 12': {'clas': KNeighborsClassifier(n_neighbors=12), 'grid_params': None, 'Use in ensemble': False,    # Gives around 76-78, chosen by Grid
+#                   'Bag': False},
 
         # Possibly retry later - probably not needed (redundant)
-# Removed - was found that lbfgs is very slightly better usually, no point of running full Grid every time
-#         'Grid Log': {'clas': LogisticRegression(solver='liblinear'),
+        # Removed - was found that lbfgs is very slightly better usually, no point of running full Grid every time
+#        'Grid Log': {'clas': LogisticRegression(solver='liblinear'),
 #                      'grid_params': [{'solver': ['liblinear', 'lbfgs', 'newton-cg', 'sag', 'saga']}],
 #                      'Use in ensemble': False, 'Bag': True
 #                      },
+        # What was chosen is 12 uniform
+#        'Grid KNN': {'clas': KNeighborsClassifier(),                                                               # Gives around 76-78
+#                     'grid_params': [{'n_neighbors': range(5, 17), 'weights': ['uniform', 'distance']}],
+#                     'Use in ensemble': False, 'Bag': False},
 
         # Possibly retry later - probably not needed (average performers)
 
 
         # Bad performers
-        'NB': {'clas': GaussianNB(), 'grid_params': None, 'Use in ensemble': False, 'Bag': True},  # consistently gives worse results
+        # 'NB': {'clas': GaussianNB(), 'grid_params': None, 'Use in ensemble': False, 'Bag': True},  # consistently gives worse results
 
 
         # Redundant
 
 
         # Not classified yet:
+        #'KNN': {'clas': KNeighborsClassifier(), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},
 
-#        'KNN 14': {'clas': KNeighborsClassifier(n_neighbors=14), 'grid_params': None, 'Use in ensemble': False, 'Bag': True},
-#       'Grid KNN': {'clas': KNeighborsClassifier(n_neighbors=14),
- #                    'grid_params': [{'n_neighbors': range(3, 25)}], 'Use in ensemble': False, 'Bag': True},
 #        'SVM rbf': {'clas': SVC(gamma='auto', kernel='rbf', probability=True), 'grid_params': None, 'Use in ensemble': False, 'Bag': True},
 #        'SVM poly': {'clas': SVC(gamma='auto', kernel='poly', probability=True), 'grid_params': None, 'Use in ensemble': False, 'Bag': True},
         #       'Grid SVM': {'clas': SVC(gamma='auto', kernel='rbf', probability=True),
