@@ -393,7 +393,8 @@ def get_cross_val_score_prepared(classifier, x_train, y_train):
 
     for rand_loop in range(options['num_rands']):
         rand = rand_loop + RANDOM_STATE_FIRST
-        classifier.set_params(random_state=rand)
+        if 'random_state' in classifier.get_params():
+            classifier.set_params(random_state=rand)
         print(f'Debug: In get_cross_val_score_prepared - doing rand {rand_loop + 1} out of {options["num_rands"]}')
 
         fold = KFold(options['num_folds'], True, random_state=rand)
@@ -430,7 +431,8 @@ def get_cross_val_score_full(classifier, x_train, y_train, param_grid):
 
     for rand_loop in range(options['num_rands']):
         rand = rand_loop + RANDOM_STATE_FIRST
-        classifier.set_params(random_state=rand)
+        if 'random_state' in classifier.get_params():
+            classifier.set_params(random_state=rand)
         print(f'Debug: doing rand {rand_loop + 1} out of {options["num_rands"]}')
 
         fold = KFold(options['num_folds'], True, random_state=rand)
@@ -450,9 +452,15 @@ def get_cross_val_score_full(classifier, x_train, y_train, param_grid):
 
             time_temp = time.time()
             fold_rfe = KFold(options['num_folds'], True, random_state=RANDOM_STATE_FIRST)
-            rfe = RFECV(classifier, cv=fold_rfe, n_jobs=-1)
 
-            rfe.fit(x_train_scaled_no_rfe, y_train_train)
+            try:
+                rfe = RFECV(classifier, cv=fold_rfe, n_jobs=-1)
+                rfe.fit(x_train_scaled_no_rfe, y_train_train)
+            except RuntimeError:
+                # in case classifier doesn't have coef_ or feature_importances_, use Logistic Regression for RFE
+                rfe = RFECV(LogisticRegression(), cv=fold_rfe, n_jobs=-1)
+                rfe.fit(x_train_scaled_no_rfe, y_train_train)
+
             print(f'Debug time: In CV - RFE: {time.time() - time_temp} seconds')
             print(f'Debug: RFE: in CV - out of total of {x_train_scaled_no_rfe.shape[1]} features, '
                   f'{rfe.n_features_} were chosen:\n{columns[rfe.support_]}')
@@ -493,9 +501,13 @@ def fit_bagged(name_str, basic_classifier, x_train, y_train, x_test, train, resu
 
     rfe_fold = KFold(options['num_folds'], True, random_state=RANDOM_STATE_FIRST)
 
-    rfe = RFECV(basic_classifier, cv=rfe_fold, n_jobs=-1)
-
-    rfe.fit(x_train_scaled_no_rfe, y_train)
+    try:
+        rfe = RFECV(basic_classifier, cv=rfe_fold, n_jobs=-1)
+        rfe.fit(x_train_scaled_no_rfe, y_train)
+    except RuntimeError:
+        # in case classifier doesn't have coef_ or feature_importances_, use Logistic Regression for RFE
+        rfe = RFECV(LogisticRegression(), cv=rfe_fold, n_jobs=-1)
+        rfe.fit(x_train_scaled_no_rfe, y_train)
 
     x_train_scaled = x_train_scaled_no_rfe[:, rfe.support_]
     x_test_scaled = x_test_scaled_no_rfe[:, rfe.support_]
@@ -584,9 +596,13 @@ def fit_detailed(name_str, type_class, basic_classifier, x_train, y_train, x_tes
 
     rfe_fold = KFold(options['num_folds'], True, random_state=RANDOM_STATE_FIRST)
 
-    rfe = RFECV(basic_classifier, cv=rfe_fold, n_jobs=-1)
-
-    rfe.fit(x_train_scaled_no_rfe, y_train)
+    try:
+        rfe = RFECV(basic_classifier, cv=rfe_fold, n_jobs=-1)
+        rfe.fit(x_train_scaled_no_rfe, y_train)
+    except RuntimeError:
+        # in case classifier doesn't have coef_ or feature_importances_, use Logistic Regression for RFE
+        rfe = RFECV(LogisticRegression(), cv=rfe_fold, n_jobs=-1)
+        rfe.fit(x_train_scaled_no_rfe, y_train)
 
     x_train_scaled = x_train_scaled_no_rfe[:, rfe.support_]
     x_test_scaled = x_test_scaled_no_rfe[:, rfe.support_]
@@ -887,7 +903,7 @@ options = {
     },
     'classifiers': {
         # Look promising
-        'Log': {'clas': LogisticRegression(solver='lbfgs'), 'grid_params': None, 'Use in ensemble': False, 'Bag': True},
+#        'Log': {'clas': LogisticRegression(solver='lbfgs'), 'grid_params': None, 'Use in ensemble': False, 'Bag': True},
 
         # Possibly retry later - probably not needed (redundant)
 # Removed - was found that lbfgs is very slightly better usually, no point of running full Grid every time
@@ -900,7 +916,7 @@ options = {
 
 
         # Bad performers
-#        'NB': {'clas': GaussianNB(), 'grid_params': None, 'Use in ensemble': False, 'Bag': True},  # consistently gives worse results
+        'NB': {'clas': GaussianNB(), 'grid_params': None, 'Use in ensemble': False, 'Bag': True},  # consistently gives worse results
 
 
         # Redundant
