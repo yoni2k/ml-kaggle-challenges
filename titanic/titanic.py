@@ -914,7 +914,8 @@ options = {
 #        'KNN 12': {'clas': KNeighborsClassifier(n_neighbors=12), 'grid_params': None, 'Use in ensemble': False,    # Gives around 76-78, chosen by Grid
 #                   'Bag': False},
         # 'SVM rbf': {'clas': SVC(gamma='auto', kernel='rbf', probability=True), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},  # Gives 77-78
-        'RF 7': {'clas': RandomForestClassifier(n_estimators=100, max_depth=7), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},  # Gives 76-78
+        # 'RF 7': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=7), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},  # Gives 76-78
+        # 'XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', n_estimators=100), 'grid_params': None, 'Use in ensemble': False, 'Bag': False}, # Gives around 76-79 accuracy
 
 
         # Possibly retry later - probably not needed (redundant)
@@ -927,8 +928,27 @@ options = {
 #        'Grid KNN': {'clas': KNeighborsClassifier(),                                                               # Gives around 76-78
 #                     'grid_params': [{'n_neighbors': range(5, 17), 'weights': ['uniform', 'distance']}],
 #                     'Use in ensemble': False, 'Bag': False},
-
-        # Possibly retry later - probably not needed (average performers)
+        # 'XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', n_estimators=100), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},  # Gives 77-80
+        # 'Grid XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', n_estimators=200),                    # Gives 75-79
+        #              'grid_params':
+        #                  [{
+        #                      'max_depth': [2, 3, 4, 5, 6, 7],  # default 3 - higher depth - less bias, more variance
+        #                      'n_estimators': [100, 250],  # default 100
+        #                      'learning_rate': [0.25, 0.1, 0.01],  # , 0.001, 0.0001
+        #                      'min_child_weight': [0.5, 1, 2],
+        #                      # default 1 - higher number, less overfitting, when to stop splitting the child given sum of weights
+        #                      'subsample': [0.5, 0.75, 0.9, 1.0],  # default 1, smaller values prevent overfitting
+        #                      'colsample_bytree': [0.75, 0.9, 1.0],
+        #                      # default 1, fraction of features selected for each tree
+        #                      'gamma': [0, 0.1]  # default 0 - for what gain in metric to continue splitting
+        #                  }],
+        #              'Use in ensemble': False, 'Bag': False
+        #              }
+        # 'SVM poly': {'clas': SVC(gamma='auto', kernel='poly', probability=True), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},  # Gives 76-78, not better than rbh
+#       'Grid RF': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=7),
+#                   'grid_params': [{'max_depth': range(3, 10)}],
+#                   'Use in ensemble': False, 'Bag': True
+#                   },
 
 
         # Bad performers
@@ -936,9 +956,6 @@ options = {
         #'KNN': {'clas': KNeighborsClassifier(), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},  # default params gives bad performance, see specific params above
         # 'RF Default': {'clas': RandomForestClassifier(), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},
 
-
-        # Redundant
-        # 'SVM poly': {'clas': SVC(gamma='auto', kernel='poly', probability=True), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},  # Gives 76-78, not better than rbh
 
         # Not classified yet:
         #       'Grid SVM': {'clas': SVC(gamma='auto', kernel='rbf', probability=True),
@@ -950,28 +967,6 @@ options = {
         #                        }],
         #                        'Use in ensemble': False, 'Bag': False
         #                        },
-#        'RF 10': {'clas': RandomForestClassifier(n_estimators=100, max_depth=10), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},
-        'RF 9': {'clas': RandomForestClassifier(n_estimators=100, max_depth=9), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},
-        'RF 8': {'clas': RandomForestClassifier(n_estimators=100, max_depth=8), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},
-        'RF 6': {'clas': RandomForestClassifier(n_estimators=100, max_depth=6), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},
- #       'Grid RF': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=7),
- #                   'grid_params': [{'max_depth': range(3, 10)}],
-#                   'Use in ensemble': False, 'Bag': True
-#                   },
-#        'XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', n_estimators=1000), 'grid_params': None, 'Use in ensemble': False, 'Bag': True},
- #       'Grid XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', n_estimators=1000),
- #                    'grid_params':
- #                        [{
- #                            'max_depth': range(1, 8, 1)  # default 3 - higher depth - less bias, more variance
- #                            # 'n_estimators': range(60, 260, 40), # default 100
- #                            # 'learning_rate': [0.3, 0.2, 0.1, 0.01],  # , 0.001, 0.0001
- #                            # 'min_child_weight': [0.5, 1, 2],  # default 1 - higher number, less overfitting, when to stop splitting the child given sum of weights
- #                            # 'subsample': [i / 10.0 for i in range(6, 11)], # default 1, smaller values prevent overfitting
- #                            # 'colsample_bytree': [i / 10.0 for i in range(6, 11)] # default 1, fraction of features selected for each tree
- #                            # 'gamma': [i / 10.0 for i in range(3)]  # default 0 - for what gain in metric to continue splitting
- #                        }],
-#                        'Use in ensemble': False, 'Bag': True
- #                    }
     }
 }
 
