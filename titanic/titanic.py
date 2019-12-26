@@ -851,22 +851,20 @@ def main():
 
 '''
 TODO:
-- Give a chance to each one of the classifiers
-- XGBoost - do much more parameter optimizations
 - Try stratified fold
-- Add extra trees algorithm, AdaBoost, Bernoulli NB (perhaps instead / in addition to Gaussasian NB), others from his list of best / all
-    From his list of algorithms for classification: Random Forest, XGBoost, SVM, (Backpropogation - what specifically is it?), Decision Trees (CART and C4.5/C5.0), Naive Bayes, Logistic Regression and Linear Discriminant Analysis, k-Nearest Neighbors and Learning Vector Quantization (what is it?)
-- Automate bottom line report and choosing of the model
+- Add Extra Trees Algorithm
 - Go over all TODOs in this file
-- Consider adding more views of features (age, family size etc.)
-- Read in my summaries what other steps need to try 
-End:
 - Voting only on models I know work best
-- Consider using statistical tests to decide with algorithm is better: parametric / non parametric, P-value
+Possibly:
+- Add AdaBoost, Bernoulli NB (perhaps instead / in addition to Gaussasian NB), others from his list of best / all
+    From his list of algorithms for classification: Random Forest, XGBoost, SVM, (Backpropogation - what specifically is it?), Decision Trees (CART and C4.5/C5.0), Naive Bayes, Logistic Regression and Linear Discriminant Analysis, k-Nearest Neighbors and Learning Vector Quantization (what is it?)
+- Consider adding more views of features (age, family size etc.)
+- Automate bottom line report and choosing of the model
+
 
 '''
 options = {
-    'output_preds': False,
+    'output_preds': True,
     # TODO - need to somehow print options of the grid in a useful way
     'input_options_not_to_output': ['classifiers', 'grid_classifiers'],
     'num_folds': 5,  # options of number of folds for Cross validation.  Try with 10 also - gives even worse result
@@ -906,17 +904,23 @@ options = {
     },
     'classifiers': {
         # Look promising
-#        'Log': {'clas': LogisticRegression(solver='lbfgs'), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},  # Around 77
-#        'KNN 7': {'clas': KNeighborsClassifier(n_neighbors=7),                                                      # Gives around 77
-#                  'grid_params': None, 'Use in ensemble': False, 'Bag': False},
-#        'KNN 9': {'clas': KNeighborsClassifier(n_neighbors=9), 'grid_params': None, 'Use in ensemble': False,      # Gives around 76-78
-#                  'Bag': False},
-#        'KNN 12': {'clas': KNeighborsClassifier(n_neighbors=12), 'grid_params': None, 'Use in ensemble': False,    # Gives around 76-78, chosen by Grid
-#                   'Bag': False},
+        # 'Log': {'clas': LogisticRegression(solver='lbfgs'), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},  # Around 77
+        # 'KNN 7': {'clas': KNeighborsClassifier(n_neighbors=7),                                                      # Gives around 77
+        #           'grid_params': None, 'Use in ensemble': False, 'Bag': False},
+        # 'KNN 9': {'clas': KNeighborsClassifier(n_neighbors=9), 'grid_params': None, 'Use in ensemble': False,      # Gives around 76-78
+        #           'Bag': False},
+        # 'KNN 12': {'clas': KNeighborsClassifier(n_neighbors=12), 'grid_params': None, 'Use in ensemble': False,    # Gives around 76-78, chosen by Grid
+        #            'Bag': False},
         # 'SVM rbf': {'clas': SVC(gamma='auto', kernel='rbf', probability=True), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},  # Gives 77-78
-        # 'RF 7': {'clas': RandomForestClassifier(n_estimators=1000, max_depth=7), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},  # Gives 76-78
-        # 'XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', n_estimators=100), 'grid_params': None, 'Use in ensemble': False, 'Bag': False}, # Gives around 76-79 accuracy
+        # 'RF 7': {'clas': RandomForestClassifier(n_estimators=250, max_depth=7), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},  # Gives 76-78
+        # 'XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', n_estimators=250), 'grid_params': None, 'Use in ensemble': False, 'Bag': False}, # Gives around 76-79 accuracy
 
+        'KNN 7': {'clas': KNeighborsClassifier(n_neighbors=7), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},
+        'KNN 8': {'clas': KNeighborsClassifier(n_neighbors=8), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},
+        'KNN 9': {'clas': KNeighborsClassifier(n_neighbors=9), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},
+        'KNN 10': {'clas': KNeighborsClassifier(n_neighbors=10), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},
+        'KNN 11': {'clas': KNeighborsClassifier(n_neighbors=11), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},
+        'KNN 12': {'clas': KNeighborsClassifier(n_neighbors=12), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},
 
         # Possibly retry later - probably not needed (redundant)
         # Removed - was found that lbfgs is very slightly better usually, no point of running full Grid every time
