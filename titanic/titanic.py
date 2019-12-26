@@ -6,7 +6,7 @@ import seaborn as sns
 import os
 import csv
 
-from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.preprocessing import LabelEncoder, StandardScaler, MinMaxScaler
 
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
@@ -16,6 +16,7 @@ from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
 
 from sklearn.model_selection import KFold
+from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import cross_val_score
 from sklearn.feature_selection import RFECV
 
@@ -29,6 +30,7 @@ from sklearn.svm import SVC
 from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.tree import DecisionTreeClassifier
 import xgboost as xgb
 sns.set()
@@ -369,6 +371,7 @@ def prepare_features_scale_every_time(x_train, x_test, train):
     # TODO make sure all data is printed properly and seen on the display
     print(x_train.corr())
 
+    # especially appropriate in our case since most of the values are one-encoded anyways
     scaler = StandardScaler()
     scaler.fit(x_train)
 
@@ -852,7 +855,7 @@ def main():
 '''
 TODO:
 - Try stratified fold
-- Add Extra Trees Algorithm
+- Change to MinMaxScaler instead of StandardScaler
 - Go over all TODOs in this file
 - Voting only on models I know work best
 Possibly:
@@ -905,22 +908,25 @@ options = {
     'classifiers': {
         # Look promising
         # 'Log': {'clas': LogisticRegression(solver='lbfgs'), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},  # Around 77
-        # 'KNN 7': {'clas': KNeighborsClassifier(n_neighbors=7),                                                      # Gives around 77
-        #           'grid_params': None, 'Use in ensemble': False, 'Bag': False},
-        # 'KNN 9': {'clas': KNeighborsClassifier(n_neighbors=9), 'grid_params': None, 'Use in ensemble': False,      # Gives around 76-78
-        #           'Bag': False},
-        # 'KNN 12': {'clas': KNeighborsClassifier(n_neighbors=12), 'grid_params': None, 'Use in ensemble': False,    # Gives around 76-78, chosen by Grid
-        #            'Bag': False},
+        # 'KNN 8': {'clas': KNeighborsClassifier(n_neighbors=8), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},  # Give accuracy 76-78
         # 'SVM rbf': {'clas': SVC(gamma='auto', kernel='rbf', probability=True), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},  # Gives 77-78
         # 'RF 7': {'clas': RandomForestClassifier(n_estimators=250, max_depth=7), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},  # Gives 76-78
+        # 'ET': {'clas': ExtraTreesClassifier(n_estimators=100), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},
+        'ET 3': {'clas': ExtraTreesClassifier(max_depth=3, n_estimators=150), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},
+        'ET 4': {'clas': ExtraTreesClassifier(max_depth=4, n_estimators=150), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},
+        # 'ET 5': {'clas': ExtraTreesClassifier(max_depth=5, n_estimators=150), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},
+        # 'ET 6': {'clas': ExtraTreesClassifier(max_depth=6, n_estimators=150), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},
+        # 'ET 7': {'clas': ExtraTreesClassifier(max_depth=7, n_estimators=150), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},
+        # 'ET 8': {'clas': ExtraTreesClassifier(max_depth=8, n_estimators=150), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},
+        # 'ET 9': {'clas': ExtraTreesClassifier(max_depth=9, n_estimators=150), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},
+        # 'ET 10': {'clas': ExtraTreesClassifier(max_depth=10, n_estimators=150), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},
+        # 'ET 11': {'clas': ExtraTreesClassifier(max_depth=11, n_estimators=150), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},
+        # #'ET': {'clas': ExtraTreesClassifier(n_estimators=100), 'Use in ensemble': False, 'Bag': False,
+        #       'grid_params': [{
+        #            'max_depth': range(6, 12)
+        #       }],
+        #       },
         # 'XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', n_estimators=250), 'grid_params': None, 'Use in ensemble': False, 'Bag': False}, # Gives around 76-79 accuracy
-
-        'KNN 7': {'clas': KNeighborsClassifier(n_neighbors=7), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},
-        'KNN 8': {'clas': KNeighborsClassifier(n_neighbors=8), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},
-        'KNN 9': {'clas': KNeighborsClassifier(n_neighbors=9), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},
-        'KNN 10': {'clas': KNeighborsClassifier(n_neighbors=10), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},
-        'KNN 11': {'clas': KNeighborsClassifier(n_neighbors=11), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},
-        'KNN 12': {'clas': KNeighborsClassifier(n_neighbors=12), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},
 
         # Possibly retry later - probably not needed (redundant)
         # Removed - was found that lbfgs is very slightly better usually, no point of running full Grid every time
