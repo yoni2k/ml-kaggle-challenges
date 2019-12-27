@@ -854,7 +854,6 @@ def main():
 
 '''
 TODO:
-- Try stratified fold
 - Go over all TODOs in this file
 - Voting only on models I know work best
 Possibly:
