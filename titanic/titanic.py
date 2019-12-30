@@ -591,8 +591,12 @@ def fit_detailed(name_str, type_class, basic_classifier, x_train, y_train, x_tes
     if 'n_jobs' in basic_classifier.get_params():
         basic_classifier.set_params(n_jobs=-1)
 
-    cross_acc_score_full, cross_acc_std_full = get_cross_val_score_full(
-        basic_classifier, x_train, y_train, param_grid)
+    if options['no_cross_validation']:
+        cross_acc_score_full = 0
+        cross_acc_std_full = 0
+    else:
+        cross_acc_score_full, cross_acc_std_full = get_cross_val_score_full(
+            basic_classifier, x_train, y_train, param_grid)
 
     x_train_scaled_no_rfe, x_test_scaled_no_rfe, columns = prepare_features_scale_every_time(
         x_train.copy(), x_test.copy(), train)
@@ -815,8 +819,11 @@ def single_features_view(x_train, y_train, x_test, train, results, output_folder
     os.mkdir(view_output_folder)
 
     preds.corr().to_csv(view_output_folder + 'classifiers_correlations.csv')
+    preds.to_csv(view_output_folder + 'preds.csv')
+    train_probas.to_csv(view_output_folder + 'train_probas.csv')
+    test_probas.to_csv(view_output_folder + 'test_probas.csv')
 
-    if options['output_preds']:
+    if options['output_separate_preds']:
         output_all_preds(preds, x_test, view_output_folder)
 
     print(f'Debug: single_features_view Time took: {time.time() - start_time_total} seconds = '
@@ -865,7 +872,8 @@ Possibly:
 
 '''
 options = {
-    'output_preds': True,
+    'output_separate_preds': False,
+    'no_cross_validation': True,
     # TODO - need to somehow print options of the grid in a useful way
     'input_options_not_to_output': ['classifiers', 'grid_classifiers'],
     'num_folds': 5,  # options of number of folds for Cross validation.  Try with 10 also - gives even worse result
@@ -905,12 +913,12 @@ options = {
     },
     'classifiers': {
         # Look promising
-        # 'Log': {'clas': LogisticRegression(solver='lbfgs'), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},  # Around 77
-        # 'KNN 8': {'clas': KNeighborsClassifier(n_neighbors=8), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},  # Give accuracy 76-78
-        # 'SVM rbf': {'clas': SVC(gamma='auto', kernel='rbf', probability=True), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},  # Gives 77-78
-        # 'RF 7': {'clas': RandomForestClassifier(n_estimators=250, max_depth=7), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},  # Gives 76-78
-        'ET 5': {'clas': ExtraTreesClassifier(max_depth=5, n_estimators=150), 'grid_params': None, 'Use in ensemble': False, 'Bag': False},  # Gives accuracy 77-78
-        # 'XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', n_estimators=250), 'grid_params': None, 'Use in ensemble': False, 'Bag': False}, # Gives around 76-79 accuracy
+        'Log': {'clas': LogisticRegression(solver='lbfgs'), 'grid_params': None, 'Use in ensemble': True, 'Bag': False},  # Around 77
+        'KNN 8': {'clas': KNeighborsClassifier(n_neighbors=8), 'grid_params': None, 'Use in ensemble': True, 'Bag': True},  # Give accuracy 76-78
+        'SVM rbf': {'clas': SVC(gamma='auto', kernel='rbf', probability=True), 'grid_params': None, 'Use in ensemble': True, 'Bag': False},  # Gives 77-78
+        'RF 7': {'clas': RandomForestClassifier(n_estimators=250, max_depth=7), 'grid_params': None, 'Use in ensemble': True, 'Bag': False},  # Gives 76-78
+        'ET 5': {'clas': ExtraTreesClassifier(max_depth=5, n_estimators=150), 'grid_params': None, 'Use in ensemble': True, 'Bag': False},  # Gives accuracy 77-78
+        'XGB': {'clas': xgb.XGBClassifier(objective='binary:logistic', n_estimators=250), 'grid_params': None, 'Use in ensemble': True, 'Bag': False}, # Gives around 76-79 accuracy
 
         # Possibly retry later - probably not needed (redundant)
         # Removed - was found that lbfgs is very slightly better usually, no point of running full Grid every time
