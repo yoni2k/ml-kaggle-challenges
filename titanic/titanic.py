@@ -649,8 +649,13 @@ def fit_detailed(name_str, type_class, basic_classifier, x_train, y_train, x_tes
 
     cross_acc_min_3_std_full = cross_acc_score_full - cross_acc_std_full * 3
 
-    cross_acc_score_specific, cross_acc_std_specific = get_cross_val_score_prepared(
-        best_estimator, x_train_scaled, y_train)
+    if options['no_cross_validation']:
+        cross_acc_score_specific = 0
+        cross_acc_std_specific = 0
+    else:
+        cross_acc_score_specific, cross_acc_std_specific = get_cross_val_score_prepared(
+            best_estimator, x_train_scaled, y_train)
+
     cross_acc_min_3_std_specific = cross_acc_score_specific - cross_acc_std_specific * 3
 
     results.append({'Features options': str(options['feature_view']),
@@ -873,7 +878,7 @@ Possibly:
 '''
 options = {
     'output_separate_preds': False,
-    'no_cross_validation': True,
+    'no_cross_validation': False,
     # TODO - need to somehow print options of the grid in a useful way
     'input_options_not_to_output': ['classifiers', 'grid_classifiers'],
     'num_folds': 5,  # options of number of folds for Cross validation.  Try with 10 also - gives even worse result
@@ -890,22 +895,25 @@ options = {
         'Ticket',  # not helpful as is, but could have been used in feature extraction
         'Name',  # not helpful as is, but could have been used in feature extraction
         'Cabin',  # not helpful as is, but could have been used in feature extraction
-        # 'Sex',  # Since titles are important, need to remove Sex
-        #'SibSp',  # very low in all models, perhaps because of Family size / Ticket_Frequency
-        #'Parch',  # very low in all models, perhaps because of Family size / Ticket_Frequency
-        #'Embarked',
+        'Embarked',
+
+        # Removed temporarily
+        'SibSp',  # very low in all models, perhaps because of Family size / Ticket_Frequency
+        'Parch',  # very low in all models, perhaps because of Family size / Ticket_Frequency
     ],
     'major_columns_to_drop_every_time': [
-        # 'Family/ticket survival known',  # low in all models
+        'Family/ticket survival known',  # low in all models
     ],
     'features_variations': {
         # 'SibSp': ['Num', 'ManualBin', 'AutobinXXX', 'Num+ManualBin'],  # TODO - add - currently not used
         # 'Parch': ['Num', 'ManualBin', 'AutobinXXX', 'Num+ManualBin'],  # TODO - add - currently not used
 
         # 'Family size': ['Bin', 'Num', 'Both'],  # TODO - add a different way to bin?
-        'Family size': ['Both'],  # TODO - add a different way to bin?
+        # 'Family size': ['Both'],  # TODO - add a different way to bin?
+        'Family size': ['Bin', 'Num'],  # TODO - add a different way to bin?
         # 'Age': ['Bin', 'Num', 'Bin+Num'],  # TODO - add other ways to bin?
-        'Age': ['Bin+Num'],  # TODO - add other ways to bin?
+        # 'Age': ['Bin+Num'],  # TODO - add other ways to bin?
+        'Age': ['Bin', 'Num'],  # TODO - add other ways to bin?
         # 'Fare': ['Num', 'Log', '13.5+', 'Log+13.5', 'Num+13.5'],  # TODO - should add more ways, like manual or automatic bin?
         'Fare': ['Log+13.5'],  # TODO - should add more ways, like manual or automatic bin?
 
