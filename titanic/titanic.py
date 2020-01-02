@@ -867,7 +867,6 @@ def main():
 '''
 TODO:
 - Go over all TODOs in this file
-- Voting only on models I know work best
 Possibly:
 - Add AdaBoost, Bernoulli NB (perhaps instead / in addition to Gaussasian NB), others from his list of best / all
     From his list of algorithms for classification: Random Forest, XGBoost, SVM, (Backpropogation - what specifically is it?), Decision Trees (CART and C4.5/C5.0), Naive Bayes, Logistic Regression and Linear Discriminant Analysis, k-Nearest Neighbors and Learning Vector Quantization (what is it?)
@@ -895,11 +894,11 @@ options = {
         'Ticket',  # not helpful as is, but could have been used in feature extraction
         'Name',  # not helpful as is, but could have been used in feature extraction
         'Cabin',  # not helpful as is, but could have been used in feature extraction
-        'Embarked',
+        # 'Embarked',
 
         # Removed temporarily
-        'SibSp',  # very low in all models, perhaps because of Family size / Ticket_Frequency
-        'Parch',  # very low in all models, perhaps because of Family size / Ticket_Frequency
+        # 'SibSp',  # very low in all models, perhaps because of Family size / Ticket_Frequency
+        # 'Parch',  # very low in all models, perhaps because of Family size / Ticket_Frequency
     ],
     'major_columns_to_drop_every_time': [
         'Family/ticket survival known',  # low in all models
