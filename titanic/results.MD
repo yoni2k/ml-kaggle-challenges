@@ -1590,6 +1590,13 @@ Also, adding Log ensembling and Grid Search on Random Forest ensembling as the f
 - Ensembling: soft voting, hard voting, Random Forest with Grid search, Logistic Regression with Grid search.  All with best performing classifiers above.
 - All the above gives close to accuracy 80 on the website.  Best - soft voting that gives 80.3, with hard voting being in 2nd place with 80. Ensemblers give 79.5
 	
-
+### 84 - a lot of steps done here together.
+Changing altogether how we work:
+- no more data leakage / contamination from test to train - not looking at test at all when preparing and scaling data.
+- Using cross validation heavily to decide which classifier to take
+- See detailed explanation of bottom line in:
+	https://www.kaggle.com/yoni2k/top-3-with-only-4-features-no-data-leakage
+	or:
+	https://github.com/yoni2k/ml-kaggle-challenges/blob/master/titanic/Simplest%20bottom%20line%20Kernel%20for%20Kaggle.ipynb
 
 
